@@ -376,8 +376,9 @@ public final class LinuxImageManager {
             let data = handle.availableData
             if !data.isEmpty, let text = String(data: data, encoding: .utf8) {
                 consoleOutput.append(text)
-                // Also log to stderr for debugging
-                FileHandle.standardError.write(data)
+                if ProcessInfo.processInfo.environment["BROMURE_DEBUG"] != nil {
+                    FileHandle.standardError.write(data)
+                }
             }
         }
         defer {
@@ -571,7 +572,7 @@ public final class LinuxImageManager {
             "# Chroot: update and install packages",
             "chroot /mnt apk update || echo 'APK_UPDATE_FAILED'",
             "chroot /mnt apk add openrc linux-virt linux-firmware-none mkinitfs || echo 'APK_ADD_BASE_FAILED'",
-            "chroot /mnt apk add chromium xorg-server xinit mesa-dri-gallium eudev dbus ttf-freefont ttf-dejavu font-noto-emoji font-liberation xf86-input-libinput agetty util-linux openbox xrandr xdotool pulseaudio pulseaudio-alsa alsa-utils alsa-plugins-pulse || echo 'APK_ADD_CHROMIUM_FAILED'",
+            "chroot /mnt apk add chromium xorg-server xinit mesa-dri-gallium mesa-egl mesa-gl mesa-gles mesa-gbm eudev dbus ttf-freefont ttf-dejavu font-noto-emoji font-liberation xf86-input-libinput agetty util-linux openbox xrandr xdotool pulseaudio pulseaudio-alsa alsa-utils alsa-plugins-pulse adwaita-icon-theme || echo 'APK_ADD_CHROMIUM_FAILED'",
             "ls -la /mnt/sbin/init || echo 'WARNING: /sbin/init not found!'",
             "",
             "# Install Cloudflare WARP (glibc binary on musl Alpine)",
@@ -620,6 +621,7 @@ public final class LinuxImageManager {
             "chroot /mnt sh -c 'echo \"root:\" | chpasswd'",
             "chroot /mnt adduser -D -s /bin/sh chrome",
             "chroot /mnt addgroup chrome video",
+            "chroot /mnt addgroup chrome render",
             "chroot /mnt addgroup chrome input",
             "chroot /mnt addgroup chrome audio",
             "chroot /mnt apk add doas",
@@ -644,9 +646,17 @@ public final class LinuxImageManager {
             "chmod +x /mnt/root/debug.sh",
             "printf '%s\\n' '/root/debug.sh &' > /mnt/root/.profile",
             "",
+            "# Udev rule for DRI device permissions (GPU access for render group)",
+            "mkdir -p /mnt/etc/udev/rules.d",
+            "printf '%s\\n' 'SUBSYSTEM==\"drm\", KERNEL==\"renderD*\", GROUP=\"render\", MODE=\"0666\"' 'SUBSYSTEM==\"drm\", KERNEL==\"card*\", GROUP=\"video\", MODE=\"0666\"' > /mnt/etc/udev/rules.d/70-dri.rules",
+            "",
+            "# Default cursor theme (so X11/Chromium find the Adwaita cursors)",
+            "mkdir -p /mnt/usr/share/icons/default",
+            "printf '%s\\n' '[Icon Theme]' 'Inherits=Adwaita' > /mnt/usr/share/icons/default/index.theme",
+            "",
             "# Xorg config for virtio-gpu (use modesetting driver)",
             "mkdir -p /mnt/etc/X11/xorg.conf.d",
-            "printf '%s\\n' 'Section \"Device\"' '  Identifier \"virtio\"' '  Driver \"modesetting\"' 'EndSection' > /mnt/etc/X11/xorg.conf.d/10-virtio.conf",
+            "printf '%s\\n' 'Section \"Device\"' '  Identifier \"virtio\"' '  Driver \"modesetting\"' 'EndSection' '' 'Section \"ServerFlags\"' '  Option \"DRI2\" \"true\"' 'EndSection' > /mnt/etc/X11/xorg.conf.d/10-virtio.conf",
             "",
             "# Keyboard layout (mirrored from macOS host)",
             "printf '%s\\n' 'Section \"InputClass\"' '  Identifier \"keyboard-layout\"' '  MatchIsKeyboard \"on\"' '  Option \"XkbLayout\" \"\(keyboardLayout)\"' 'EndSection' > /mnt/etc/X11/xorg.conf.d/20-keyboard.conf",
@@ -662,7 +672,7 @@ public final class LinuxImageManager {
             "chmod +x /mnt/usr/local/bin/resize-watcher.sh",
             "",
             "# xinitrc for chrome user - openbox WM + Chromium maximized",
-            "printf '%s\\n' '#!/bin/sh' 'export XCURSOR_SIZE=\(displayScale * 24)' '/usr/local/bin/resize-watcher.sh &' 'openbox &' 'cat /proc/asound/cards > /dev/hvc0 2>&1' 'pulseaudio --start --exit-idle-time=-1 2>/dev/null' 'sleep 0.5' 'pactl list sinks short > /dev/hvc0 2>&1' 'for i in $(seq 1 20); do [ -f /tmp/bromure/chrome-ready ] && break; sleep 0.2; done' 'EXTRA_FLAGS=' 'CHROME_URL=' '[ -f /tmp/bromure/chrome-env ] && . /tmp/bromure/chrome-env' 'echo \"xinitrc: EXTRA_FLAGS=$EXTRA_FLAGS CHROME_URL=$CHROME_URL\" > /dev/hvc0' 'chromium-browser --disable-gpu --disable-gpu-compositing --no-first-run --disable-dev-shm-usage --start-maximized --force-device-scale-factor=\(displayScale) $EXTRA_FLAGS $CHROME_URL' 'doas poweroff' > /mnt/home/chrome/.xinitrc",
+            "printf '%s\\n' '#!/bin/sh' 'export XCURSOR_SIZE=\(displayScale * 24)' 'export XCURSOR_THEME=Adwaita' 'echo \"Xcursor.size: \(displayScale * 24)\" | xrdb -merge' '/usr/local/bin/resize-watcher.sh &' 'openbox &' 'cat /proc/asound/cards > /dev/hvc0 2>&1' 'pulseaudio --start --exit-idle-time=-1 2>/dev/null' 'sleep 0.5' 'pactl list sinks short > /dev/hvc0 2>&1' 'for i in $(seq 1 20); do [ -f /tmp/bromure/chrome-ready ] && break; sleep 0.2; done' 'EXTRA_FLAGS=' 'CHROME_URL=' '[ -f /tmp/bromure/chrome-env ] && . /tmp/bromure/chrome-env' 'echo \"xinitrc: EXTRA_FLAGS=$EXTRA_FLAGS CHROME_URL=$CHROME_URL\" > /dev/hvc0' 'export LIBGL_ALWAYS_SOFTWARE=1' 'chromium-browser --no-first-run --disable-dev-shm-usage --start-maximized --force-device-scale-factor=\(displayScale) --use-gl=angle --use-angle=gl --ignore-gpu-blocklist --enable-gpu-rasterization --disable-vulkan --in-process-gpu $EXTRA_FLAGS $CHROME_URL' 'doas poweroff' > /mnt/home/chrome/.xinitrc",
             "chroot /mnt chown chrome:chrome /home/chrome/.xinitrc",
             "# Configure openbox: no decorations (no close/minimize/maximize buttons)",
             "mkdir -p /mnt/home/chrome/.config/openbox",

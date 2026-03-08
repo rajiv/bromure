@@ -90,15 +90,16 @@ public final class VMPool {
         }
         var envLines: [String] = []
         if !extraFlags.isEmpty {
+            // extraFlags are hardcoded strings, safe to interpolate
             envLines.append("EXTRA_FLAGS=\"\(extraFlags.joined(separator: " "))\"")
         }
-        envLines.append("CHROME_URL=\"\(config.homePage)\"")
+        envLines.append("CHROME_URL=\(shellEscape(config.homePage))")
 
         // Always start dnsmasq + squid when networking is enabled.
         // - Ad blocking: squid uses 127.0.0.1 as DNS (dnsmasq with pihole blocklist)
         // - WARP: squid is started via proxychains to route through WARP SOCKS5
         var bootScript = "mkdir -p /tmp/bromure && "
-            + envLines.map { "echo '\($0)' >> /tmp/bromure/chrome-env" }.joined(separator: " && ")
+            + envLines.map { "echo \(shellEscape($0)) >> /tmp/bromure/chrome-env" }.joined(separator: " && ")
             + " && touch /tmp/bromure/chrome-ready"
         if config.enableNetworking {
             // Always run dnsmasq with pihole config
@@ -128,7 +129,7 @@ public final class VMPool {
                 "\(preload) /bin/warp-cli --accept-tos registration new 2>&1",
                 "\(preload) /bin/warp-cli --accept-tos mode proxy 2>&1",
                 "\(preload) /bin/warp-cli --accept-tos connect 2>&1",
-                "sleep 2",
+                "sleep 5",
                 "\(preload) /bin/warp-cli --accept-tos status 2>&1",
             ]
 

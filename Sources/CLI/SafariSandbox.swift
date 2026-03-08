@@ -329,6 +329,24 @@ final class GUIAppDelegate: NSObject, NSApplicationDelegate {
 
     func applicationShouldTerminate(_ sender: NSApplication) -> NSApplication.TerminateReply {
         if isTerminating { return .terminateNow }
+
+        // If there are active sessions, confirm before quitting
+        if !sessions.isEmpty {
+            let alert = NSAlert()
+            alert.messageText = "Quit Bromure?"
+            let count = sessions.count
+            alert.informativeText = count == 1
+                ? "There is 1 open browser session. All session data will be lost."
+                : "There are \(count) open browser sessions. All session data will be lost."
+            alert.alertStyle = .warning
+            alert.addButton(withTitle: "Quit")
+            alert.addButton(withTitle: "Cancel")
+            let response = alert.runModal()
+            if response == .alertSecondButtonReturn {
+                return .terminateCancel
+            }
+        }
+
         isTerminating = true
 
         // Detach VZ views synchronously while we're on the real main thread.
@@ -413,7 +431,8 @@ final class BrowserSession {
         print("[URL] navigateTo: opening \(urlString)")
         // Running chromium-browser again while an instance is already running
         // will open the URL in a new tab of the existing instance.
-        let cmd = "su chrome -c 'DISPLAY=:0 chromium-browser \"\(urlString)\"' &"
+        let innerCmd = "DISPLAY=:0 chromium-browser " + shellEscape(urlString)
+        let cmd = "su chrome -c \(shellEscape(innerCmd)) &"
         warmVM.serialInput.fileHandleForWriting.write(Data((cmd + "\n").utf8))
     }
 
