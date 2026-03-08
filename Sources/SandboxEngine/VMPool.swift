@@ -5,6 +5,8 @@ import Virtualization
 ///
 /// Pre-boots a VM in the background so that "File > New Browser" is instant.
 /// When a VM is claimed (shown to user), the next one starts booting immediately.
+private let bromureDebug = ProcessInfo.processInfo.environment["BROMURE_DEBUG"] != nil
+
 @MainActor
 public final class VMPool {
     /// A pre-warmed VM ready to be shown to the user.
@@ -78,7 +80,7 @@ public final class VMPool {
         }
 
         // Build chrome-env content to write immediately on boot detection
-        print("[VMPool] Writing chrome-env: homePage='\(config.homePage)' forceDarkMode=\(config.forceDarkMode) adBlocking=\(config.enableAdBlocking)")
+        if bromureDebug { print("[VMPool] Writing chrome-env: homePage='\(config.homePage)' forceDarkMode=\(config.forceDarkMode) adBlocking=\(config.enableAdBlocking)") }
         var extraFlags: [String] = []
         if config.forceDarkMode {
             extraFlags.append("--force-dark-mode --enable-features=WebContentsForceDark")
@@ -131,7 +133,7 @@ public final class VMPool {
             ]
 
             for cmd in warpCommands {
-                print("[VMPool] WARP: \(cmd)")
+                if bromureDebug { print("[VMPool] WARP: \(cmd)") }
                 inputPipe.fileHandleForWriting.write(Data((cmd + "\n").utf8))
                 if cmd.hasPrefix("sleep") {
                     let secs = Int(cmd.split(separator: " ").dropFirst().first ?? "2") ?? 2
@@ -140,12 +142,12 @@ public final class VMPool {
                     try? await Task.sleep(for: .milliseconds(500))
                 }
             }
-            print("[VMPool] WARP setup complete")
+            if bromureDebug { print("[VMPool] WARP setup complete") }
 
             // Start squid via proxychains now that WARP is connected
             if config.enableWarp {
                 let squidCmd = "proxychains4 -q -f /etc/proxychains/proxychains.conf squid -N -f /etc/squid/squid.conf &"
-                print("[VMPool] Starting squid via proxychains")
+                if bromureDebug { print("[VMPool] Starting squid via proxychains") }
                 inputPipe.fileHandleForWriting.write(Data((squidCmd + "\n").utf8))
                 try? await Task.sleep(for: .milliseconds(500))
             }
@@ -202,9 +204,7 @@ public final class VMPool {
             outputPipe.fileHandleForReading.readabilityHandler = { handle in
                 let data = handle.availableData
                 guard !data.isEmpty, let text = String(data: data, encoding: .utf8) else { return }
-                if ProcessInfo.processInfo.environment["BROMURE_DEBUG"] != nil {
-                    print(text, terminator: "")
-                }
+                if bromureDebug { print(text, terminator: "") }
                 accumulated += text
 
                 // Shell prompt means Alpine has booted

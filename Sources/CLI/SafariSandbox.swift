@@ -331,6 +331,13 @@ final class GUIAppDelegate: NSObject, NSApplicationDelegate {
         if isTerminating { return .terminateNow }
         isTerminating = true
 
+        // Detach VZ views synchronously while we're on the real main thread.
+        // VZVirtualMachineView.setVirtualMachine requires the main dispatch queue,
+        // which @MainActor Tasks don't guarantee.
+        for session in sessions {
+            session.detachView()
+        }
+
         Task { @MainActor in
             for session in sessions {
                 await session.teardown()
@@ -410,11 +417,21 @@ final class BrowserSession {
         warmVM.serialInput.fileHandleForWriting.write(Data((cmd + "\n").utf8))
     }
 
-    /// Detach the VM view to prevent VZ framework from accessing freed memory.
+    /// Detach the VM view and disconnect window delegate.
+    /// VZVirtualMachineView and NSWindow both require the real main dispatch queue.
     fileprivate func detachView() {
-        vmView?.virtualMachine = nil
-        window.contentView = NSView()
-        vmView = nil
+        guard vmView != nil else { return }
+        let work = {
+            self.vmView?.virtualMachine = nil
+            self.window.contentView = NSView()
+            self.window.delegate = nil
+            self.vmView = nil
+        }
+        if Thread.isMainThread {
+            work()
+        } else {
+            DispatchQueue.main.sync { work() }
+        }
     }
 
     /// Stop the VM, close pipes, destroy disk — in that order.
@@ -468,7 +485,6 @@ final class BrowserSession {
         guard !closing else { return }
         closing = true
         detachView()
-        window.delegate = nil
         delegateHelper = nil
         await fullCleanup()
     }
