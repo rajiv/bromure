@@ -123,6 +123,18 @@ final class AppState: @unchecked Sendable {
         }
     }
 
+    /// Shut down the current pool and start a fresh one with updated config.
+    func restartPool() {
+        warmUpTask?.cancel()
+        warmUpTask = nil
+        Task {
+            await pool?.shutdown()
+            pool = nil
+            poolReady = false
+            startPool()
+        }
+    }
+
     func startPool() {
         let config = buildConfig()
         pool = VMPool(config: config, storageDir: storageDir)
@@ -158,7 +170,7 @@ final class AppState: @unchecked Sendable {
             memorySize: UInt64(memGB > 0 ? memGB : 2) * 1024 * 1024 * 1024,
             enableNetworking: defaults.object(forKey: "vm.enableNetworking") as? Bool ?? true,
             enableAudio: defaults.object(forKey: "vm.enableAudio") as? Bool ?? true,
-            enableWarp: false, // WARP disabled for now
+            enableWarp: defaults.object(forKey: "vm.enableWarp") as? Bool ?? false,
             forceDarkMode: forceDark,
             enableAdBlocking: defaults.object(forKey: "vm.enableAdBlocking") as? Bool ?? false,
             homePage: defaults.string(forKey: "vm.homePage") ?? "https://www.google.com"

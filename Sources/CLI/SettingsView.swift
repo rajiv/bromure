@@ -138,9 +138,9 @@ struct SettingsView: View {
                 Toggle("Filter ads (with Pi-hole)", isOn: $enableAdBlocking)
                     .help("Block ads and trackers using Pi-hole DNS filtering with a local Squid proxy.")
                     .disabled(!enableNetworking)
-                // Toggle("Cloudflare WARP", isOn: $enableWarp)
-                //     .help("Route VM traffic through Cloudflare\u{2019}s encrypted network via SOCKS5 proxy.")
-                //     .disabled(!enableNetworking)
+                Toggle("Cloudflare WARP", isOn: $enableWarp)
+                    .help("Route VM traffic through Cloudflare\u{2019}s encrypted network via SOCKS5 proxy.")
+                    .disabled(!enableNetworking)
             }
 
             Section("Storage") {
@@ -224,7 +224,16 @@ struct SettingsView: View {
             Text("Cloudflare WARP requires at least 2 GB of RAM to run reliably. Would you like to increase the VM memory?")
         }
 
-        Text("Memory, CPU, and appearance changes take effect on next browser window.")
+        .onChange(of: memoryGB) { _, _ in state?.restartPool() }
+        .onChange(of: cpuCount) { _, _ in state?.restartPool() }
+        .onChange(of: enableNetworking) { _, _ in state?.restartPool() }
+        .onChange(of: enableAudio) { _, _ in state?.restartPool() }
+        .onChange(of: enableWarp) { _, _ in state?.restartPool() }
+        .onChange(of: enableAdBlocking) { _, _ in state?.restartPool() }
+        .onChange(of: appearance) { _, _ in state?.restartPool() }
+        .onChange(of: homePage) { _, _ in state?.restartPool() }
+
+        Text("Changes take effect immediately by restarting the pre-warmed VM.")
             .font(.caption2)
             .foregroundStyle(.tertiary)
             .padding(.bottom, 8)

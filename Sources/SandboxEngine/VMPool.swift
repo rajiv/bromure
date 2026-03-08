@@ -83,7 +83,7 @@ public final class VMPool {
         if config.forceDarkMode {
             extraFlags.append("--force-dark-mode --enable-features=WebContentsForceDark")
         }
-        if config.enableAdBlocking && config.enableNetworking {
+        if config.enableNetworking {
             extraFlags.append("--proxy-server=http://127.0.0.1:3128")
         }
         var envLines: [String] = []
@@ -92,28 +92,39 @@ public final class VMPool {
         }
         envLines.append("CHROME_URL=\"\(config.homePage)\"")
 
-        // Start ad-blocking services if enabled (dnsmasq always, squid after WARP if needed)
+        // Always start dnsmasq + squid when networking is enabled.
+        // - Ad blocking: squid uses 127.0.0.1 as DNS (dnsmasq with pihole blocklist)
+        // - WARP: squid is started via proxychains to route through WARP SOCKS5
         var bootScript = "mkdir -p /tmp/bromure && "
             + envLines.map { "echo '\($0)' >> /tmp/bromure/chrome-env" }.joined(separator: " && ")
             + " && touch /tmp/bromure/chrome-ready"
-        if config.enableAdBlocking && config.enableNetworking {
-            bootScript += " && dnsmasq -C /etc/dnsmasq.d/pihole.conf && squid -f /etc/squid/squid.conf"
+        if config.enableNetworking {
+            // Always run dnsmasq with pihole config
+            bootScript += " && dnsmasq -C /etc/dnsmasq.d/pihole.conf"
+            // If ad blocking, squid should resolve via dnsmasq (127.0.0.1); otherwise use system DNS
+            if config.enableAdBlocking {
+                bootScript += " && sed -i 's/^dns_nameservers.*/dns_nameservers 127.0.0.1/' /etc/squid/squid.conf"
+            } else {
+                bootScript += " && sed -i '/^dns_nameservers/d' /etc/squid/squid.conf"
+            }
+            // If WARP is not enabled, start squid now; otherwise defer until after WARP is connected
+            if !config.enableWarp {
+                bootScript += " && squid -N -f /etc/squid/squid.conf &"
+            }
         }
 
         // Wait for boot, then immediately write config (before the 5s X11 wait)
         await waitForBoot(outputPipe: outputPipe, inputPipe: inputPipe, onBootDetected: bootScript)
 
-        // Start Cloudflare WARP in proxy mode if enabled
-        if config.enableWarp && config.enableNetworking {
+        // Always start Cloudflare WARP in proxy mode when networking is enabled
+        if config.enableNetworking {
             let preload = "LD_PRELOAD=/usr/lib/libresolv_stub.so"
             let warpCommands = [
-                "mkdir -p /dev/net && [ -e /dev/net/tun ] || mknod /dev/net/tun c 10 200",
                 "/usr/bin/dbus-daemon --system 2>/dev/null",
                 "\(preload) /bin/warp-svc 1>/dev/null 2>/dev/null &",
                 "sleep 3",
                 "\(preload) /bin/warp-cli --accept-tos registration new 2>&1",
                 "\(preload) /bin/warp-cli --accept-tos mode proxy 2>&1",
-                "\(preload) /bin/warp-cli --accept-tos proxy port 40000 2>&1",
                 "\(preload) /bin/warp-cli --accept-tos connect 2>&1",
                 "sleep 2",
                 "\(preload) /bin/warp-cli --accept-tos status 2>&1",
@@ -130,6 +141,14 @@ public final class VMPool {
                 }
             }
             print("[VMPool] WARP setup complete")
+
+            // Start squid via proxychains now that WARP is connected
+            if config.enableWarp {
+                let squidCmd = "proxychains4 -q -f /etc/proxychains/proxychains.conf squid -N -f /etc/squid/squid.conf &"
+                print("[VMPool] Starting squid via proxychains")
+                inputPipe.fileHandleForWriting.write(Data((squidCmd + "\n").utf8))
+                try? await Task.sleep(for: .milliseconds(500))
+            }
         }
 
         outputPipe.fileHandleForReading.readabilityHandler = nil
@@ -183,6 +202,9 @@ public final class VMPool {
             outputPipe.fileHandleForReading.readabilityHandler = { handle in
                 let data = handle.availableData
                 guard !data.isEmpty, let text = String(data: data, encoding: .utf8) else { return }
+                if ProcessInfo.processInfo.environment["BROMURE_DEBUG"] != nil {
+                    print(text, terminator: "")
+                }
                 accumulated += text
 
                 // Shell prompt means Alpine has booted

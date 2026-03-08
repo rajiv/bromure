@@ -23,6 +23,13 @@ struct Launch: ParsableCommand {
     )
 
     func run() throws {
+        let osVersion = ProcessInfo.processInfo.operatingSystemVersion
+        if osVersion.majorVersion < 14 {
+            print("Error: Bromure requires macOS 14 (Sonoma) or later.")
+            print("You are running macOS \(osVersion.majorVersion).\(osVersion.minorVersion).")
+            throw ExitCode.failure
+        }
+
         let app = NSApplication.shared
         app.setActivationPolicy(.regular)
 
