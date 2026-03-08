@@ -67,6 +67,9 @@ public struct VMConfig {
     /// OS language/locale (e.g. "en_US").
     public var locale: String
 
+    /// Whether to swap Command and Control keys (macOS-like shortcuts).
+    public var swapCmdCtrl: Bool
+
     /// Home page URL for the browser.
     public var homePage: String
 
@@ -81,6 +84,7 @@ public struct VMConfig {
         enableWarp: Bool = false,
         forceDarkMode: Bool = false,
         enableAdBlocking: Bool = false,
+        swapCmdCtrl: Bool = true,
         homePage: String = "https://www.google.com",
         keyboardLayout: String? = nil,
         naturalScrolling: Bool? = nil,
@@ -96,6 +100,7 @@ public struct VMConfig {
         self.enableWarp = enableWarp
         self.forceDarkMode = forceDarkMode
         self.enableAdBlocking = enableAdBlocking
+        self.swapCmdCtrl = swapCmdCtrl
         self.homePage = homePage
         self.keyboardLayout = keyboardLayout ?? VMConfig.detectKeyboardLayout()
         self.naturalScrolling = naturalScrolling ?? VMConfig.detectNaturalScrolling()

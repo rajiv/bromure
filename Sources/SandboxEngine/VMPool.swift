@@ -94,6 +94,9 @@ public final class VMPool {
             envLines.append("EXTRA_FLAGS=\"\(extraFlags.joined(separator: " "))\"")
         }
         envLines.append("CHROME_URL=\(shellEscape(config.homePage))")
+        if config.swapCmdCtrl {
+            envLines.append("SWAP_CMD_CTRL=1")
+        }
 
         // Only start dnsmasq + squid when ad blocking or WARP is enabled.
         // When neither is active, Chrome runs directly without proxy.

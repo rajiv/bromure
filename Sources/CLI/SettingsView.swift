@@ -8,6 +8,7 @@ struct SettingsView: View {
     @AppStorage("vm.enableAudio") private var enableAudio = true
     @AppStorage("vm.enableWarp") private var enableWarp = false
     @AppStorage("vm.enableAdBlocking") private var enableAdBlocking = false
+    @AppStorage("vm.swapCmdCtrl") private var swapCmdCtrl = true
     @AppStorage("vm.appearance") private var appearance = "system"
     @AppStorage("vm.homePage") private var homePage = "https://www.google.com"
 
@@ -102,6 +103,9 @@ struct SettingsView: View {
                             showRebuildConfirm = true
                         }
                     }
+
+                Toggle("Use Command as Control", isOn: $swapCmdCtrl)
+                    .help("Swap Command and Control keys so macOS shortcuts (⌘T, ⌘W, ⌘L, etc.) work in Chromium.")
             }
 
             Section("Display") {
@@ -230,6 +234,7 @@ struct SettingsView: View {
         .onChange(of: enableAudio) { _, _ in state?.restartPool() }
         .onChange(of: enableWarp) { _, _ in state?.restartPool() }
         .onChange(of: enableAdBlocking) { _, _ in state?.restartPool() }
+        .onChange(of: swapCmdCtrl) { _, _ in state?.restartPool() }
         .onChange(of: appearance) { _, _ in state?.restartPool() }
         .onChange(of: homePage) { _, _ in state?.restartPool() }
 

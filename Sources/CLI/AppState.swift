@@ -181,6 +181,7 @@ final class AppState: @unchecked Sendable {
             enableWarp: defaults.object(forKey: "vm.enableWarp") as? Bool ?? false,
             forceDarkMode: forceDark,
             enableAdBlocking: defaults.object(forKey: "vm.enableAdBlocking") as? Bool ?? false,
+            swapCmdCtrl: defaults.object(forKey: "vm.swapCmdCtrl") as? Bool ?? true,
             homePage: defaults.string(forKey: "vm.homePage") ?? "https://www.google.com"
         )
     }
