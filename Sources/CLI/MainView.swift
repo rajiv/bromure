@@ -63,6 +63,9 @@ struct MainView: View {
                 Text("Starting browser engine...")
                     .foregroundStyle(.secondary)
                     .font(.subheadline)
+                Text("First launch is slower, subsequent ones will be faster.")
+                    .foregroundStyle(.tertiary)
+                    .font(.caption)
             }
             .padding()
 
