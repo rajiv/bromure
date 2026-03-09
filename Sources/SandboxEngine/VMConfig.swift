@@ -70,6 +70,9 @@ public struct VMConfig {
     /// Home page URL for the browser.
     public var homePage: String
 
+    /// Whether GPU acceleration is enabled in the browser.
+    public var enableGPU: Bool
+
     public init(
         cpuCount: Int? = nil,
         memorySize: UInt64 = 4 * 1024 * 1024 * 1024,
@@ -82,6 +85,7 @@ public struct VMConfig {
         enableAdBlocking: Bool = false,
         swapCmdCtrl: Bool = true,
         homePage: String = "https://www.google.com",
+        enableGPU: Bool = true,
         keyboardLayout: String? = nil,
         naturalScrolling: Bool? = nil,
         locale: String? = nil
@@ -97,6 +101,7 @@ public struct VMConfig {
         self.enableAdBlocking = enableAdBlocking
         self.swapCmdCtrl = swapCmdCtrl
         self.homePage = homePage
+        self.enableGPU = enableGPU
         self.keyboardLayout = keyboardLayout ?? VMConfig.detectKeyboardLayout()
         self.naturalScrolling = naturalScrolling ?? VMConfig.detectNaturalScrolling()
         self.locale = locale ?? VMConfig.detectLocale()

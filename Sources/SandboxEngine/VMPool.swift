@@ -89,6 +89,9 @@ public final class VMPool {
         if config.enableAdBlocking || config.enableWarp {
             extraFlags.append("--proxy-server=http://127.0.0.1:3128")
         }
+        if !config.enableGPU {
+            extraFlags.append("--disable-gpu")
+        }
         var envLines: [String] = []
         if !extraFlags.isEmpty {
             // extraFlags are hardcoded strings, safe to interpolate
