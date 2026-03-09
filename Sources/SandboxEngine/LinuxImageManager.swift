@@ -11,7 +11,7 @@ import Virtualization
 /// - virtio drivers for GPU, network, and disk
 public final class LinuxImageManager {
     /// Bump this to force a rebuild of the base image on next launch.
-    public static let imageVersion = "1"
+    public static let imageVersion = "2"
 
     private let storageDir: URL
 
@@ -198,6 +198,18 @@ public final class LinuxImageManager {
 
         // Entropy
         vzConfig.entropyDevices = [VZVirtioEntropyDeviceConfiguration()]
+
+        // SPICE agent for clipboard sharing
+        if config.enableClipboardSharing {
+            let spiceConsole = VZVirtioConsoleDeviceConfiguration()
+            let spicePort = VZVirtioConsolePortConfiguration()
+            spicePort.name = VZSpiceAgentPortAttachment.spiceAgentPortName
+            let spiceAttachment = VZSpiceAgentPortAttachment()
+            spiceAttachment.sharesClipboard = true
+            spicePort.attachment = spiceAttachment
+            spiceConsole.ports[0] = spicePort
+            vzConfig.consoleDevices.append(spiceConsole)
+        }
 
         return vzConfig
     }
@@ -683,7 +695,7 @@ public final class LinuxImageManager {
             "# Chroot: update and install packages",
             "retry chroot /mnt apk update",
             "retry chroot /mnt apk add openrc linux-virt linux-firmware-none mkinitfs",
-            "retry chroot /mnt apk add chromium xorg-server xinit mesa-dri-gallium mesa-egl mesa-gl mesa-gles mesa-gbm eudev dbus ttf-freefont ttf-dejavu font-noto-emoji font-liberation xf86-input-libinput agetty util-linux openbox xrandr xdotool setxkbmap pulseaudio pulseaudio-alsa alsa-utils alsa-plugins-pulse adwaita-icon-theme",
+            "retry chroot /mnt apk add chromium xorg-server xinit mesa-dri-gallium mesa-egl mesa-gl mesa-gles mesa-gbm eudev dbus ttf-freefont ttf-dejavu font-noto-emoji font-liberation xf86-input-libinput agetty util-linux openbox xrandr xdotool setxkbmap pulseaudio pulseaudio-alsa alsa-utils alsa-plugins-pulse adwaita-icon-theme spice-vdagent",
             "ls -la /mnt/sbin/init || { echo 'SANDBOX_SETUP_FAILED: /sbin/init not found — package installation likely failed due to network issues'; exit 1; }",
             "",
             "# Install Cloudflare WARP (glibc binary on musl Alpine)",
@@ -752,6 +764,7 @@ public final class LinuxImageManager {
             "chroot /mnt rc-update add networking boot",
             "chroot /mnt rc-update add modules boot",
             "chroot /mnt rc-update add dbus default",
+            "chroot /mnt rc-update add spice-vdagentd default",
             "",
             "# Networking config",
             "printf '%s\\n' 'auto lo' 'iface lo inet loopback' '' 'auto eth0' 'iface eth0 inet dhcp' > /mnt/etc/network/interfaces",
@@ -790,7 +803,7 @@ public final class LinuxImageManager {
             "chmod +x /mnt/usr/local/bin/resize-watcher.sh",
             "",
             "# xinitrc for chrome user - openbox WM + Chromium maximized",
-            "printf '%s\\n' '#!/bin/sh' 'export XCURSOR_SIZE=\(displayScale * 24)' 'export XCURSOR_THEME=Adwaita' 'echo \"Xcursor.size: \(displayScale * 24)\" | xrdb -merge' '/usr/local/bin/resize-watcher.sh &' 'openbox &' 'cat /proc/asound/cards > /dev/hvc0 2>&1' 'pulseaudio --start --exit-idle-time=-1 2>/dev/null' 'sleep 0.5' 'pactl list sinks short > /dev/hvc0 2>&1' 'for i in $(seq 1 20); do [ -f /tmp/bromure/chrome-ready ] && break; sleep 0.2; done' 'EXTRA_FLAGS=' 'CHROME_URL=' 'SWAP_CMD_CTRL=' '[ -f /tmp/bromure/chrome-env ] && . /tmp/bromure/chrome-env' '[ \"$SWAP_CMD_CTRL\" = \"1\" ] && setxkbmap -option ctrl:swap_lwin_lctl,ctrl:swap_rwin_rctl' 'echo \"xinitrc: EXTRA_FLAGS=$EXTRA_FLAGS CHROME_URL=$CHROME_URL SWAP_CMD_CTRL=$SWAP_CMD_CTRL\" > /dev/hvc0' 'export LIBGL_ALWAYS_SOFTWARE=1' 'chromium-browser --no-first-run --disable-dev-shm-usage --start-maximized --force-device-scale-factor=\(displayScale) --use-gl=angle --use-angle=gl --ignore-gpu-blocklist --enable-gpu-rasterization --enable-smooth-scrolling --enable-zero-copy --disable-vulkan --in-process-gpu $EXTRA_FLAGS $CHROME_URL' 'doas poweroff' > /mnt/home/chrome/.xinitrc",
+            "printf '%s\\n' '#!/bin/sh' 'export XCURSOR_SIZE=\(displayScale * 24)' 'export XCURSOR_THEME=Adwaita' 'echo \"Xcursor.size: \(displayScale * 24)\" | xrdb -merge' '/usr/local/bin/resize-watcher.sh &' 'openbox &' 'spice-vdagent -x 2>/dev/null &' 'cat /proc/asound/cards > /dev/hvc0 2>&1' 'pulseaudio --start --exit-idle-time=-1 2>/dev/null' 'sleep 0.5' 'pactl list sinks short > /dev/hvc0 2>&1' 'for i in $(seq 1 20); do [ -f /tmp/bromure/chrome-ready ] && break; sleep 0.2; done' 'EXTRA_FLAGS=' 'CHROME_URL=' 'SWAP_CMD_CTRL=' '[ -f /tmp/bromure/chrome-env ] && . /tmp/bromure/chrome-env' '[ \"$SWAP_CMD_CTRL\" = \"1\" ] && setxkbmap -option ctrl:swap_lwin_lctl,ctrl:swap_rwin_rctl' 'echo \"xinitrc: EXTRA_FLAGS=$EXTRA_FLAGS CHROME_URL=$CHROME_URL SWAP_CMD_CTRL=$SWAP_CMD_CTRL\" > /dev/hvc0' 'export LIBGL_ALWAYS_SOFTWARE=1' 'chromium-browser --no-first-run --disable-dev-shm-usage --start-maximized --force-device-scale-factor=\(displayScale) --use-gl=angle --use-angle=gl --ignore-gpu-blocklist --enable-gpu-rasterization --enable-smooth-scrolling --enable-zero-copy --disable-vulkan --in-process-gpu $EXTRA_FLAGS $CHROME_URL' 'doas poweroff' > /mnt/home/chrome/.xinitrc",
             "chroot /mnt chown chrome:chrome /home/chrome/.xinitrc",
             "# Configure openbox: no decorations, minimal menu (just Logout)",
             "mkdir -p /mnt/home/chrome/.config/openbox",

@@ -186,7 +186,8 @@ final class AppState: @unchecked Sendable {
             enableAdBlocking: defaults.object(forKey: "vm.enableAdBlocking") as? Bool ?? false,
             swapCmdCtrl: defaults.object(forKey: "vm.swapCmdCtrl") as? Bool ?? true,
             homePage: defaults.string(forKey: "vm.homePage") ?? "https://www.google.com",
-            enableGPU: defaults.object(forKey: "vm.enableGPU") as? Bool ?? true
+            enableGPU: defaults.object(forKey: "vm.enableGPU") as? Bool ?? true,
+            enableClipboardSharing: defaults.object(forKey: "vm.enableClipboardSharing") as? Bool ?? false
         )
     }
 

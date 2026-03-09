@@ -11,6 +11,7 @@ struct SettingsView: View {
     @AppStorage("vm.swapCmdCtrl") private var swapCmdCtrl = true
     @AppStorage("vm.appearance") private var appearance = "system"
     @AppStorage("vm.homePage") private var homePage = "https://www.google.com"
+    @AppStorage("vm.enableClipboardSharing") private var enableClipboardSharing = false
 
     var state: AppState?
     var onShowWarpEULA: ((@escaping () -> Void) -> Void)?
@@ -143,6 +144,8 @@ struct SettingsView: View {
                     .help("Block ads and trackers using Pi-hole DNS filtering with a local Squid proxy.")
                 Toggle("Cloudflare WARP", isOn: $enableWarp)
                     .help("Route VM traffic through Cloudflare\u{2019}s encrypted network via SOCKS5 proxy.")
+                Toggle("Shared Clipboard", isOn: $enableClipboardSharing)
+                    .help("Share the clipboard between macOS and the VM browser.")
             }
 
             Section("Storage") {
@@ -249,6 +252,7 @@ struct SettingsView: View {
         .onChange(of: swapCmdCtrl) { _, _ in state?.restartPool() }
         .onChange(of: appearance) { _, _ in state?.restartPool() }
         .onChange(of: homePage) { _, _ in state?.restartPool() }
+        .onChange(of: enableClipboardSharing) { _, _ in state?.restartPool() }
 
         Text("Changes take effect immediately by restarting the pre-warmed VM.")
             .font(.caption2)
