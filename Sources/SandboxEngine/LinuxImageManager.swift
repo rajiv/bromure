@@ -680,14 +680,39 @@ public final class LinuxImageManager {
             "# xinitrc for chrome user - openbox WM + Chromium maximized",
             "printf '%s\\n' '#!/bin/sh' 'export XCURSOR_SIZE=\(displayScale * 24)' 'export XCURSOR_THEME=Adwaita' 'echo \"Xcursor.size: \(displayScale * 24)\" | xrdb -merge' '/usr/local/bin/resize-watcher.sh &' 'openbox &' 'cat /proc/asound/cards > /dev/hvc0 2>&1' 'pulseaudio --start --exit-idle-time=-1 2>/dev/null' 'sleep 0.5' 'pactl list sinks short > /dev/hvc0 2>&1' 'for i in $(seq 1 20); do [ -f /tmp/bromure/chrome-ready ] && break; sleep 0.2; done' 'EXTRA_FLAGS=' 'CHROME_URL=' 'SWAP_CMD_CTRL=' '[ -f /tmp/bromure/chrome-env ] && . /tmp/bromure/chrome-env' '[ \"$SWAP_CMD_CTRL\" = \"1\" ] && setxkbmap -option ctrl:swap_lwin_lctl,ctrl:swap_rwin_rctl' 'echo \"xinitrc: EXTRA_FLAGS=$EXTRA_FLAGS CHROME_URL=$CHROME_URL SWAP_CMD_CTRL=$SWAP_CMD_CTRL\" > /dev/hvc0' 'export LIBGL_ALWAYS_SOFTWARE=1' 'chromium-browser --no-first-run --disable-dev-shm-usage --start-maximized --force-device-scale-factor=\(displayScale) --use-gl=angle --use-angle=gl --ignore-gpu-blocklist --enable-gpu-rasterization --disable-vulkan --in-process-gpu $EXTRA_FLAGS $CHROME_URL' 'doas poweroff' > /mnt/home/chrome/.xinitrc",
             "chroot /mnt chown chrome:chrome /home/chrome/.xinitrc",
-            "# Configure openbox: no decorations (no close/minimize/maximize buttons)",
+            "# Configure openbox: no decorations, minimal menu (just Logout)",
             "mkdir -p /mnt/home/chrome/.config/openbox",
-            "cp /mnt/etc/xdg/openbox/rc.xml /mnt/home/chrome/.config/openbox/rc.xml",
-            "sed -i 's|<focusNew>yes</focusNew>|<focusNew>yes</focusNew>|' /mnt/home/chrome/.config/openbox/rc.xml",
-            "sed -i 's|<followMouse>no</followMouse>|<followMouse>yes</followMouse>|' /mnt/home/chrome/.config/openbox/rc.xml",
-            "sed -i 's|<raiseOnFocus>no</raiseOnFocus>|<raiseOnFocus>yes</raiseOnFocus>|' /mnt/home/chrome/.config/openbox/rc.xml",
-            "sed -i 's|<decor>yes</decor>|<decor>no</decor>|g' /mnt/home/chrome/.config/openbox/rc.xml",
             "mkdir -p /mnt/home/chrome/.cache/openbox/sessions",
+            #"""
+            cat > /mnt/home/chrome/.config/openbox/rc.xml << 'OBRC'
+            <?xml version="1.0" encoding="UTF-8"?>
+            <openbox_config xmlns="http://openbox.org/3.4/rc">
+              <resistance><strength>10</strength><screen_edge_strength>20</screen_edge_strength></resistance>
+              <focus><focusNew>yes</focusNew><followMouse>yes</followMouse><raiseOnFocus>yes</raiseOnFocus></focus>
+              <placement><policy>Smart</policy></placement>
+              <theme><name>Clearlooks</name><titleLayout></titleLayout></theme>
+              <desktops><number>1</number></desktops>
+              <keyboard/>
+              <mouse/>
+              <applications>
+                <application class="*"><decor>no</decor><maximized>true</maximized></application>
+              </applications>
+            </openbox_config>
+            OBRC
+            """#,
+            #"""
+            cat > /mnt/home/chrome/.config/openbox/menu.xml << 'OBMENU'
+            <?xml version="1.0" encoding="UTF-8"?>
+            <openbox_menu xmlns="http://openbox.org/3.4/rc">
+              <menu id="root-menu" label="Menu">
+                <item label="Logout"><action name="Execute"><command>doas poweroff</command></action></item>
+              </menu>
+            </openbox_menu>
+            OBMENU
+            """#,
+            "# Pre-seed Chromium preferences to use system title bar (no CSD buttons)",
+            "mkdir -p /mnt/home/chrome/.config/chromium/Default",
+            #"printf '%s\n' '{"browser":{"custom_chrome_frame":false}}' > /mnt/home/chrome/.config/chromium/Default/Preferences"#,
             "chroot /mnt chown -R chrome:chrome /home/chrome/.config /home/chrome/.cache",
             "",
             "# Auto-start X on login for chrome user",
