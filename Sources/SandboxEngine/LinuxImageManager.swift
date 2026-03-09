@@ -473,14 +473,39 @@ public final class LinuxImageManager {
             if trimmed.contains("SANDBOX_SETUP_DONE") {
                 break
             }
-            try await consoleOutput.waitFor(
-                marker: "localhost:~#",
-                timeout: 900,
-                progress: progress
-            )
+            do {
+                try await consoleOutput.waitFor(
+                    marker: "localhost:~#",
+                    timeout: 900,
+                    progress: progress
+                )
+            } catch {
+                // If the shell exited due to a setup failure, detect it early
+                let snapshot = consoleOutput.pollAndTrim(marker: "SANDBOX_SETUP_FAILED")
+                if snapshot.found {
+                    throw SandboxError.diskCreationFailed(
+                        "The image could not be created. Package installation failed, likely due to network issues. Please check your internet connection and try again."
+                    )
+                }
+                throw error
+            }
         }
 
-        try await consoleOutput.waitFor(marker: "SANDBOX_SETUP_DONE", timeout: 60, progress: progress)
+        // Check for setup failure before waiting for SANDBOX_SETUP_DONE.
+        // If a critical package failed to install, the script will emit
+        // SANDBOX_SETUP_FAILED and exit before reaching SANDBOX_SETUP_DONE.
+        do {
+            try await consoleOutput.waitFor(marker: "SANDBOX_SETUP_DONE", timeout: 60, progress: progress)
+        } catch {
+            // Check if the setup script reported a specific failure
+            let snapshot = consoleOutput.pollAndTrim(marker: "SANDBOX_SETUP_FAILED")
+            if snapshot.found {
+                throw SandboxError.diskCreationFailed(
+                    "The image could not be created. Package installation failed, likely due to network issues. Please check your internet connection and try again."
+                )
+            }
+            throw error
+        }
 
         // Extract initramfs to the transfer disk (vdb).
         // We're still in the netboot environment, so ext4 is available via the
@@ -603,15 +628,22 @@ public final class LinuxImageManager {
         // Lines are joined with \n; each is sent to the serial console individually.
         // No heredocs — they don't work reliably over serial with line-by-line sending.
         return [
+            "# Retry wrapper: 3 attempts with 2s delay, hard-fail with detectable marker",
+            #"retry() { for i in 1 2 3; do "$@" && return 0; echo "RETRY $i/3: $*"; sleep 2; done; echo "SANDBOX_SETUP_FAILED: command failed after 3 attempts: $*"; exit 1; }"#,
+            "",
+            "# Wait for network connectivity (up to 30s)",
+            "for i in $(seq 1 30); do wget -q -O /dev/null --spider http://dl-cdn.alpinelinux.org/alpine/ 2>/dev/null && break; sleep 1; done",
+            "wget -q -O /dev/null --spider http://dl-cdn.alpinelinux.org/alpine/ 2>/dev/null || { echo 'SANDBOX_SETUP_FAILED: no network connectivity — check your internet connection'; exit 1; }",
+            "",
             "# Load ext4 module and format target disk",
             "modprobe ext4",
-            "apk add e2fsprogs",
+            "retry apk add e2fsprogs",
             "mkfs.ext4 -q -F /dev/vda",
             "mkdir -p /mnt",
             "mount -t ext4 /dev/vda /mnt",
             "",
             "# Install Alpine base",
-            "apk add alpine-base --root /mnt --initdb --keys-dir /etc/apk/keys --repositories-file /etc/apk/repositories",
+            "retry apk add alpine-base --root /mnt --initdb --keys-dir /etc/apk/keys --repositories-file /etc/apk/repositories",
             "",
             "# Repos",
             "mkdir -p /mnt/etc/apk",
@@ -626,16 +658,16 @@ public final class LinuxImageManager {
             "mount --bind /dev /mnt/dev",
             "",
             "# Chroot: update and install packages",
-            "chroot /mnt apk update || echo 'APK_UPDATE_FAILED'",
-            "chroot /mnt apk add openrc linux-virt linux-firmware-none mkinitfs || echo 'APK_ADD_BASE_FAILED'",
-            "chroot /mnt apk add chromium xorg-server xinit mesa-dri-gallium mesa-egl mesa-gl mesa-gles mesa-gbm eudev dbus ttf-freefont ttf-dejavu font-noto-emoji font-liberation xf86-input-libinput agetty util-linux openbox xrandr xdotool setxkbmap pulseaudio pulseaudio-alsa alsa-utils alsa-plugins-pulse adwaita-icon-theme || echo 'APK_ADD_CHROMIUM_FAILED'",
-            "ls -la /mnt/sbin/init || echo 'WARNING: /sbin/init not found!'",
+            "retry chroot /mnt apk update",
+            "retry chroot /mnt apk add openrc linux-virt linux-firmware-none mkinitfs",
+            "retry chroot /mnt apk add chromium xorg-server xinit mesa-dri-gallium mesa-egl mesa-gl mesa-gles mesa-gbm eudev dbus ttf-freefont ttf-dejavu font-noto-emoji font-liberation xf86-input-libinput agetty util-linux openbox xrandr xdotool setxkbmap pulseaudio pulseaudio-alsa alsa-utils alsa-plugins-pulse adwaita-icon-theme",
+            "ls -la /mnt/sbin/init || { echo 'SANDBOX_SETUP_FAILED: /sbin/init not found — package installation likely failed due to network issues'; exit 1; }",
             "",
             "# Install Cloudflare WARP (glibc binary on musl Alpine)",
-            "chroot /mnt apk add gcompat libstdc++ ca-certificates nftables iproute2 glib nss nspr libgcc",
-            "apk add binutils",
+            "retry chroot /mnt apk add gcompat libstdc++ ca-certificates nftables iproute2 glib nss nspr libgcc",
+            "retry apk add binutils",
             #"WARP_DEB=$(wget -qO- 'https://pkg.cloudflareclient.com/dists/bookworm/main/binary-arm64/Packages' | grep '^Filename:' | tail -1 | cut -d' ' -f2)"#,
-            #"wget -q "https://pkg.cloudflareclient.com/$WARP_DEB" -O /tmp/warp.deb || echo 'WARP_DOWNLOAD_FAILED'"#,
+            #"for i in 1 2 3; do wget -q "https://pkg.cloudflareclient.com/$WARP_DEB" -O /tmp/warp.deb && break; sleep 2; done"#,
             "cd /tmp && ar x warp.deb 2>/dev/null",
             "tar xf /tmp/data.tar.* -C /mnt 2>/dev/null || echo 'WARP_EXTRACT_FAILED'",
             "rm -f /tmp/warp.deb /tmp/data.tar.* /tmp/control.tar.* /tmp/debian-binary",
@@ -643,13 +675,13 @@ public final class LinuxImageManager {
             "ls -la /mnt/bin/warp-cli 2>/dev/null && echo 'WARP_INSTALLED_OK' || echo 'WARP_INSTALL_FAILED'",
             "",
             "# Build glibc resolver stub for WARP (gcompat lacks __res_init)",
-            "apk add gcc musl-dev",
+            "retry apk add gcc musl-dev",
             #"printf '#include <stddef.h>\nint __res_init(void) { return 0; }\nint res_init(void) { return 0; }\nint __res_nclose(void *s) { return 0; }\nint __res_ninit(void *s) { return 0; }\n' > /tmp/resolv_stub.c"#,
             "gcc -shared -o /mnt/usr/lib/libresolv_stub.so /tmp/resolv_stub.c",
             "rm -f /tmp/resolv_stub.c",
             "",
             "# Install Squid proxy, dnsmasq, and proxychains for ad blocking / WARP",
-            "chroot /mnt apk add squid dnsmasq proxychains-ng",
+            "retry chroot /mnt apk add squid dnsmasq proxychains-ng",
             "",
             "# proxychains config for WARP SOCKS5 proxy",
             "printf '%s\\n' '[ProxyList]' 'socks5 \t127.0.0.1 40000' > /mnt/etc/proxychains/proxychains.conf",
@@ -658,7 +690,7 @@ public final class LinuxImageManager {
             "mkdir -p /mnt/etc/pihole /mnt/var/log/pihole /mnt/etc/dnsmasq.d",
             "",
             "# Download ad blocklist (Steven Black unified hosts)",
-            "wget -qO /mnt/etc/pihole/gravity.list 'https://raw.githubusercontent.com/StevenBlack/hosts/master/hosts' || echo 'BLOCKLIST_DOWNLOAD_FAILED'",
+            "for i in 1 2 3; do wget -qO /mnt/etc/pihole/gravity.list 'https://raw.githubusercontent.com/StevenBlack/hosts/master/hosts' && break; sleep 2; done",
             "touch /mnt/etc/pihole/local.list /mnt/etc/pihole/custom.list",
             "",
             "# Pi-hole setupVars.conf",
@@ -687,7 +719,7 @@ public final class LinuxImageManager {
             "chroot /mnt addgroup chrome render",
             "chroot /mnt addgroup chrome input",
             "chroot /mnt addgroup chrome audio",
-            "chroot /mnt apk add doas",
+            "retry chroot /mnt apk add doas",
             "printf '%s\\n' 'permit nopass chrome as root cmd poweroff' 'permit nopass chrome as root cmd warp-cli' > /mnt/etc/doas.d/chrome.conf",
             "",
             "# Enable services",
