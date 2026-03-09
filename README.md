@@ -69,6 +69,8 @@ WARP runs entirely inside the disposable VM, so Cloudflare never sees your host 
 
 ## Getting Started
 
+- Download the pre-built binaries here: https://github.com/rderaison/bromure/releases
+- Or you can build the app yourself:
 ```bash
 # Build the app
 ./build.sh
