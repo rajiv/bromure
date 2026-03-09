@@ -92,6 +92,9 @@ public final class VMPool {
         if !config.enableGPU {
             extraFlags.append("--disable-gpu")
         }
+        if !config.enableWebGL {
+            extraFlags.append("--disable-webgl --disable-3d-apis")
+        }
         var envLines: [String] = []
         if !extraFlags.isEmpty {
             // extraFlags are hardcoded strings, safe to interpolate

@@ -8,6 +8,7 @@ struct SettingsView: View {
     @AppStorage("vm.enableWarp") private var enableWarp = false
     @AppStorage("vm.enableAdBlocking") private var enableAdBlocking = false
     @AppStorage("vm.enableGPU") private var enableGPU = true
+    @AppStorage("vm.enableWebGL") private var enableWebGL = false
     @AppStorage("vm.swapCmdCtrl") private var swapCmdCtrl = true
     @AppStorage("vm.appearance") private var appearance = "system"
     @AppStorage("vm.homePage") private var homePage = "https://www.google.com"
@@ -140,6 +141,8 @@ struct SettingsView: View {
                 Toggle("Audio", isOn: $enableAudio)
                 Toggle("GPU Acceleration", isOn: $enableGPU)
                     .help("Hardware GPU acceleration in the browser. Disable if you experience graphical glitches.")
+                Toggle("WebGL", isOn: $enableWebGL)
+                    .help("Enable WebGL and WebGPU. Some websites with heavy 3D content may cause slowdowns.")
                 Toggle("Filter ads (with Pi-hole)", isOn: $enableAdBlocking)
                     .help("Block ads and trackers using Pi-hole DNS filtering with a local Squid proxy.")
                 Toggle("Cloudflare WARP", isOn: $enableWarp)
@@ -233,6 +236,7 @@ struct SettingsView: View {
         .onChange(of: cpuCount) { _, _ in state?.restartPool() }
         .onChange(of: enableAudio) { _, _ in state?.restartPool() }
         .onChange(of: enableGPU) { _, _ in state?.restartPool() }
+        .onChange(of: enableWebGL) { _, _ in state?.restartPool() }
         .onChange(of: enableWarp) { _, newValue in
             if newValue && !UserDefaults.standard.bool(forKey: "warpEULAAccepted") {
                 // Revert toggle — EULA must be accepted first

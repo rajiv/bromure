@@ -73,6 +73,9 @@ public struct VMConfig {
     /// Whether GPU acceleration is enabled in the browser.
     public var enableGPU: Bool
 
+    /// Whether WebGL and WebGPU are enabled in the browser.
+    public var enableWebGL: Bool
+
     /// Whether to share the clipboard between host and guest via SPICE agent.
     public var enableClipboardSharing: Bool
 
@@ -89,6 +92,7 @@ public struct VMConfig {
         swapCmdCtrl: Bool = true,
         homePage: String = "https://www.google.com",
         enableGPU: Bool = true,
+        enableWebGL: Bool = false,
         enableClipboardSharing: Bool = false,
         keyboardLayout: String? = nil,
         naturalScrolling: Bool? = nil,
@@ -106,6 +110,7 @@ public struct VMConfig {
         self.swapCmdCtrl = swapCmdCtrl
         self.homePage = homePage
         self.enableGPU = enableGPU
+        self.enableWebGL = enableWebGL
         self.enableClipboardSharing = enableClipboardSharing
         self.keyboardLayout = keyboardLayout ?? VMConfig.detectKeyboardLayout()
         self.naturalScrolling = naturalScrolling ?? VMConfig.detectNaturalScrolling()
