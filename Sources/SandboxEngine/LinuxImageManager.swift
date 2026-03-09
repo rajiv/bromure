@@ -10,6 +10,9 @@ import Virtualization
 /// - Auto-login, auto-start X + Chromium fullscreen
 /// - virtio drivers for GPU, network, and disk
 public final class LinuxImageManager {
+    /// Bump this to force a rebuild of the base image on next launch.
+    public static let imageVersion = "1"
+
     private let storageDir: URL
 
     public init(storageDir: URL? = nil) {
@@ -18,12 +21,24 @@ public final class LinuxImageManager {
 
     // MARK: - Public
 
-    /// Whether a valid Linux base image already exists.
+    /// Whether image files exist on disk (regardless of version).
+    public var hasImageFiles: Bool {
+        FileManager.default.fileExists(atPath: linuxDiskURL.path)
+    }
+
+    /// Whether a valid Linux base image exists and matches the current image version.
     public var baseImageExists: Bool {
         let fm = FileManager.default
-        return fm.fileExists(atPath: linuxDiskURL.path)
-            && fm.fileExists(atPath: linuxKernelURL.path)
-            && fm.fileExists(atPath: linuxInitrdURL.path)
+        guard fm.fileExists(atPath: linuxDiskURL.path),
+              fm.fileExists(atPath: linuxKernelURL.path),
+              fm.fileExists(atPath: linuxInitrdURL.path) else {
+            return false
+        }
+        // Check version stamp
+        guard let stored = try? String(contentsOf: imageVersionURL, encoding: .utf8) else {
+            return false
+        }
+        return stored.trimmingCharacters(in: .whitespacesAndNewlines) == Self.imageVersion
     }
 
     /// Create a Linux base image: download Alpine netboot, install to disk, add Chromium.
@@ -96,6 +111,9 @@ public final class LinuxImageManager {
         try? fm.removeItem(at: netbootKernel)
         try? fm.removeItem(at: netbootInitrd)
 
+        // 7. Write version stamp
+        try Self.imageVersion.write(to: imageVersionURL, atomically: true, encoding: .utf8)
+
         progress(.message("Linux image created at \(linuxDiskURL.path)"))
     }
 
@@ -111,6 +129,10 @@ public final class LinuxImageManager {
 
     public var linuxInitrdURL: URL {
         storageDir.appendingPathComponent("initrd")
+    }
+
+    public var imageVersionURL: URL {
+        storageDir.appendingPathComponent("image-version")
     }
 
     // MARK: - VM Configuration

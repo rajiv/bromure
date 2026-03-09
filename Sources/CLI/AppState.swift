@@ -59,6 +59,10 @@ final class AppState: @unchecked Sendable {
         if imageManager.baseImageExists {
             phase = .warmingUp
             startPool()
+        } else if imageManager.hasImageFiles {
+            // Image files exist but version mismatch — auto-rebuild
+            deleteImageFiles()
+            startInit()
         } else {
             phase = .needsSetup
         }
@@ -234,6 +238,7 @@ final class AppState: @unchecked Sendable {
         try? fm.removeItem(at: storageDir.appendingPathComponent("linux-base.img"))
         try? fm.removeItem(at: storageDir.appendingPathComponent("vmlinuz"))
         try? fm.removeItem(at: storageDir.appendingPathComponent("initrd"))
+        try? fm.removeItem(at: storageDir.appendingPathComponent("image-version"))
     }
 
     /// Current keyboard layout stored in preferences (or auto-detected).
