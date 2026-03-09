@@ -195,4 +195,5 @@ public struct VMConfig {
         let dir = storageDir ?? defaultStorageDirectory
         return dir.appendingPathComponent("\(guestOS.rawValue)-vm.state")
     }
+
 }
