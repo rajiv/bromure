@@ -3,6 +3,7 @@ set -euo pipefail
 
 SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
 PRODUCT_NAME="bromure"
+APP_NAME="Bromure"
 ENTITLEMENTS="$SCRIPT_DIR/Sources/CLI/SafariSandbox.entitlements"
 INFO_PLIST="$SCRIPT_DIR/Sources/CLI/Info.plist"
 
@@ -30,7 +31,7 @@ codesign --force --sign - --entitlements "$ENTITLEMENTS" "$BINARY"
 # 1. The Dock icon to appear
 # 2. NSApplication to work properly
 # 3. Window focus to work correctly
-APP_BUNDLE="$BUILD_DIR/$PRODUCT_NAME.app"
+APP_BUNDLE="$BUILD_DIR/$APP_NAME.app"
 CONTENTS="$APP_BUNDLE/Contents"
 MACOS_DIR="$CONTENTS/MacOS"
 
