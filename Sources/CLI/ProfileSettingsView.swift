@@ -136,6 +136,8 @@ struct ProfileSettingsView: View {
                         .help("Block known malware domains using Cloudflare\u{2019}s security DNS.")
                     Toggle("Phishing Warning", isOn: $draft.settings.phishingWarning)
                         .help("Warn when entering passwords on suspicious sites.")
+                    Toggle("Keychain Integration", isOn: $draft.settings.keychainIntegration)
+                        .help("Use macOS Keychain for passkeys and password autofill. Disables Chromium\u{2019}s built-in password manager.")
                 }
 
                 // MARK: - Advanced

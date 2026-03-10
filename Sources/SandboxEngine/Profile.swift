@@ -97,6 +97,9 @@ public struct ProfileSettings: Codable, Equatable {
     // Security — phishing
     public var phishingWarning: Bool = false
 
+    // Integration
+    public var keychainIntegration: Bool = false
+
     // Advanced
     public var persistent: Bool = false
     public var encryptOnDisk: Bool = false
@@ -132,7 +135,8 @@ public struct ProfileSettings: Codable, Equatable {
             blockMalwareSites: blockMalwareSites,
             enableFileTransfer: canUpload || canDownload,
             phishingWarning: phishingWarning,
-            enableClipboardSharing: enableClipboardSharing
+            enableClipboardSharing: enableClipboardSharing,
+            enableKeychainIntegration: keychainIntegration
         )
     }
 }

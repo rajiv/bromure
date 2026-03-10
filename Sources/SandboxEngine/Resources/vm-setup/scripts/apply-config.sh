@@ -18,6 +18,7 @@
 #   BLOCK_MALWARE=1       Use Cloudflare security DNS (1.1.1.2)
 #   AD_BLOCKING=1         Enable Pi-hole ad blocking
 #   ENABLE_WARP=1         Route traffic through Cloudflare WARP
+#   KEYCHAIN=1            Enable Keychain integration (passkeys + passwords)
 
 set -e
 
@@ -41,11 +42,14 @@ ENABLE_FEATURES=""
 [ "$DISABLE_WEBGL" = "1" ] && \
     EXTRA_FLAGS="$EXTRA_FLAGS --disable-webgl --disable-3d-apis"
 
-# Always load credential bridge extension (passkeys + passwords)
-EXTENSIONS="/opt/bromure/extensions/credential-bridge"
+# Build extension list
+EXTENSIONS=""
+[ "$KEYCHAIN" = "1" ] && \
+    EXTENSIONS="/opt/bromure/extensions/credential-bridge"
 [ "$PHISHING_GUARD" = "1" ] && \
-    EXTENSIONS="$EXTENSIONS,/opt/bromure/extensions/phishing-guard"
-EXTRA_FLAGS="$EXTRA_FLAGS --load-extension=$EXTENSIONS"
+    EXTENSIONS="${EXTENSIONS:+$EXTENSIONS,}/opt/bromure/extensions/phishing-guard"
+[ -n "$EXTENSIONS" ] && \
+    EXTRA_FLAGS="$EXTRA_FLAGS --load-extension=$EXTENSIONS"
 
 [ -n "$PROFILE_DIR" ] && \
     EXTRA_FLAGS="$EXTRA_FLAGS --user-data-dir=$PROFILE_DIR"
@@ -65,6 +69,7 @@ EXTRA_FLAGS="$EXTRA_FLAGS --load-extension=$EXTENSIONS"
 [ "$SWAP_CMD_CTRL" = "1" ] && echo "SWAP_CMD_CTRL=1" >> "$ENVFILE"
 [ "$FILE_TRANSFER" = "1" ] && echo "FILE_TRANSFER=1" >> "$ENVFILE"
 [ "$CLIPBOARD" = "1" ] && echo "CLIPBOARD=1" >> "$ENVFILE"
+[ "$KEYCHAIN" = "1" ] && echo "KEYCHAIN=1" >> "$ENVFILE"
 
 # --- Configure DNS/proxy services ---
 
@@ -122,6 +127,17 @@ if [ -n "$PROFILE_DIR" ]; then
     if [ -f "$PREFS" ]; then
         sed -i 's/"exit_type":"Crashed"/"exit_type":"Normal"/' "$PREFS"
         sed -i 's/"exited_cleanly":false/"exited_cleanly":true/' "$PREFS"
+    fi
+fi
+
+# --- Disable Chromium's built-in password manager when Keychain integration is active ---
+# The credential bridge extension handles passwords; the built-in manager would conflict.
+
+if [ "$KEYCHAIN" = "1" ]; then
+    POLICY="/etc/chromium/policies/managed/bromure.json"
+    if [ -f "$POLICY" ]; then
+        # Add PasswordManagerEnabled:false and AutofillCreditCardEnabled:false
+        sed -i 's/}$/,"PasswordManagerEnabled":false,"AutofillCreditCardEnabled":false}/' "$POLICY"
     fi
 fi
 

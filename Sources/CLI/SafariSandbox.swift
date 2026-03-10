@@ -605,13 +605,15 @@ final class BrowserSession {
             window.addTitlebarAccessoryViewController(accessory)
         }
 
-        // Credential bridge — always set up (vsock is always present)
-        if let socketDevices = warmVM.vm.socketDevices as? [VZVirtioSocketDevice],
-           let socketDevice = socketDevices.first {
-            let credBridge = MainActor.assumeIsolated {
-                CredentialBridge(socketDevice: socketDevice, window: window)
+        // Credential bridge — only when Keychain integration is enabled
+        if config.enableKeychainIntegration {
+            if let socketDevices = warmVM.vm.socketDevices as? [VZVirtioSocketDevice],
+               let socketDevice = socketDevices.first {
+                let credBridge = MainActor.assumeIsolated {
+                    CredentialBridge(socketDevice: socketDevice, window: window)
+                }
+                self.credentialBridge = credBridge
             }
-            self.credentialBridge = credBridge
         }
 
         let helper = SessionDelegateHelper(session: self)

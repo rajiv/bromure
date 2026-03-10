@@ -214,6 +214,7 @@ public final class VMPool {
         if config.swapCmdCtrl { envVars.append("SWAP_CMD_CTRL=1") }
         if config.enableFileTransfer { envVars.append("FILE_TRANSFER=1") }
         if config.enableClipboardSharing { envVars.append("CLIPBOARD=1") }
+        if config.enableKeychainIntegration { envVars.append("KEYCHAIN=1") }
         if config.blockMalwareSites { envVars.append("BLOCK_MALWARE=1") }
         if config.enableAdBlocking { envVars.append("AD_BLOCKING=1") }
         if config.enableWarp { envVars.append("ENABLE_WARP=1") }
