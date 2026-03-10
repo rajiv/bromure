@@ -84,6 +84,11 @@ if [ -f "$ICON_FILE" ]; then
     cp "$ICON_FILE" "$RESOURCES_DIR/AppIcon.icns"
 fi
 
+# Copy SPM resource bundles (needed for vm-setup resources at runtime).
+for bundle in "$BUILD_DIR"/*.bundle; do
+    [ -e "$bundle" ] && cp -R "$bundle" "$RESOURCES_DIR/"
+done
+
 # --- Sign ---
 echo "=== Signing with: $DEVELOPER_ID ==="
 codesign --force --options runtime \

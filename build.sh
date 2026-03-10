@@ -50,6 +50,11 @@ if [ -f "$ICON_FILE" ]; then
     cp "$ICON_FILE" "$RESOURCES_DIR/AppIcon.icns"
 fi
 
+# Copy SPM resource bundles (needed for vm-setup resources at runtime).
+for bundle in "$BUILD_DIR"/*.bundle; do
+    [ -e "$bundle" ] && cp -R "$bundle" "$RESOURCES_DIR/"
+done
+
 # Code sign with entitlements.
 # Virtualization.framework requires the com.apple.security.virtualization entitlement.
 # Use ad-hoc signing (-) for local development, or replace with your identity.

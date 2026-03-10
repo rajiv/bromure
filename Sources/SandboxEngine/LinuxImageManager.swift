@@ -661,7 +661,7 @@ public final class LinuxImageManager {
 
     /// Create a tar.gz archive of the bundled vm-setup resources.
     private static func createSetupArchive() throws -> Data {
-        guard let setupDir = Bundle.module.url(forResource: "vm-setup", withExtension: nil) else {
+        guard let setupDir = Self.resourceBundle.url(forResource: "vm-setup", withExtension: nil) else {
             throw SandboxError.diskCreationFailed("vm-setup resources not found in bundle")
         }
         let tempTar = FileManager.default.temporaryDirectory
@@ -688,6 +688,18 @@ public final class LinuxImageManager {
         "'" + s.replacingOccurrences(of: "'", with: "'\\''") + "'"
     }
 
+    /// SPM resource bundle, checking Contents/Resources/ for app bundles.
+    private static let resourceBundle: Bundle = {
+        let bundleName = "bromure_SandboxEngine"
+        // SPM's auto-generated accessor checks Bundle.main.bundleURL (the .app root),
+        // but codesign requires resources in Contents/Resources/.
+        if let resourceURL = Bundle.main.resourceURL,
+           let bundle = Bundle(url: resourceURL.appendingPathComponent("\(bundleName).bundle")) {
+            return bundle
+        }
+        // Fallback to SPM's default (works during development)
+        return Bundle.module
+    }()
 }
 
 // MARK: - Console Buffer
