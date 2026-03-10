@@ -612,6 +612,11 @@ final class BrowserSession {
                 let credBridge = MainActor.assumeIsolated {
                     CredentialBridge(socketDevice: socketDevice, window: window)
                 }
+                credBridge.onKillSession = { [weak self] in
+                    guard let self else { return }
+                    self.confirmed = true
+                    self.window.close()
+                }
                 self.credentialBridge = credBridge
             }
         }
