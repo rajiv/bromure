@@ -171,6 +171,9 @@ public final class VMPool {
             serialInput: inputPipe,
             serialOutput: outputPipe
         )
+
+        // Inflate balloon to reclaim unused guest memory while VM is idle.
+        inflateBalloon(vm: vm)
     }
 
     /// Claim the pre-warmed VM. Returns nil if none ready.
@@ -179,6 +182,10 @@ public final class VMPool {
         let result = warmVM
         warmVM = nil
         Task { try? await warmUp() }
+        // Deflate balloon — give all memory back before running the browser
+        if let vm = result?.vm {
+            deflateBalloon(vm: vm)
+        }
         return result
     }
 
@@ -241,6 +248,31 @@ public final class VMPool {
                     cont.resume()
                 }
             }
+        }
+    }
+
+    // MARK: - Memory Balloon
+
+    /// Inflate the balloon to reclaim unused guest memory.
+    /// Keeps a small amount (128 MB) for the idle shell and kernel.
+    private func inflateBalloon(vm: VZVirtualMachine) {
+        guard let balloon = vm.memoryBalloonDevices.first
+                as? VZVirtioTraditionalMemoryBalloonDevice else { return }
+        let keep: UInt64 = 128 * 1024 * 1024
+        balloon.targetVirtualMachineMemorySize = keep
+        if bromureDebug {
+            let reclaimed = config.memorySize > keep ? config.memorySize - keep : 0
+            print("[VMPool] Balloon inflated: reclaiming \(reclaimed / 1024 / 1024) MB, guest keeps \(keep / 1024 / 1024) MB")
+        }
+    }
+
+    /// Deflate the balloon to return all memory to the guest.
+    private func deflateBalloon(vm: VZVirtualMachine) {
+        guard let balloon = vm.memoryBalloonDevices.first
+                as? VZVirtioTraditionalMemoryBalloonDevice else { return }
+        balloon.targetVirtualMachineMemorySize = config.memorySize
+        if bromureDebug {
+            print("[VMPool] Balloon deflated: guest has full \(config.memorySize / 1024 / 1024) MB")
         }
     }
 }

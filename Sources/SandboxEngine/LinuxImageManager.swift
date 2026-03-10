@@ -199,6 +199,9 @@ public final class LinuxImageManager {
         // Entropy
         vzConfig.entropyDevices = [VZVirtioEntropyDeviceConfiguration()]
 
+        // Memory balloon — allows host to reclaim unused guest memory
+        vzConfig.memoryBalloonDevices = [VZVirtioTraditionalMemoryBalloonDeviceConfiguration()]
+
         // SPICE agent for clipboard sharing
         if config.enableClipboardSharing {
             let spiceConsole = VZVirtioConsoleDeviceConfiguration()
