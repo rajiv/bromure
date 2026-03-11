@@ -100,6 +100,11 @@ public struct ProfileSettings: Codable, Equatable {
     // Cross-session
     public var enableLinkSender: Bool = false
 
+    // Network isolation
+    public var isolateFromLAN: Bool = false
+    public var restrictPorts: Bool = false
+    public var allowedPorts: String = "80,443"
+
     // Media
     public var enableWebcam: Bool = false
     public var enableMicrophone: Bool = false
@@ -130,6 +135,9 @@ public struct ProfileSettings: Codable, Equatable {
         blockMalwareSites = try c.decodeIfPresent(Bool.self, forKey: .blockMalwareSites) ?? defaults.blockMalwareSites
         phishingWarning = try c.decodeIfPresent(Bool.self, forKey: .phishingWarning) ?? defaults.phishingWarning
         enableLinkSender = try c.decodeIfPresent(Bool.self, forKey: .enableLinkSender) ?? defaults.enableLinkSender
+        isolateFromLAN = try c.decodeIfPresent(Bool.self, forKey: .isolateFromLAN) ?? defaults.isolateFromLAN
+        restrictPorts = try c.decodeIfPresent(Bool.self, forKey: .restrictPorts) ?? defaults.restrictPorts
+        allowedPorts = try c.decodeIfPresent(String.self, forKey: .allowedPorts) ?? defaults.allowedPorts
         enableWebcam = try c.decodeIfPresent(Bool.self, forKey: .enableWebcam) ?? defaults.enableWebcam
         enableMicrophone = try c.decodeIfPresent(Bool.self, forKey: .enableMicrophone) ?? defaults.enableMicrophone
         webcamDeviceID = try c.decodeIfPresent(String.self, forKey: .webcamDeviceID)
@@ -174,7 +182,9 @@ public struct ProfileSettings: Codable, Equatable {
             enableMicrophone: enableMicrophone,
             webcamDeviceID: webcamDeviceID,
             microphoneDeviceID: microphoneDeviceID,
-            speakerDeviceID: speakerDeviceID
+            speakerDeviceID: speakerDeviceID,
+            isolateFromLAN: isolateFromLAN,
+            allowedPorts: restrictPorts ? allowedPorts : nil
         )
     }
 }

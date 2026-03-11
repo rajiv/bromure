@@ -17,14 +17,20 @@ let package = Package(
             path: "Sources/CLI",
             exclude: ["Info.plist", "SafariSandbox.entitlements"]
         ),
+        .systemLibrary(
+            name: "CVmnet",
+            path: "Sources/CVmnet"
+        ),
         .target(
             name: "SandboxEngine",
-            dependencies: [],
+            dependencies: ["CVmnet"],
             path: "Sources/SandboxEngine",
             resources: [.copy("Resources/vm-setup")],
             linkerSettings: [
                 .linkedFramework("Virtualization"),
                 .linkedFramework("AppKit"),
+                .linkedFramework("vmnet"),
+                .linkedFramework("SystemConfiguration"),
             ]
         ),
         .target(

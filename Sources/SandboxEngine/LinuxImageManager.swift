@@ -138,10 +138,14 @@ public final class LinuxImageManager {
     // MARK: - VM Configuration
 
     /// Build a VZVirtualMachineConfiguration for a Linux VM.
+    ///
+    /// - Parameter networkAttachment: Custom network attachment (e.g. from NetworkFilter).
+    ///   If nil, uses VZNATNetworkDeviceAttachment.
     public func buildLinuxVMConfig(
         diskURL: URL,
         config: VMConfig,
-        readOnlyDisk: Bool = false
+        readOnlyDisk: Bool = false,
+        networkAttachment: VZNetworkDeviceAttachment? = nil
     ) throws -> VZVirtualMachineConfiguration {
         let vzConfig = VZVirtualMachineConfiguration()
 
@@ -176,10 +180,9 @@ public final class LinuxImageManager {
         let shareDevice = VZVirtioFileSystemDeviceConfiguration(tag: "share")
         vzConfig.directorySharingDevices = [shareDevice]
 
-        // Network — NAT mode (bridged networking requires com.apple.vm.networking
-        // entitlement which needs an Apple Developer provisioning profile)
+        // Network — use custom attachment (e.g. filtered vmnet) or fall back to NAT
         let net = VZVirtioNetworkDeviceConfiguration()
-        net.attachment = VZNATNetworkDeviceAttachment()
+        net.attachment = networkAttachment ?? VZNATNetworkDeviceAttachment()
         vzConfig.networkDevices = [net]
 
         // Graphics — virtio GPU

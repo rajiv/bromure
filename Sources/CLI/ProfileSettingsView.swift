@@ -138,6 +138,16 @@ struct ProfileSettingsView: View {
                         .help("Warn when entering passwords on suspicious sites.")
                     Toggle("Send Link to Other Session", isOn: $draft.settings.enableLinkSender)
                         .help("Adds a right-click menu to send links to another Bromure profile\u{2019}s session.")
+                    Toggle("Isolate from Local Network", isOn: $draft.settings.isolateFromLAN)
+                        .help("Block the VM from accessing devices on your local network (printers, NAS, etc). Internet access is unaffected.")
+                    Toggle("Restrict Outgoing Ports", isOn: $draft.settings.restrictPorts)
+                        .help("Only allow outgoing connections on specified ports. DNS (UDP/53) is always allowed.")
+                    if draft.settings.restrictPorts {
+                        TextField("Allowed Ports", text: $draft.settings.allowedPorts)
+                            .textFieldStyle(.roundedBorder)
+                            .padding(.leading, 16)
+                            .help("Comma-separated ports or ranges, e.g. \"80, 443, 8000-9000\"")
+                    }
                 }
 
                 // MARK: - Media

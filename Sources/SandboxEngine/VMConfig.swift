@@ -106,6 +106,15 @@ public struct VMConfig {
     /// Unique ID of the speaker device to use (nil = default speaker).
     public var speakerDeviceID: String?
 
+    /// Block VM traffic to the host's local network (RFC 1918).
+    /// Uses vmnet + packet filtering on the host side (requires vmnet entitlement).
+    public var isolateFromLAN: Bool
+
+    /// If set, only these outgoing TCP/UDP ports are allowed (e.g. "80,443,8000-9000").
+    /// UDP/53 (DNS) is always allowed regardless of this setting.
+    /// nil means all ports are allowed.
+    public var allowedPorts: String?
+
     public init(
         cpuCount: Int? = nil,
         memorySize: UInt64 = 4 * 1024 * 1024 * 1024,
@@ -130,6 +139,8 @@ public struct VMConfig {
         webcamDeviceID: String? = nil,
         microphoneDeviceID: String? = nil,
         speakerDeviceID: String? = nil,
+        isolateFromLAN: Bool = false,
+        allowedPorts: String? = nil,
         keyboardLayout: String? = nil,
         naturalScrolling: Bool? = nil,
         locale: String? = nil
@@ -157,6 +168,8 @@ public struct VMConfig {
         self.webcamDeviceID = webcamDeviceID
         self.microphoneDeviceID = microphoneDeviceID
         self.speakerDeviceID = speakerDeviceID
+        self.isolateFromLAN = isolateFromLAN
+        self.allowedPorts = allowedPorts
         self.keyboardLayout = keyboardLayout ?? VMConfig.detectKeyboardLayout()
         self.naturalScrolling = naturalScrolling ?? VMConfig.detectNaturalScrolling()
         self.locale = locale ?? VMConfig.detectLocale()

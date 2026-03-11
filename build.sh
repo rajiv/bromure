@@ -22,9 +22,12 @@ fi
 
 echo "Binary built at: $BINARY"
 
+# Signing identity: use CODESIGN_IDENTITY env var, or fall back to ad-hoc (-)
+SIGN_ID="${CODESIGN_IDENTITY:--}"
+
 # Sign the standalone binary too (for direct invocation without the app bundle)
 echo "Code signing standalone binary..."
-codesign --force --sign - --entitlements "$ENTITLEMENTS" "$BINARY"
+codesign --force --sign "$SIGN_ID" --entitlements "$ENTITLEMENTS" "$BINARY"
 
 # Create a minimal .app bundle so macOS treats this as a GUI application.
 # This is needed for:
@@ -42,6 +45,12 @@ mkdir -p "$MACOS_DIR"
 cp "$BINARY" "$MACOS_DIR/$PRODUCT_NAME"
 cp "$INFO_PLIST" "$CONTENTS/Info.plist"
 
+# Embed provisioning profile (required for iCloud and other entitlements)
+PROVISION_PROFILE="$SCRIPT_DIR/bromure.provisionprofile"
+if [ -f "$PROVISION_PROFILE" ]; then
+    cp "$PROVISION_PROFILE" "$CONTENTS/embedded.provisionprofile"
+fi
+
 # Copy app icon into Resources
 RESOURCES_DIR="$CONTENTS/Resources"
 mkdir -p "$RESOURCES_DIR"
@@ -57,9 +66,9 @@ done
 
 # Code sign with entitlements.
 # Virtualization.framework requires the com.apple.security.virtualization entitlement.
-# Use ad-hoc signing (-) for local development, or replace with your identity.
+# Set CODESIGN_IDENTITY for Developer ID signing (required for iCloud).
 echo "Code signing with entitlements..."
-codesign --force --sign - --entitlements "$ENTITLEMENTS" "$APP_BUNDLE"
+codesign --force --sign "$SIGN_ID" --entitlements "$ENTITLEMENTS" --options runtime "$APP_BUNDLE"
 
 echo ""
 echo "=== Build Complete ==="

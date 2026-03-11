@@ -15,6 +15,8 @@ public final class VMPool {
         public let ephemeralDisk: EphemeralDisk
         public let serialInput: Pipe
         public let serialOutput: Pipe
+        /// Host-side network filter (must stay alive for the VM's lifetime).
+        public var networkFilter: NetworkFilter?
     }
 
     private var config: VMConfig
@@ -56,9 +58,26 @@ public final class VMPool {
         let ephDisk = EphemeralDisk(baseImageURL: imageManager.linuxDiskURL)
         try ephDisk.create()
 
+        // Always create NetworkFilter (vmnet proxy) so we can activate LAN
+        // isolation at claim time based on the profile's config.
+        // The filter starts in pass-through mode until activateFiltering() is called.
+        var networkFilter: NetworkFilter?
+        var networkAttachment: VZNetworkDeviceAttachment?
+        if let netInfo = HostNetworkInfo.detect() {
+            if let filter = NetworkFilter(networkInfo: netInfo) {
+                networkFilter = filter
+                networkAttachment = VZFileHandleNetworkDeviceAttachment(fileHandle: filter.vmFileHandle)
+            } else {
+                print("[VMPool] NetworkFilter unavailable (missing vmnet entitlement?), falling back to NAT")
+            }
+        } else {
+            print("[VMPool] Could not detect host network info, falling back to NAT")
+        }
+
         let vzConfig = try imageManager.buildLinuxVMConfig(
             diskURL: ephDisk.ephemeralURL,
-            config: config
+            config: config,
+            networkAttachment: networkAttachment
         )
 
         let inputPipe = Pipe()
@@ -92,7 +111,8 @@ public final class VMPool {
             vm: vm,
             ephemeralDisk: ephDisk,
             serialInput: inputPipe,
-            serialOutput: outputPipe
+            serialOutput: outputPipe,
+            networkFilter: networkFilter
         )
 
         // Inflate balloon to reclaim unused guest memory while VM is idle.
@@ -161,6 +181,22 @@ public final class VMPool {
         let input = warm.serialInput.fileHandleForWriting
 
         print("[VMPool] Applying config: homePage='\(config.homePage)' forceDarkMode=\(config.forceDarkMode) adBlocking=\(config.enableAdBlocking)")
+
+        // Activate network filtering based on profile config
+        if config.isolateFromLAN {
+            if let filter = warm.networkFilter {
+                filter.activateFiltering()
+            } else {
+                print("[VMPool] WARNING: isolateFromLAN=true but no NetworkFilter available")
+            }
+        }
+        if let allowedPorts = config.allowedPorts {
+            if let filter = warm.networkFilter {
+                filter.activatePortFiltering(allowedPorts)
+            } else {
+                print("[VMPool] WARNING: port restriction requested but no NetworkFilter available")
+            }
+        }
 
         // Mount profile disk via virtio-fs share + loop device.
         // The host sets fsDevice.share in claim() before calling applyConfig,

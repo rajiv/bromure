@@ -62,15 +62,23 @@ final class AppState: @unchecked Sendable {
         self.imageManager = LinuxImageManager(storageDir: storageDir)
         self.profileManager = ProfileManager(storageDir: storageDir)
 
-        // Migrate v1.0.x UserDefaults settings into a Default profile
-        if let migrated = profileManager.migrateFromUserDefaults() {
-            selectedProfileID = migrated.id
-        }
-
-        // Ensure a Default profile always exists
-        if profileManager.allProfiles.isEmpty {
-            let defaultProfile = profileManager.createProfile(name: "Default", color: nil)
-            selectedProfileID = defaultProfile.id
+        // Profiles load asynchronously (iCloud discovery happens in background).
+        // Defer migration and default-profile creation until profiles are ready.
+        profileManager.onReady = { [weak self] in
+            guard let self else { return }
+            // Migrate v1.0.x UserDefaults settings into a Default profile
+            if let migrated = self.profileManager.migrateFromUserDefaults() {
+                self.selectedProfileID = migrated.id
+            }
+            // Ensure a Default profile always exists
+            if self.profileManager.allProfiles.isEmpty {
+                let defaultProfile = self.profileManager.createProfile(name: "Default", color: nil)
+                self.selectedProfileID = defaultProfile.id
+            }
+            // Select first profile if none selected
+            if self.selectedProfileID == nil {
+                self.selectedProfileID = self.profileManager.allProfiles.first?.id
+            }
         }
     }
 
