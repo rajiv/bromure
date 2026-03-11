@@ -456,9 +456,28 @@ public final class LinuxImageManager {
             VZVirtioBlockDeviceConfiguration(attachment: transferAttachment),
         ]
 
-        // Network (needed for apk)
+        // Network (needed for apk) — use NetworkFilter to rewrite DHCP DNS
+        // when the user has overridden DNS servers (e.g. VPN software breaks DNS)
+        var buildNetworkFilter: NetworkFilter?
         let net = VZVirtioNetworkDeviceConfiguration()
-        net.attachment = VZNATNetworkDeviceAttachment()
+        if let netInfo = HostNetworkInfo.detect() {
+            let dnsOverride: [UInt32]
+            if let dnsString = UserDefaults.standard.string(forKey: "vm.dnsServers"),
+               !dnsString.trimmingCharacters(in: .whitespaces).isEmpty {
+                dnsOverride = dnsString.split(separator: ",")
+                    .compactMap { HostNetworkInfo.parseIPv4(String($0).trimmingCharacters(in: .whitespaces)) }
+            } else {
+                dnsOverride = []
+            }
+            if !dnsOverride.isEmpty, let filter = NetworkFilter(networkInfo: netInfo, dnsOverrideServers: dnsOverride) {
+                buildNetworkFilter = filter
+                net.attachment = VZFileHandleNetworkDeviceAttachment(fileHandle: filter.vmFileHandle)
+            } else {
+                net.attachment = VZNATNetworkDeviceAttachment()
+            }
+        } else {
+            net.attachment = VZNATNetworkDeviceAttachment()
+        }
         vzConfig.networkDevices = [net]
 
         // Serial console via pipe
@@ -559,6 +578,12 @@ public final class LinuxImageManager {
                     "The image could not be created. Package installation failed, likely due to network issues. Please check your internet connection and try again."
                 )
             }
+            let dnsSnapshot = consoleOutput.pollAndTrim(marker: "APKINDEX.tar.gz: DNS:")
+            if dnsSnapshot.found {
+                throw SandboxError.diskCreationFailed(
+                    "DNS resolution failed inside the VM. If you use a VPN or security software that modifies DNS, set override DNS servers (e.g. 1.1.1.1, 1.0.0.1) in Settings \u{2192} Network \u{2192} DNS Servers."
+                )
+            }
             throw error
         }
 
@@ -616,6 +641,10 @@ public final class LinuxImageManager {
         }
         if vm.state != .stopped {
             try? await vm.stop()
+        }
+        // Keep the network filter alive for the VM's lifetime, then clean up
+        withExtendedLifetime(buildNetworkFilter) {
+            buildNetworkFilter?.stop()
         }
     }
 

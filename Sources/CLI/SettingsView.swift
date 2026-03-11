@@ -7,6 +7,7 @@ struct SettingsView: View {
     @AppStorage("vm.enableAudio") private var enableAudio = true
     @AppStorage("vm.swapCmdCtrl") private var swapCmdCtrl = true
     @AppStorage("vm.appearance") private var appearance = "system"
+    @AppStorage("vm.dnsServers") private var dnsServers = ""
 
     var state: AppState?
     @State private var showResetConfirm = false
@@ -126,6 +127,12 @@ struct SettingsView: View {
                 .help("Controls Chromium's color scheme in the VM.")
             }
 
+            Section("Network") {
+                TextField("DNS Servers", text: $dnsServers)
+                    .textFieldStyle(.roundedBorder)
+                    .help("Override DNS servers for the VM (comma-separated, e.g. \"1.1.1.1, 1.0.0.1\"). Leave empty to use the system default. Useful when VPN software intercepts DNS.")
+            }
+
             Section("Storage") {
                 LabeledContent("Disk Usage") {
                     Text(state?.diskUsage ?? "\u{2014}")
@@ -144,7 +151,7 @@ struct SettingsView: View {
             }
         }
         .formStyle(.grouped)
-        .frame(width: 450, height: 480)
+        .frame(width: 450, height: 540)
         .onAppear {
             keyboardLayout = state?.currentKeyboardLayout ?? VMConfig.detectKeyboardLayout()
             naturalScrolling = state?.currentNaturalScrolling ?? VMConfig.detectNaturalScrolling()
@@ -196,6 +203,7 @@ struct SettingsView: View {
         .onChange(of: memoryGB) { _, _ in state?.restartPool() }
         .onChange(of: cpuCount) { _, _ in state?.restartPool() }
         .onChange(of: enableAudio) { _, _ in state?.restartPool() }
+        .onChange(of: dnsServers) { _, _ in state?.restartPool() }
 
         Text("Changes restart the pre-warmed VM.")
             .font(.caption2)

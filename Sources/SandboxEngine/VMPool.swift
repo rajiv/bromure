@@ -64,7 +64,17 @@ public final class VMPool {
         var networkFilter: NetworkFilter?
         var networkAttachment: VZNetworkDeviceAttachment?
         if let netInfo = HostNetworkInfo.detect() {
-            if let filter = NetworkFilter(networkInfo: netInfo) {
+            // Read DNS override from preferences (e.g. "1.1.1.1,1.0.0.1")
+            let dnsOverride: [UInt32]
+            if let dnsString = UserDefaults.standard.string(forKey: "vm.dnsServers"),
+               !dnsString.trimmingCharacters(in: .whitespaces).isEmpty {
+                dnsOverride = dnsString.split(separator: ",")
+                    .compactMap { HostNetworkInfo.parseIPv4(String($0).trimmingCharacters(in: .whitespaces)) }
+            } else {
+                dnsOverride = []
+            }
+
+            if let filter = NetworkFilter(networkInfo: netInfo, dnsOverrideServers: dnsOverride) {
                 networkFilter = filter
                 networkAttachment = VZFileHandleNetworkDeviceAttachment(fileHandle: filter.vmFileHandle)
             } else {
