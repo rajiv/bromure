@@ -140,6 +140,32 @@ struct ProfileSettingsView: View {
                         .help("Adds a right-click menu to send links to another Bromure profile\u{2019}s session.")
                 }
 
+                // MARK: - Media
+                Section("Media") {
+                    Toggle("Share Webcam", isOn: $draft.settings.enableWebcam)
+                        .help("Share your Mac\u{2019}s camera with the browser in the VM.")
+
+                    Toggle("Share Microphone", isOn: $draft.settings.enableMicrophone)
+                        .help("Share your Mac\u{2019}s microphone with the browser in the VM.")
+
+                    if draft.settings.enableWebcam || draft.settings.enableMicrophone {
+                        MediaPreviewView(
+                            webcamDeviceID: $draft.settings.webcamDeviceID,
+                            microphoneDeviceID: $draft.settings.microphoneDeviceID,
+                            speakerDeviceID: $draft.settings.speakerDeviceID,
+                            enableWebcam: draft.settings.enableWebcam,
+                            enableMicrophone: draft.settings.enableMicrophone
+                        )
+                    } else {
+                        Picker("Speaker", selection: $draft.settings.speakerDeviceID) {
+                            Text("Default").tag(String?.none)
+                            ForEach(MediaDevices.speakers()) { device in
+                                Text(device.name).tag(Optional(device.id))
+                            }
+                        }
+                    }
+                }
+
                 // MARK: - Advanced
                 Section("Advanced") {
                     if draft.settings.persistent {

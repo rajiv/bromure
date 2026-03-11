@@ -91,6 +91,21 @@ public struct VMConfig {
     /// Whether to enable the "Send link to other session" Chrome extension.
     public var enableLinkSender: Bool
 
+    /// Whether to share the host webcam with the guest via vsock + v4l2loopback.
+    public var enableWebcam: Bool
+
+    /// Whether to share the host microphone with the guest via virtio-snd.
+    public var enableMicrophone: Bool
+
+    /// Unique ID of the camera device to use (nil = default camera).
+    public var webcamDeviceID: String?
+
+    /// Unique ID of the microphone device to use (nil = default microphone).
+    public var microphoneDeviceID: String?
+
+    /// Unique ID of the speaker device to use (nil = default speaker).
+    public var speakerDeviceID: String?
+
     public init(
         cpuCount: Int? = nil,
         memorySize: UInt64 = 4 * 1024 * 1024 * 1024,
@@ -110,6 +125,11 @@ public struct VMConfig {
         phishingWarning: Bool = false,
         enableClipboardSharing: Bool = false,
         enableLinkSender: Bool = false,
+        enableWebcam: Bool = false,
+        enableMicrophone: Bool = false,
+        webcamDeviceID: String? = nil,
+        microphoneDeviceID: String? = nil,
+        speakerDeviceID: String? = nil,
         keyboardLayout: String? = nil,
         naturalScrolling: Bool? = nil,
         locale: String? = nil
@@ -132,6 +152,11 @@ public struct VMConfig {
         self.phishingWarning = phishingWarning
         self.enableClipboardSharing = enableClipboardSharing
         self.enableLinkSender = enableLinkSender
+        self.enableWebcam = enableWebcam
+        self.enableMicrophone = enableMicrophone
+        self.webcamDeviceID = webcamDeviceID
+        self.microphoneDeviceID = microphoneDeviceID
+        self.speakerDeviceID = speakerDeviceID
         self.keyboardLayout = keyboardLayout ?? VMConfig.detectKeyboardLayout()
         self.naturalScrolling = naturalScrolling ?? VMConfig.detectNaturalScrolling()
         self.locale = locale ?? VMConfig.detectLocale()

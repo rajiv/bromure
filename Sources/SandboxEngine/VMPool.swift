@@ -218,6 +218,13 @@ public final class VMPool {
         if config.enableAdBlocking { envVars.append("AD_BLOCKING=1") }
         if config.enableWarp { envVars.append("ENABLE_WARP=1") }
         if config.enableLinkSender { envVars.append("LINK_SENDER=1") }
+        if config.enableWebcam {
+            envVars.append("WEBCAM=1")
+            let res = WebcamBridge.queryCameraResolution(cameraID: config.webcamDeviceID)
+            envVars.append("WEBCAM_WIDTH=\(res.width)")
+            envVars.append("WEBCAM_HEIGHT=\(res.height)")
+        }
+        if config.enableMicrophone { envVars.append("MICROPHONE=1") }
 
         let cmd = envVars.joined(separator: " ") + " /usr/local/bin/apply-config.sh"
         input.write(Data((cmd + "\n").utf8))

@@ -22,6 +22,8 @@
     <true/>
     <key>NSMicrophoneUsageDescription</key>
     <string>Bromure needs microphone access to pass audio input to the virtual machine.</string>
+    <key>NSCameraUsageDescription</key>
+    <string>Bromure needs camera access to share your webcam with the virtual machine.</string>
     <key>CFBundleURLTypes</key>
     <array>
         <dict>

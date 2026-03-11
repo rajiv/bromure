@@ -92,12 +92,12 @@ mount --bind /dev /mnt/dev
 # ---------------------------------------------------------------------------
 
 retry chroot /mnt apk update
-retry chroot /mnt apk add openrc linux-virt linux-firmware-none mkinitfs e2fsprogs
+retry chroot /mnt apk add openrc linux-lts linux-firmware-none mkinitfs e2fsprogs
 retry chroot /mnt apk add \
     chromium xorg-server xinit mesa-dri-gallium mesa-egl mesa-gl mesa-gles \
-    mesa-gbm eudev dbus ttf-freefont ttf-dejavu font-noto-emoji font-liberation \
+    mesa-gbm eudev dbus dbus-x11 ttf-freefont ttf-dejavu font-noto-emoji font-liberation \
     xf86-input-libinput agetty util-linux openbox xrandr xdotool setxkbmap \
-    pulseaudio pulseaudio-alsa alsa-utils alsa-plugins-pulse adwaita-icon-theme \
+    pipewire pipewire-pulse wireplumber pipewire-tools alsa-utils alsa-plugins-pulse adwaita-icon-theme \
     spice-vdagent
 
 ls -la /mnt/sbin/init || {
@@ -135,7 +135,8 @@ rm -f /tmp/resolv_stub.c
 # Install proxy and DNS tools
 # ---------------------------------------------------------------------------
 
-retry chroot /mnt apk add squid dnsmasq proxychains-ng cryptsetup inotify-tools jq python3
+retry chroot /mnt apk add squid dnsmasq proxychains-ng cryptsetup inotify-tools jq python3 \
+    v4l-utils
 
 # ---------------------------------------------------------------------------
 # Configuration files (static)
@@ -182,6 +183,7 @@ install_template configs/locale.sh /mnt/etc/profile.d/locale.sh
 chroot /mnt sh -c 'echo "root:" | chpasswd'
 chroot /mnt adduser -D -s /bin/sh chrome
 chroot /mnt addgroup chrome video
+chroot /mnt addgroup -S render 2>/dev/null || true
 chroot /mnt addgroup chrome render
 chroot /mnt addgroup chrome input
 chroot /mnt addgroup chrome audio
@@ -259,8 +261,9 @@ chroot /mnt chown chrome:chrome /home/chrome/.profile
 # File transfer agent
 # ---------------------------------------------------------------------------
 
-install_config scripts/file-agent.py /mnt/usr/local/bin/file-agent.py 755
+install_config scripts/file-agent.py  /mnt/usr/local/bin/file-agent.py  755
 install_config scripts/link-agent.py /mnt/usr/local/bin/link-agent.py 755
+install_config scripts/webcam-agent.py /mnt/usr/local/bin/webcam-agent.py 755
 
 # ---------------------------------------------------------------------------
 # Phishing guard extension
@@ -311,8 +314,45 @@ fi
 echo "SANDBOX_STEP_DONE:Downloading popular domains list"
 
 # ---------------------------------------------------------------------------
+# v4l2loopback (virtual webcam device, pre-built for linux-lts)
+# ---------------------------------------------------------------------------
+
+KVER=$(ls /mnt/lib/modules/)
+if [ -f "$SCRIPT_DIR/v4l2loopback/v4l2loopback.ko.gz" ]; then
+    mkdir -p "/mnt/lib/modules/$KVER/extra"
+    cp "$SCRIPT_DIR/v4l2loopback/v4l2loopback.ko.gz" "/mnt/lib/modules/$KVER/extra/"
+    gunzip "/mnt/lib/modules/$KVER/extra/v4l2loopback.ko.gz"
+    chroot /mnt depmod "$KVER"
+    echo "V4L2LOOPBACK_INSTALLED_OK"
+else
+    echo "Warning: v4l2loopback.ko not found — webcam sharing will not work"
+fi
+
+# ---------------------------------------------------------------------------
 # Kernel and initramfs
 # ---------------------------------------------------------------------------
+
+# ---------------------------------------------------------------------------
+# RTC PL031 (Virtualization.framework virtual RTC, pre-built for linux-lts)
+# ---------------------------------------------------------------------------
+
+KVER=$(ls /mnt/lib/modules/)
+if [ -f "$SCRIPT_DIR/rtc-pl031/rtc-pl031.ko.gz" ]; then
+    mkdir -p "/mnt/lib/modules/$KVER/extra"
+    cp "$SCRIPT_DIR/rtc-pl031/rtc-pl031.ko.gz" "/mnt/lib/modules/$KVER/extra/"
+    gunzip "/mnt/lib/modules/$KVER/extra/rtc-pl031.ko.gz"
+    chroot /mnt depmod "$KVER"
+    echo "rtc-pl031" >> /mnt/etc/modules
+    echo "RTC_PL031_INSTALLED_OK"
+elif [ -f "$SCRIPT_DIR/rtc-pl031/rtc-pl031.ko" ]; then
+    mkdir -p "/mnt/lib/modules/$KVER/extra"
+    cp "$SCRIPT_DIR/rtc-pl031/rtc-pl031.ko" "/mnt/lib/modules/$KVER/extra/"
+    chroot /mnt depmod "$KVER"
+    echo "rtc-pl031" >> /mnt/etc/modules
+    echo "RTC_PL031_INSTALLED_OK"
+else
+    echo "Warning: rtc-pl031.ko not found — guest clock will need manual sync"
+fi
 
 install_config configs/mkinitfs.conf /mnt/etc/mkinitfs/mkinitfs.conf
 chroot /mnt ls /etc/mkinitfs/features.d/ 2>/dev/null || true

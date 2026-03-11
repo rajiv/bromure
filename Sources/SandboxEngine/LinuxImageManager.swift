@@ -192,12 +192,19 @@ public final class LinuxImageManager {
         ]
         vzConfig.graphicsDevices = [graphics]
 
-        // Audio
+        // Audio — always include both output and input streams.
+        // Input (microphone) is always available at the hardware level;
+        // whether the guest actually uses it depends on the profile config.
         if config.enableAudio {
             let audio = VZVirtioSoundDeviceConfiguration()
+
             let outputStream = VZVirtioSoundDeviceOutputStreamConfiguration()
             outputStream.sink = VZHostAudioOutputStreamSink()
-            audio.streams = [outputStream]
+
+            let inputStream = VZVirtioSoundDeviceInputStreamConfiguration()
+            inputStream.source = VZHostAudioInputStreamSource()
+
+            audio.streams = [outputStream, inputStream]
             vzConfig.audioDevices = [audio]
         }
 
@@ -275,7 +282,7 @@ public final class LinuxImageManager {
             )
         }
 
-        // Extract vmlinuz-virt and initramfs-virt from tarball
+        // Extract vmlinuz-virt and initramfs-virt from netboot tarball
         progress(.message("Extracting netboot files..."))
         let extractDir = storageDir.appendingPathComponent("netboot-extract")
         try? FileManager.default.removeItem(at: extractDir)
@@ -323,7 +330,7 @@ public final class LinuxImageManager {
 
     /// Extract the raw ARM64 Image from an EFI stub vmlinuz.
     ///
-    /// Alpine's vmlinuz-virt is an EFI PE binary that wraps a gzip-compressed
+    /// Alpine's vmlinuz is an EFI PE binary that wraps a gzip-compressed
     /// ARM64 Image. VZLinuxBootLoader cannot boot EFI stubs directly — it
     /// needs the raw Image. We find the embedded gzip stream (magic bytes
     /// 1F 8B 08) and decompress it.
@@ -564,9 +571,9 @@ public final class LinuxImageManager {
             "printf '%s\\n' 'features=\"base ext4 virtio\"' > /mnt/etc/mkinitfs/mkinitfs.conf",
             // Rebuild initramfs with correct modules
             "chroot /mnt sh -c 'KVER=$(ls /lib/modules/ | head -1) && mkinitfs -o /boot/initramfs-custom $KVER'",
-            // Find the installed kernel (vmlinuz-virt is the EFI stub,
+            // Find the installed kernel (vmlinuz-lts is the EFI stub,
             // but we need the raw Image for VZLinuxBootLoader)
-            "KERNEL=/mnt/boot/vmlinuz-virt",
+            "KERNEL=/mnt/boot/vmlinuz-lts",
             "INITRD=/mnt/boot/initramfs-custom",
             "KSIZE=$(stat -c%s $KERNEL)",
             "ISIZE=$(stat -c%s $INITRD)",

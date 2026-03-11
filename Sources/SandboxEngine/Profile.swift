@@ -100,6 +100,13 @@ public struct ProfileSettings: Codable, Equatable {
     // Cross-session
     public var enableLinkSender: Bool = false
 
+    // Media
+    public var enableWebcam: Bool = false
+    public var enableMicrophone: Bool = false
+    public var webcamDeviceID: String?
+    public var microphoneDeviceID: String?
+    public var speakerDeviceID: String?
+
     // Advanced
     public var persistent: Bool = false
     public var encryptOnDisk: Bool = false
@@ -123,6 +130,11 @@ public struct ProfileSettings: Codable, Equatable {
         blockMalwareSites = try c.decodeIfPresent(Bool.self, forKey: .blockMalwareSites) ?? defaults.blockMalwareSites
         phishingWarning = try c.decodeIfPresent(Bool.self, forKey: .phishingWarning) ?? defaults.phishingWarning
         enableLinkSender = try c.decodeIfPresent(Bool.self, forKey: .enableLinkSender) ?? defaults.enableLinkSender
+        enableWebcam = try c.decodeIfPresent(Bool.self, forKey: .enableWebcam) ?? defaults.enableWebcam
+        enableMicrophone = try c.decodeIfPresent(Bool.self, forKey: .enableMicrophone) ?? defaults.enableMicrophone
+        webcamDeviceID = try c.decodeIfPresent(String.self, forKey: .webcamDeviceID)
+        microphoneDeviceID = try c.decodeIfPresent(String.self, forKey: .microphoneDeviceID)
+        speakerDeviceID = try c.decodeIfPresent(String.self, forKey: .speakerDeviceID)
         persistent = try c.decodeIfPresent(Bool.self, forKey: .persistent) ?? defaults.persistent
         encryptOnDisk = try c.decodeIfPresent(Bool.self, forKey: .encryptOnDisk) ?? defaults.encryptOnDisk
     }
@@ -157,7 +169,12 @@ public struct ProfileSettings: Codable, Equatable {
             enableFileTransfer: canUpload || canDownload,
             phishingWarning: phishingWarning,
             enableClipboardSharing: enableClipboardSharing,
-            enableLinkSender: enableLinkSender
+            enableLinkSender: enableLinkSender,
+            enableWebcam: enableWebcam,
+            enableMicrophone: enableMicrophone,
+            webcamDeviceID: webcamDeviceID,
+            microphoneDeviceID: microphoneDeviceID,
+            speakerDeviceID: speakerDeviceID
         )
     }
 }

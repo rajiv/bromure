@@ -557,6 +557,15 @@ final class GUIAppDelegate: NSObject, NSApplicationDelegate {
             restoreSession = alert.runModal() == .alertFirstButtonReturn
         }
 
+        // Switch system default audio devices before claiming VM
+        // (VZHostAudioInputStreamSource/Sink use system defaults)
+        if config.enableMicrophone, let micID = config.microphoneDeviceID {
+            MediaDevices.setDefaultAudioInput(deviceID: micID)
+        }
+        if let speakerID = config.speakerDeviceID {
+            MediaDevices.setDefaultAudioOutput(deviceID: speakerID)
+        }
+
         Task { @MainActor in
             guard let warm = await state.pool?.claim(
                 config: config,
@@ -667,6 +676,7 @@ final class BrowserSession {
     private var fileTransferBridge: FileTransferBridge?
     private var fileDrawerModel: FileDrawerModel?
     private var linkSenderBridge: LinkSenderBridge?
+    private var webcamBridge: WebcamBridge?
     private var splitView: NSSplitView?
     private var drawerHost: NSView?
     fileprivate var hasFileTransfer = false
@@ -786,7 +796,7 @@ final class BrowserSession {
             }
             return nil
         }()
-        if let dev = linkSocketDevice {
+        if config.enableLinkSender, let dev = linkSocketDevice {
             let bridge = MainActor.assumeIsolated { LinkSenderBridge(socketDevice: dev) }
             MainActor.assumeIsolated {
                 bridge.onOpenInProfile = { [weak self] url in
@@ -794,6 +804,12 @@ final class BrowserSession {
                 }
             }
             self.linkSenderBridge = bridge
+        }
+
+        // Set up webcam bridge (vsock port 5400) for camera sharing.
+        if config.enableWebcam, let dev = linkSocketDevice {
+            let bridge = MainActor.assumeIsolated { WebcamBridge(socketDevice: dev, cameraID: config.webcamDeviceID) }
+            self.webcamBridge = bridge
         }
 
         let helper = SessionDelegateHelper(session: self)

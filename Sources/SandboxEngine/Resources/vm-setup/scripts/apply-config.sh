@@ -19,6 +19,8 @@
 #   AD_BLOCKING=1         Enable Pi-hole ad blocking
 #   ENABLE_WARP=1         Route traffic through Cloudflare WARP
 #   LINK_SENDER=1         Enable "Send link to other session" context menu
+#   WEBCAM=1              Enable webcam sharing from host via vsock + v4l2loopback
+#   MICROPHONE=1          Enable microphone sharing from host via virtio-snd
 
 set -e
 
@@ -57,8 +59,15 @@ EXTENSIONS=""
 [ "$RESTORE_SESSION" = "1" ] && \
     EXTRA_FLAGS="$EXTRA_FLAGS --restore-last-session"
 
+# Media device access: run audio in-process (out-of-process can't find PipeWire).
+DISABLE_FEATURES=""
+[ "$MICROPHONE" = "1" ] && \
+    DISABLE_FEATURES="${DISABLE_FEATURES:+$DISABLE_FEATURES,}AudioServiceOutOfProcess"
+
 [ -n "$ENABLE_FEATURES" ] && \
     EXTRA_FLAGS="$EXTRA_FLAGS --enable-features=$ENABLE_FEATURES"
+[ -n "$DISABLE_FEATURES" ] && \
+    EXTRA_FLAGS="$EXTRA_FLAGS --disable-features=$DISABLE_FEATURES"
 
 # --- Write chrome-env ---
 
@@ -70,6 +79,12 @@ EXTENSIONS=""
 [ "$FILE_TRANSFER" = "1" ] && echo "FILE_TRANSFER=1" >> "$ENVFILE"
 [ "$CLIPBOARD" = "1" ] && echo "CLIPBOARD=1" >> "$ENVFILE"
 [ "$LINK_SENDER" = "1" ] && echo "LINK_SENDER=1" >> "$ENVFILE"
+if [ "$WEBCAM" = "1" ]; then
+    echo "WEBCAM=1" >> "$ENVFILE"
+    [ -n "$WEBCAM_WIDTH" ] && echo "WEBCAM_WIDTH=$WEBCAM_WIDTH" >> "$ENVFILE"
+    [ -n "$WEBCAM_HEIGHT" ] && echo "WEBCAM_HEIGHT=$WEBCAM_HEIGHT" >> "$ENVFILE"
+fi
+[ "$MICROPHONE" = "1" ] && echo "MICROPHONE=1" >> "$ENVFILE"
 
 # --- Configure DNS/proxy services ---
 
@@ -128,6 +143,16 @@ if [ -n "$PROFILE_DIR" ]; then
         sed -i 's/"exit_type":"Crashed"/"exit_type":"Normal"/' "$PREFS"
         sed -i 's/"exited_cleanly":false/"exited_cleanly":true/' "$PREFS"
     fi
+fi
+
+# --- Webcam: load v4l2loopback and start agent ---
+
+if [ "$WEBCAM" = "1" ]; then
+    modprobe v4l2loopback video_nr=0 card_label="Bromure Camera" exclusive_caps=1 2>/dev/null
+    # Wait for /dev/video0 to appear, then fix permissions
+    for i in $(seq 1 30); do [ -e /dev/video0 ] && break; sleep 0.1; done
+    chown root:video /dev/video0 2>/dev/null
+    chmod 660 /dev/video0 2>/dev/null
 fi
 
 # --- Signal xinitrc to launch Chromium ---
