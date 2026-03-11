@@ -18,6 +18,7 @@
 #   BLOCK_MALWARE=1       Use Cloudflare security DNS (1.1.1.2)
 #   AD_BLOCKING=1         Enable Pi-hole ad blocking
 #   ENABLE_WARP=1         Route traffic through Cloudflare WARP
+#   LINK_SENDER=1         Enable "Send link to other session" context menu
 
 set -e
 
@@ -41,8 +42,13 @@ ENABLE_FEATURES=""
 [ "$DISABLE_WEBGL" = "1" ] && \
     EXTRA_FLAGS="$EXTRA_FLAGS --disable-webgl --disable-3d-apis"
 
+EXTENSIONS=""
 [ "$PHISHING_GUARD" = "1" ] && \
-    EXTRA_FLAGS="$EXTRA_FLAGS --load-extension=/opt/bromure/extensions/phishing-guard"
+    EXTENSIONS="${EXTENSIONS:+$EXTENSIONS,}/opt/bromure/extensions/phishing-guard"
+[ "$LINK_SENDER" = "1" ] && \
+    EXTENSIONS="${EXTENSIONS:+$EXTENSIONS,}/opt/bromure/extensions/link-sender"
+[ -n "$EXTENSIONS" ] && \
+    EXTRA_FLAGS="$EXTRA_FLAGS --load-extension=$EXTENSIONS"
 
 [ -n "$PROFILE_DIR" ] && \
     EXTRA_FLAGS="$EXTRA_FLAGS --user-data-dir=$PROFILE_DIR" && \
@@ -63,6 +69,7 @@ ENABLE_FEATURES=""
 [ "$SWAP_CMD_CTRL" = "1" ] && echo "SWAP_CMD_CTRL=1" >> "$ENVFILE"
 [ "$FILE_TRANSFER" = "1" ] && echo "FILE_TRANSFER=1" >> "$ENVFILE"
 [ "$CLIPBOARD" = "1" ] && echo "CLIPBOARD=1" >> "$ENVFILE"
+[ "$LINK_SENDER" = "1" ] && echo "LINK_SENDER=1" >> "$ENVFILE"
 
 # --- Configure DNS/proxy services ---
 

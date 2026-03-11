@@ -217,6 +217,7 @@ public final class VMPool {
         if config.blockMalwareSites { envVars.append("BLOCK_MALWARE=1") }
         if config.enableAdBlocking { envVars.append("AD_BLOCKING=1") }
         if config.enableWarp { envVars.append("ENABLE_WARP=1") }
+        if config.enableLinkSender { envVars.append("LINK_SENDER=1") }
 
         let cmd = envVars.joined(separator: " ") + " /usr/local/bin/apply-config.sh"
         input.write(Data((cmd + "\n").utf8))

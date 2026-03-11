@@ -88,6 +88,9 @@ public struct VMConfig {
     /// Whether to share the clipboard between host and guest via SPICE agent.
     public var enableClipboardSharing: Bool
 
+    /// Whether to enable the "Send link to other session" Chrome extension.
+    public var enableLinkSender: Bool
+
     public init(
         cpuCount: Int? = nil,
         memorySize: UInt64 = 4 * 1024 * 1024 * 1024,
@@ -106,6 +109,7 @@ public struct VMConfig {
         enableFileTransfer: Bool = false,
         phishingWarning: Bool = false,
         enableClipboardSharing: Bool = false,
+        enableLinkSender: Bool = false,
         keyboardLayout: String? = nil,
         naturalScrolling: Bool? = nil,
         locale: String? = nil
@@ -127,6 +131,7 @@ public struct VMConfig {
         self.enableFileTransfer = enableFileTransfer
         self.phishingWarning = phishingWarning
         self.enableClipboardSharing = enableClipboardSharing
+        self.enableLinkSender = enableLinkSender
         self.keyboardLayout = keyboardLayout ?? VMConfig.detectKeyboardLayout()
         self.naturalScrolling = naturalScrolling ?? VMConfig.detectNaturalScrolling()
         self.locale = locale ?? VMConfig.detectLocale()

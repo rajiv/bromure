@@ -260,6 +260,7 @@ chroot /mnt chown chrome:chrome /home/chrome/.profile
 # ---------------------------------------------------------------------------
 
 install_config scripts/file-agent.py /mnt/usr/local/bin/file-agent.py 755
+install_config scripts/link-agent.py /mnt/usr/local/bin/link-agent.py 755
 
 # ---------------------------------------------------------------------------
 # Phishing guard extension
@@ -270,6 +271,21 @@ for f in manifest.json background.js content.js popup.html popup.css popup.js bl
     [ -f "$SCRIPT_DIR/extensions/phishing-guard/$f" ] && \
         cp "$SCRIPT_DIR/extensions/phishing-guard/$f" /mnt/opt/bromure/extensions/phishing-guard/
 done
+
+# ---------------------------------------------------------------------------
+# Link sender extension
+# ---------------------------------------------------------------------------
+
+mkdir -p /mnt/opt/bromure/extensions/link-sender
+for f in manifest.json background.js; do
+    [ -f "$SCRIPT_DIR/extensions/link-sender/$f" ] && \
+        cp "$SCRIPT_DIR/extensions/link-sender/$f" /mnt/opt/bromure/extensions/link-sender/
+done
+
+# Native messaging hosts (link sender)
+mkdir -p /mnt/etc/chromium/native-messaging-hosts
+install_config configs/com.bromure.link_sender.json \
+    /mnt/etc/chromium/native-messaging-hosts/com.bromure.link_sender.json
 
 # Download Tranco top domains list (research-grade popularity ranking)
 echo "SANDBOX_STEP_START:Downloading popular domains list"

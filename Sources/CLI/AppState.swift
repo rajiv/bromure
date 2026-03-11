@@ -55,6 +55,7 @@ final class AppState: @unchecked Sendable {
 
     /// Called by the app delegate when sessions need to be closed for image rebuild.
     var onCloseAllSessions: (() async -> Void)?
+    var onPoolReady: (() -> Void)?
 
     init() {
         self.storageDir = VMConfig.defaultStorageDirectory
@@ -182,6 +183,7 @@ final class AppState: @unchecked Sendable {
                 guard !Task.isCancelled else { return }
                 poolReady = true
                 phase = .ready
+                onPoolReady?()
             } catch {
                 guard !Task.isCancelled else { return }
                 phase = .error(error.localizedDescription)

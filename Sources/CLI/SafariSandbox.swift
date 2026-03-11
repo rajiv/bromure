@@ -76,6 +76,13 @@ final class GUIAppDelegate: NSObject, NSApplicationDelegate {
             self.state.sessionCount = 0
         }
 
+        state.onPoolReady = { [weak self] in
+            guard let self, let url = self.pendingURL else { return }
+            self.pendingURL = nil
+            // Re-enter the normal URL handling flow now that the pool is ready
+            self.application(NSApp, open: [url])
+        }
+
         showMainWindow()
     }
 
@@ -90,7 +97,30 @@ final class GUIAppDelegate: NSObject, NSApplicationDelegate {
         }
 
         print("[URL] sessions=\(sessions.count), phase=\(state.phase)")
-        // Prefer the frontmost (key) window session, fall back to the most recent one
+
+        let profiles = state.profileManager.allProfiles
+
+        // If there's more than one profile, ask the user which one to use.
+        // If there's a running session for the chosen profile, route the URL
+        // to it; otherwise spin up a new VM.
+        if profiles.count > 1, state.phase == .ready {
+            guard let chosen = promptProfileForURL(url, profiles: profiles) else {
+                print("[URL] user cancelled profile picker")
+                return
+            }
+            // Prefer an active session that already uses this profile
+            let existingSession = sessions.first(where: { !$0.closing && $0.profile?.id == chosen.id })
+            if let session = existingSession {
+                print("[URL] sending to existing session for profile '\(chosen.name)'")
+                session.navigateTo(url: url)
+            } else {
+                print("[URL] opening new browser for profile '\(chosen.name)' with URL")
+                openNewBrowser(with: chosen, initialURL: url)
+            }
+            return
+        }
+
+        // Single profile or no profiles — use original behaviour
         let activeSession = sessions.first(where: { !$0.closing && $0.window.isKeyWindow })
             ?? sessions.last(where: { !$0.closing })
         if let session = activeSession {
@@ -103,6 +133,137 @@ final class GUIAppDelegate: NSObject, NSApplicationDelegate {
             print("[URL] storing as pending URL")
             pendingURL = url
             showMainWindow()
+        }
+    }
+
+    // MARK: - Profile Picker for URL
+
+    /// Shows a modal dialog asking which profile to use when opening a URL.
+    /// Returns the chosen profile, or nil if the user cancels.
+    private func promptProfileForURL(_ url: URL, profiles: [Profile]) -> Profile? {
+        let urlString = url.absoluteString
+        let truncatedURL = urlString.count > 60
+            ? String(urlString.prefix(57)) + "..."
+            : urlString
+
+        let alert = NSAlert()
+        alert.messageText = "Choose a profile"
+        alert.informativeText = "Which profile should open \(truncatedURL)?"
+        alert.addButton(withTitle: "Open")
+        alert.addButton(withTitle: "Cancel")
+        alert.alertStyle = .informational
+
+        let containerWidth: CGFloat = 400
+
+        // Profile picker popup
+        let popup = NSPopUpButton(frame: NSRect(x: 0, y: 0, width: containerWidth, height: 25), pullsDown: false)
+        for profile in profiles {
+            let colorDot = profile.color.map { Self.colorDot(for: $0) } ?? ""
+            popup.addItem(withTitle: "\(colorDot)\(profile.name)")
+        }
+
+        // Full URL label (small, grey, multiline).
+        // URLs have no natural word-break points, so insert zero-width spaces
+        // after slashes, dots, hyphens, and query/fragment delimiters to let
+        // NSTextField wrap at those positions.
+        let breakableURL = urlString.flatMap { c -> [Character] in
+            if "/.-?&=#".contains(c) { return [c, "\u{200B}"] }
+            return [c]
+        }
+        // Measure how tall the URL text will be
+        let urlFont = NSFont.systemFont(ofSize: NSFont.smallSystemFontSize)
+        let urlAttr = NSAttributedString(string: String(breakableURL), attributes: [.font: urlFont])
+        let measuredHeight = urlAttr.boundingRect(
+            with: NSSize(width: containerWidth, height: .greatestFiniteMagnitude),
+            options: [.usesLineFragmentOrigin, .usesFontLeading]
+        ).height
+
+        let lineHeight = urlFont.boundingRectForFont.height
+        let maxURLHeight = ceil(lineHeight * 10)
+        let urlHeight = min(ceil(measuredHeight) + 4, maxURLHeight)
+
+        // Use a scrollable text view for the URL so NSAlert respects the height
+        let scrollView = NSScrollView(frame: NSRect(x: 0, y: 0, width: containerWidth, height: urlHeight))
+        let textView = NSTextView(frame: NSRect(x: 0, y: 0, width: containerWidth, height: urlHeight))
+        textView.string = String(breakableURL)
+        textView.font = urlFont
+        textView.textColor = .secondaryLabelColor
+        textView.isEditable = false
+        textView.isSelectable = true
+        textView.backgroundColor = .clear
+        textView.drawsBackground = false
+        textView.textContainerInset = .zero
+        textView.textContainer?.lineFragmentPadding = 0
+        textView.isVerticallyResizable = true
+        textView.isHorizontallyResizable = false
+        textView.textContainer?.widthTracksTextView = true
+        scrollView.documentView = textView
+        scrollView.hasVerticalScroller = measuredHeight > maxURLHeight
+        scrollView.hasHorizontalScroller = false
+        scrollView.autohidesScrollers = true
+        scrollView.borderType = .noBorder
+        scrollView.drawsBackground = false
+
+        // Container with explicit frame-based layout
+        let totalHeight = popup.frame.height + 8 + urlHeight
+        let container = NSView(frame: NSRect(x: 0, y: 0, width: containerWidth, height: totalHeight))
+
+        scrollView.frame.origin = .zero
+        popup.frame.origin = NSPoint(x: 0, y: urlHeight + 8)
+
+        container.addSubview(popup)
+        container.addSubview(scrollView)
+
+        alert.accessoryView = container
+        // Force the alert to lay out with the accessory view's size
+        alert.layout()
+
+        let response = alert.runModal()
+        guard response == .alertFirstButtonReturn else { return nil }
+        let index = popup.indexOfSelectedItem
+        guard index >= 0, index < profiles.count else { return nil }
+        return profiles[index]
+    }
+
+    /// Returns a colored circle character for a profile color.
+    private static func colorDot(for color: ProfileColor) -> String {
+        switch color {
+        case .blue:   return "🔵 "
+        case .red:    return "🔴 "
+        case .green:  return "🟢 "
+        case .orange: return "🟠 "
+        case .purple: return "🟣 "
+        case .pink:   return "🩷 "
+        case .teal:   return "🩵 "
+        case .gray:   return "⚪ "
+        }
+    }
+
+    // MARK: - Cross-Profile URL Opening
+
+    /// Handles a request from a guest VM to open a URL in a different profile.
+    @MainActor private func handleOpenInProfile(url: URL) {
+        let profiles = state.profileManager.allProfiles
+        guard !profiles.isEmpty, state.phase == .ready else { return }
+
+        if profiles.count == 1 {
+            // Only one profile — open directly if there's no session for it yet
+            let profile = profiles[0]
+            let existingSession = sessions.first(where: { !$0.closing && $0.profile?.id == profile.id })
+            if let session = existingSession {
+                session.navigateTo(url: url)
+            } else {
+                openNewBrowser(with: profile, initialURL: url)
+            }
+            return
+        }
+
+        guard let chosen = promptProfileForURL(url, profiles: profiles) else { return }
+        let existingSession = sessions.first(where: { !$0.closing && $0.profile?.id == chosen.id })
+        if let session = existingSession {
+            session.navigateTo(url: url)
+        } else {
+            openNewBrowser(with: chosen, initialURL: url)
         }
     }
 
@@ -321,19 +482,25 @@ final class GUIAppDelegate: NSObject, NSApplicationDelegate {
             showMainWindow()
             return
         }
-        let config = state.buildDefaultConfig()
+        var config = state.buildDefaultConfig()
+        if let initialURL {
+            config.homePage = initialURL.absoluteString
+        }
         Task { @MainActor in
             guard let warm = await state.pool?.claim(config: config) else {
                 if let url = initialURL { self.pendingURL = url }
                 self.showMainWindow()
                 return
             }
-            let session = BrowserSession(warmVM: warm, config: config, initialURL: initialURL)
+            let session = BrowserSession(warmVM: warm, config: config)
             session.onClosed = { [weak self] session in
                 guard let self else { return }
                 self.sessions.removeAll { $0 === session }
                 self.state.sessionCount = self.sessions.count
                 self.retiredSessions.append(session)
+            }
+            session.onOpenInProfile = { [weak self] url in
+                self?.handleOpenInProfile(url: url)
             }
             self.sessions.append(session)
             self.state.sessionCount = self.sessions.count
@@ -344,8 +511,9 @@ final class GUIAppDelegate: NSObject, NSApplicationDelegate {
         }
     }
 
-    @MainActor func openNewBrowser(with profile: Profile) {
+    @MainActor func openNewBrowser(with profile: Profile, initialURL: URL? = nil) {
         guard state.pool != nil, state.poolReady else {
+            if let url = initialURL { pendingURL = url }
             showMainWindow()
             return
         }
@@ -404,6 +572,7 @@ final class GUIAppDelegate: NSObject, NSApplicationDelegate {
             let session = BrowserSession(
                 warmVM: warm, config: config,
                 profile: profile,
+                initialURL: initialURL,
                 virusTotalAPIKey: vtKey
             )
             session.onClosed = { [weak self] session in
@@ -411,6 +580,9 @@ final class GUIAppDelegate: NSObject, NSApplicationDelegate {
                 self.sessions.removeAll { $0 === session }
                 self.state.sessionCount = self.sessions.count
                 self.retiredSessions.append(session)
+            }
+            session.onOpenInProfile = { [weak self] url in
+                self?.handleOpenInProfile(url: url)
             }
             self.sessions.append(session)
             self.state.sessionCount = self.sessions.count
@@ -487,16 +659,18 @@ final class BrowserSession {
     let window: NSWindow
     private var vmView: VZVirtualMachineView?
     var onClosed: ((BrowserSession) -> Void)?
+    var onOpenInProfile: ((URL) -> Void)?
     fileprivate var closing = false
     fileprivate var confirmed = false
     private static var windowCount = 0
     private var delegateHelper: SessionDelegateHelper?
     private var fileTransferBridge: FileTransferBridge?
     private var fileDrawerModel: FileDrawerModel?
+    private var linkSenderBridge: LinkSenderBridge?
     private var splitView: NSSplitView?
     private var drawerHost: NSView?
     fileprivate var hasFileTransfer = false
-    private let profile: Profile?
+    fileprivate let profile: Profile?
 
     private var initialURL: URL?
 
@@ -604,6 +778,24 @@ final class BrowserSession {
             window.addTitlebarAccessoryViewController(accessory)
         }
 
+        // Set up link sender bridge (vsock port 5300) for cross-profile URL opening.
+        // Reuse the socket device from file transfer, or grab it fresh.
+        let linkSocketDevice: VZVirtioSocketDevice? = {
+            if let socketDevices = warmVM.vm.socketDevices as? [VZVirtioSocketDevice] {
+                return socketDevices.first
+            }
+            return nil
+        }()
+        if let dev = linkSocketDevice {
+            let bridge = MainActor.assumeIsolated { LinkSenderBridge(socketDevice: dev) }
+            MainActor.assumeIsolated {
+                bridge.onOpenInProfile = { [weak self] url in
+                    self?.onOpenInProfile?(url)
+                }
+            }
+            self.linkSenderBridge = bridge
+        }
+
         let helper = SessionDelegateHelper(session: self)
         self.delegateHelper = helper
         warmVM.vm.delegate = helper
@@ -624,8 +816,11 @@ final class BrowserSession {
     }
 
     /// Navigate to a URL in the running Chromium.
-    /// Launches chromium-browser with the URL — Chromium opens it in a new tab
-    /// of the already-running instance.
+    /// Launches chromium-browser with the URL — Chromium detects the existing
+    /// instance via its singleton lock and opens the URL in a new tab.
+    /// For persistent profiles the --user-data-dir must match the running
+    /// instance, otherwise Chromium looks in the default dir, finds no lock,
+    /// and starts a separate process.
     func navigateTo(url: URL) {
         guard let warmVM else {
             print("[URL] navigateTo: no warmVM")
@@ -633,9 +828,14 @@ final class BrowserSession {
         }
         let urlString = url.absoluteString
         print("[URL] navigateTo: opening \(urlString)")
-        // Running chromium-browser again while an instance is already running
-        // will open the URL in a new tab of the existing instance.
-        let innerCmd = "DISPLAY=:0 chromium-browser " + shellEscape(urlString)
+
+        var chromiumArgs = shellEscape(urlString)
+        if let profile, profile.isPersistent {
+            let userDataDir = "/home/chrome/.\(profile.id.uuidString)"
+            chromiumArgs = "--user-data-dir=\(userDataDir) " + chromiumArgs
+        }
+
+        let innerCmd = "DISPLAY=:0 chromium-browser " + chromiumArgs
         let cmd = "su chrome -c \(shellEscape(innerCmd)) &"
         warmVM.serialInput.fileHandleForWriting.write(Data((cmd + "\n").utf8))
     }
@@ -757,6 +957,8 @@ final class BrowserSession {
             fileTransferBridge?.stop()
             fileTransferBridge = nil
             fileDrawerModel = nil
+            linkSenderBridge?.stop()
+            linkSenderBridge = nil
         }
         detachView()
         delegateHelper = nil
@@ -858,9 +1060,13 @@ struct Init: ParsableCommand {
 
     private func initLinux(dir: URL, diskSizeGB: UInt64) throws {
         let manager = LinuxImageManager(storageDir: dir)
-        if manager.baseImageExists {
-            print("Linux base image already exists.")
-            return
+        if manager.hasImageFiles {
+            print("Removing existing Linux base image...")
+            let fm = FileManager.default
+            try? fm.removeItem(at: manager.linuxDiskURL)
+            try? fm.removeItem(at: manager.linuxKernelURL)
+            try? fm.removeItem(at: manager.linuxInitrdURL)
+            try? fm.removeItem(at: manager.imageVersionURL)
         }
 
         print("=== Bromure: Linux Base Image Creation ===")
@@ -889,8 +1095,11 @@ struct Init: ParsableCommand {
     private func initMacOS(dir: URL, diskSizeGB: UInt64) throws {
         let manager = BaseImageManager(storageDir: dir)
         if manager.baseImageExists {
-            print("macOS base image already exists.")
-            return
+            print("Removing existing macOS base image...")
+            let fm = FileManager.default
+            try? fm.removeItem(at: VMConfig.baseImageURL(in: dir))
+            try? fm.removeItem(at: VMConfig.baseAuxURL(in: dir))
+            try? fm.removeItem(at: VMConfig.baseMetadataURL(in: dir))
         }
 
         print("=== Bromure: macOS Base Image Creation ===")

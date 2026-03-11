@@ -97,11 +97,35 @@ public struct ProfileSettings: Codable, Equatable {
     // Security — phishing
     public var phishingWarning: Bool = false
 
+    // Cross-session
+    public var enableLinkSender: Bool = false
+
     // Advanced
     public var persistent: Bool = false
     public var encryptOnDisk: Bool = false
 
     public init() {}
+
+    // Custom decoder so that adding new fields doesn't break existing profiles.
+    public init(from decoder: Decoder) throws {
+        let c = try decoder.container(keyedBy: CodingKeys.self)
+        let defaults = ProfileSettings()
+        homePage = try c.decodeIfPresent(String.self, forKey: .homePage) ?? defaults.homePage
+        enableGPU = try c.decodeIfPresent(Bool.self, forKey: .enableGPU) ?? defaults.enableGPU
+        enableWebGL = try c.decodeIfPresent(Bool.self, forKey: .enableWebGL) ?? defaults.enableWebGL
+        enableAdBlocking = try c.decodeIfPresent(Bool.self, forKey: .enableAdBlocking) ?? defaults.enableAdBlocking
+        enableWarp = try c.decodeIfPresent(Bool.self, forKey: .enableWarp) ?? defaults.enableWarp
+        enableClipboardSharing = try c.decodeIfPresent(Bool.self, forKey: .enableClipboardSharing) ?? defaults.enableClipboardSharing
+        canUpload = try c.decodeIfPresent(Bool.self, forKey: .canUpload) ?? defaults.canUpload
+        canDownload = try c.decodeIfPresent(Bool.self, forKey: .canDownload) ?? defaults.canDownload
+        virusTotalEnabled = try c.decodeIfPresent(Bool.self, forKey: .virusTotalEnabled) ?? defaults.virusTotalEnabled
+        virusTotalAPIKey = try c.decodeIfPresent(String.self, forKey: .virusTotalAPIKey)
+        blockMalwareSites = try c.decodeIfPresent(Bool.self, forKey: .blockMalwareSites) ?? defaults.blockMalwareSites
+        phishingWarning = try c.decodeIfPresent(Bool.self, forKey: .phishingWarning) ?? defaults.phishingWarning
+        enableLinkSender = try c.decodeIfPresent(Bool.self, forKey: .enableLinkSender) ?? defaults.enableLinkSender
+        persistent = try c.decodeIfPresent(Bool.self, forKey: .persistent) ?? defaults.persistent
+        encryptOnDisk = try c.decodeIfPresent(Bool.self, forKey: .encryptOnDisk) ?? defaults.encryptOnDisk
+    }
 
     /// Convert to a VMConfig for VM creation.
     /// Merges per-profile settings with app-wide hardware settings from UserDefaults.
@@ -132,7 +156,8 @@ public struct ProfileSettings: Codable, Equatable {
             blockMalwareSites: blockMalwareSites,
             enableFileTransfer: canUpload || canDownload,
             phishingWarning: phishingWarning,
-            enableClipboardSharing: enableClipboardSharing
+            enableClipboardSharing: enableClipboardSharing,
+            enableLinkSender: enableLinkSender
         )
     }
 }

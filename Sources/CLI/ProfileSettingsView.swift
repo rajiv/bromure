@@ -136,6 +136,8 @@ struct ProfileSettingsView: View {
                         .help("Block known malware domains using Cloudflare\u{2019}s security DNS.")
                     Toggle("Phishing Warning", isOn: $draft.settings.phishingWarning)
                         .help("Warn when entering passwords on suspicious sites.")
+                    Toggle("Send Link to Other Session", isOn: $draft.settings.enableLinkSender)
+                        .help("Adds a right-click menu to send links to another Bromure profile\u{2019}s session.")
                 }
 
                 // MARK: - Advanced
