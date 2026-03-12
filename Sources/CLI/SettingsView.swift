@@ -1,6 +1,37 @@
 import SwiftUI
 import SandboxEngine
 
+// MARK: - Settings Category
+
+private enum AppSettingsCategory: String, CaseIterable, Identifiable {
+    case hardware = "Hardware"
+    case input = "Input"
+    case display = "Display"
+    case storage = "Storage"
+
+    var id: String { rawValue }
+
+    var icon: String {
+        switch self {
+        case .hardware: "cpu.fill"
+        case .input: "keyboard.fill"
+        case .display: "display"
+        case .storage: "internaldrive.fill"
+        }
+    }
+
+    var iconColor: Color {
+        switch self {
+        case .hardware: .orange
+        case .input: .blue
+        case .display: .purple
+        case .storage: .gray
+        }
+    }
+}
+
+// MARK: - Main View
+
 struct SettingsView: View {
     @AppStorage("vm.memoryGB") private var memoryGB = 2
     @AppStorage("vm.cpuCount") private var cpuCount = 0
@@ -9,6 +40,8 @@ struct SettingsView: View {
     @AppStorage("vm.appearance") private var appearance = "system"
 
     var state: AppState?
+
+    @State private var selectedCategory: AppSettingsCategory = .hardware
     @State private var showResetConfirm = false
     @State private var showRebuildConfirm = false
     @State private var pendingKeyboard: String?
@@ -55,100 +88,40 @@ struct SettingsView: View {
     ]
 
     var body: some View {
-        Form {
-            Section("Virtual Machine") {
-                Picker("Memory", selection: $memoryGB) {
-                    Text("1 GB").tag(1)
-                    Text("2 GB").tag(2)
-                    Text("4 GB").tag(4)
-                    Text("8 GB").tag(8)
-                    Text("16 GB").tag(16)
+        HStack(spacing: 0) {
+            // Sidebar
+            List(AppSettingsCategory.allCases, selection: $selectedCategory) { category in
+                Label {
+                    Text(category.rawValue)
+                } icon: {
+                    Image(systemName: category.icon)
+                        .font(.system(size: 12))
+                        .foregroundStyle(.white)
+                        .frame(width: 22, height: 22)
+                        .background(category.iconColor.gradient, in: RoundedRectangle(cornerRadius: 5))
                 }
-                .help("RAM allocated to the VM. 2 GB is recommended for most browsing.")
-
-                Picker("CPU Cores", selection: $cpuCount) {
-                    Text("Automatic (\(autoCPU))").tag(0)
-                    ForEach(1...ProcessInfo.processInfo.processorCount, id: \.self) { n in
-                        Text("\(n)").tag(n)
-                    }
-                }
-
+                .tag(category)
             }
+            .listStyle(.sidebar)
+            .frame(width: 160)
 
-            Section("Input") {
-                Picker("Keyboard Layout", selection: $keyboardLayout) {
-                    ForEach(Self.keyboardLayouts, id: \.value) { layout in
-                        Text(layout.label).tag(layout.value)
-                    }
-                }
-                .onChange(of: keyboardLayout) { _, newValue in
-                    let current = state?.currentKeyboardLayout ?? "us"
-                    if newValue != current {
-                        pendingKeyboard = newValue
-                        showRebuildConfirm = true
-                    }
-                }
+            Divider()
 
-                Toggle("Natural Scrolling", isOn: $naturalScrolling)
-                    .help("Match macOS trackpad scroll direction.")
-                    .onChange(of: naturalScrolling) { _, newValue in
-                        let current = state?.currentNaturalScrolling ?? true
-                        if newValue != current {
-                            pendingScrolling = newValue
-                            showRebuildConfirm = true
-                        }
-                    }
-
-                Toggle("Use Command as Control", isOn: $swapCmdCtrl)
-                    .help("Swap Command and Control keys so macOS shortcuts work in Chromium.")
-            }
-
-            Section("Display") {
-                Picker("Scale Factor", selection: $displayScale) {
-                    Text("1x (Standard)").tag(1)
-                    Text("2x (Retina)").tag(2)
-                }
-                .help("Match your Mac's display scaling. Use 2x for Retina displays.")
-                .onChange(of: displayScale) { _, newValue in
-                    let current = state?.currentDisplayScale ?? 2
-                    if newValue != current {
-                        pendingDisplayScale = newValue
-                        showRebuildConfirm = true
-                    }
-                }
-
-                Picker("Appearance", selection: $appearance) {
-                    Text("Same as System").tag("system")
-                    Text("Light").tag("light")
-                    Text("Dark").tag("dark")
-                }
-                .help("Controls Chromium's color scheme in the VM.")
-            }
-
-            Section("Storage") {
-                LabeledContent("Disk Usage") {
-                    Text(state?.diskUsage ?? "\u{2014}")
-                        .foregroundStyle(.secondary)
-                }
-                LabeledContent("Location") {
-                    Text(VMConfig.defaultStorageDirectory.path)
-                        .foregroundStyle(.secondary)
-                        .lineLimit(1)
-                        .truncationMode(.middle)
-                }
-
-                Button("Delete Base Image & Reset...", role: .destructive) {
-                    showResetConfirm = true
-                }
+            // Detail
+            ScrollView {
+                detailView
+                    .padding(24)
+                    .frame(maxWidth: .infinity, alignment: .leading)
             }
         }
-        .formStyle(.grouped)
-        .frame(width: 450, height: 480)
+        .frame(width: 620, height: 440)
         .onAppear {
             keyboardLayout = state?.currentKeyboardLayout ?? VMConfig.detectKeyboardLayout()
             naturalScrolling = state?.currentNaturalScrolling ?? VMConfig.detectNaturalScrolling()
             displayScale = state?.currentDisplayScale ?? VMConfig.detectDisplayScale()
         }
+        .onChange(of: memoryGB) { _, _ in state?.restartPool() }
+        .onChange(of: cpuCount) { _, _ in state?.restartPool() }
         .confirmationDialog(
             "Delete the base image?",
             isPresented: $showResetConfirm,
@@ -191,14 +164,240 @@ struct SettingsView: View {
         } message: {
             Text("Changing this setting requires rebuilding the base image. All open browser windows will be closed and any unsaved data will be lost.")
         }
+    }
 
-        .onChange(of: memoryGB) { _, _ in state?.restartPool() }
-        .onChange(of: cpuCount) { _, _ in state?.restartPool() }
+    // MARK: - Detail Router
 
+    @ViewBuilder
+    private var detailView: some View {
+        switch selectedCategory {
+        case .hardware: hardwareView
+        case .input: inputView
+        case .display: displayView
+        case .storage: storageView
+        }
+    }
 
-        Text("Changes restart the pre-warmed VM.")
-            .font(.caption2)
-            .foregroundStyle(.tertiary)
-            .padding(.bottom, 8)
+    // MARK: - Hardware
+
+    private var hardwareView: some View {
+        VStack(alignment: .leading, spacing: 20) {
+            sectionHeader("Hardware", subtitle: "Resources allocated to each browser session")
+
+            VStack(alignment: .leading, spacing: 6) {
+                Text("Memory").font(.headline)
+                Text("How much RAM each browser gets. 2 GB works for most websites. Increase to 4 GB or more for heavy web apps.")
+                    .settingDescription()
+                Picker("", selection: $memoryGB) {
+                    Text("1 GB").tag(1)
+                    Text("2 GB").tag(2)
+                    Text("4 GB").tag(4)
+                    Text("8 GB").tag(8)
+                    Text("16 GB").tag(16)
+                }
+                .labelsHidden()
+                .frame(width: 200)
+            }
+
+            settingsDivider
+
+            VStack(alignment: .leading, spacing: 6) {
+                Text("CPU Cores").font(.headline)
+                Text("Number of processor cores available to the browser. Automatic uses half of your Mac\u{2019}s cores, which is a good balance between browser speed and Mac performance.")
+                    .settingDescription()
+                Picker("", selection: $cpuCount) {
+                    Text("Automatic (\(autoCPU))").tag(0)
+                    ForEach(1...ProcessInfo.processInfo.processorCount, id: \.self) { n in
+                        Text("\(n)").tag(n)
+                    }
+                }
+                .labelsHidden()
+                .frame(width: 200)
+            }
+
+            Spacer()
+
+            Text("Changes take effect when the next browser session starts.")
+                .font(.caption)
+                .foregroundStyle(.tertiary)
+        }
+    }
+
+    // MARK: - Input
+
+    private var inputView: some View {
+        VStack(alignment: .leading, spacing: 20) {
+            sectionHeader("Input", subtitle: "Keyboard and trackpad settings")
+
+            VStack(alignment: .leading, spacing: 6) {
+                Text("Keyboard Layout").font(.headline)
+                Text("Match this to your physical keyboard. Changing the layout requires rebuilding the base image.")
+                    .settingDescription()
+                Picker("", selection: $keyboardLayout) {
+                    ForEach(Self.keyboardLayouts, id: \.value) { layout in
+                        Text(layout.label).tag(layout.value)
+                    }
+                }
+                .labelsHidden()
+                .frame(width: 250)
+                .onChange(of: keyboardLayout) { _, newValue in
+                    let current = state?.currentKeyboardLayout ?? "us"
+                    if newValue != current {
+                        pendingKeyboard = newValue
+                        showRebuildConfirm = true
+                    }
+                }
+            }
+
+            settingsDivider
+
+            settingToggle(
+                "Natural Scrolling",
+                description: "Scroll content in the same direction as your finger moves on the trackpad, matching the macOS default.",
+                isOn: $naturalScrolling
+            )
+            .onChange(of: naturalScrolling) { _, newValue in
+                let current = state?.currentNaturalScrolling ?? true
+                if newValue != current {
+                    pendingScrolling = newValue
+                    showRebuildConfirm = true
+                }
+            }
+
+            settingsDivider
+
+            settingToggle(
+                "Use Command as Control",
+                description: "Makes familiar shortcuts like \u{2318}C, \u{2318}V, and \u{2318}T work inside the browser by swapping the Command and Control keys.",
+                isOn: $swapCmdCtrl
+            )
+        }
+    }
+
+    // MARK: - Display
+
+    private var displayView: some View {
+        VStack(alignment: .leading, spacing: 20) {
+            sectionHeader("Display", subtitle: "Screen and appearance settings")
+
+            VStack(alignment: .leading, spacing: 6) {
+                Text("Scale Factor").font(.headline)
+                Text("Match your Mac\u{2019}s display. Use 2x for Retina screens (most modern Macs). Changing this requires rebuilding the base image.")
+                    .settingDescription()
+                Picker("", selection: $displayScale) {
+                    Text("1x (Standard)").tag(1)
+                    Text("2x (Retina)").tag(2)
+                }
+                .labelsHidden()
+                .frame(width: 200)
+                .onChange(of: displayScale) { _, newValue in
+                    let current = state?.currentDisplayScale ?? 2
+                    if newValue != current {
+                        pendingDisplayScale = newValue
+                        showRebuildConfirm = true
+                    }
+                }
+            }
+
+            settingsDivider
+
+            VStack(alignment: .leading, spacing: 6) {
+                Text("Appearance").font(.headline)
+                Text("Controls whether the browser uses a light or dark color scheme. \u{201c}Same as System\u{201d} follows your Mac\u{2019}s current setting.")
+                    .settingDescription()
+                Picker("", selection: $appearance) {
+                    Text("Same as System").tag("system")
+                    Text("Light").tag("light")
+                    Text("Dark").tag("dark")
+                }
+                .labelsHidden()
+                .frame(width: 200)
+            }
+        }
+    }
+
+    // MARK: - Storage
+
+    private var storageView: some View {
+        VStack(alignment: .leading, spacing: 20) {
+            sectionHeader("Storage", subtitle: "Disk usage and base image management")
+
+            VStack(alignment: .leading, spacing: 8) {
+                Text("Disk Usage").font(.headline)
+                Text("Total disk space used by the base image and all profile data.")
+                    .settingDescription()
+
+                HStack {
+                    Text(state?.diskUsage ?? "\u{2014}")
+                        .font(.system(.title3, design: .rounded).bold())
+                }
+            }
+
+            settingsDivider
+
+            VStack(alignment: .leading, spacing: 8) {
+                Text("Storage Location").font(.headline)
+                Text(VMConfig.defaultStorageDirectory.path)
+                    .font(.callout.monospaced())
+                    .foregroundStyle(.secondary)
+                    .lineLimit(1)
+                    .truncationMode(.middle)
+                    .textSelection(.enabled)
+            }
+
+            settingsDivider
+
+            VStack(alignment: .leading, spacing: 8) {
+                Text("Reset").font(.headline)
+                Text("Delete the Linux base image. You\u{2019}ll need to run the initial setup again. This does not delete your profile data or settings.")
+                    .settingDescription()
+
+                Button("Delete Base Image & Reset\u{2026}", role: .destructive) {
+                    showResetConfirm = true
+                }
+                .controlSize(.small)
+            }
+        }
+    }
+
+    // MARK: - Reusable Components
+
+    private func sectionHeader(_ title: String, subtitle: String) -> some View {
+        VStack(alignment: .leading, spacing: 2) {
+            Text(title)
+                .font(.title2.bold())
+            Text(subtitle)
+                .font(.subheadline)
+                .foregroundStyle(.secondary)
+        }
+        .padding(.bottom, 4)
+    }
+
+    private var settingsDivider: some View {
+        Divider().padding(.vertical, 2)
+    }
+
+    private func settingToggle(
+        _ title: String,
+        description: String,
+        isOn: Binding<Bool>
+    ) -> some View {
+        VStack(alignment: .leading, spacing: 4) {
+            Toggle(title, isOn: isOn)
+            Text(description)
+                .settingDescription()
+                .padding(.leading, 20)
+        }
+    }
+}
+
+// MARK: - Text Style Extension
+
+private extension Text {
+    func settingDescription() -> some View {
+        self
+            .font(.callout)
+            .foregroundStyle(.secondary)
+            .fixedSize(horizontal: false, vertical: true)
     }
 }
