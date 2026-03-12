@@ -391,7 +391,7 @@ struct MainView: View {
                 },
                 onShowWarpEULA: onShowWarpEULA
             )
-            .frame(width: 420, height: 560)
+            .frame(width: 680, height: 560)
         }
 
         .confirmationDialog(
