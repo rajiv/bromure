@@ -198,6 +198,7 @@ struct SettingsView: View {
                 Picker("", selection: $memoryGB) {
                     Text("1 GB").tag(1)
                     Text("2 GB").tag(2)
+                    Text("3 GB").tag(3)
                     Text("4 GB").tag(4)
                     Text("8 GB").tag(8)
                     Text("16 GB").tag(16)

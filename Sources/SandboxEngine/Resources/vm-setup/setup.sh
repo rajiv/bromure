@@ -362,6 +362,15 @@ chroot /mnt sh -c 'mkinitfs $(ls /lib/modules/)'
 cat "$SCRIPT_DIR/configs/modules" >> /mnt/etc/modules
 
 # ---------------------------------------------------------------------------
+# Swap file (1 GB)
+# ---------------------------------------------------------------------------
+
+dd if=/dev/zero of=/mnt/swap bs=1M count=1024
+chmod 600 /mnt/swap
+mkswap /mnt/swap
+chroot /mnt rc-update add swap boot
+
+# ---------------------------------------------------------------------------
 # Cleanup and finish
 # ---------------------------------------------------------------------------
 

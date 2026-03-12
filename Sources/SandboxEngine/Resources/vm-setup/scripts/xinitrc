@@ -46,3 +46,4 @@ echo "xinitrc: EXTRA_FLAGS=$EXTRA_FLAGS CHROME_URL=$CHROME_URL SWAP_CMD_CTRL=$SW
 export LIBGL_ALWAYS_SOFTWARE=1
 chromium-browser --no-first-run --start-maximized --force-device-scale-factor=%%DISPLAY_SCALE%% --use-gl=angle --use-angle=gl --ignore-gpu-blocklist --enable-gpu-rasterization --enable-smooth-scrolling --enable-zero-copy --disable-vulkan --in-process-gpu $EXTRA_FLAGS $CHROME_URL
 doas poweroff
+
