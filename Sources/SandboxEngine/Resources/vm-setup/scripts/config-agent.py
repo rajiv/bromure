@@ -265,10 +265,7 @@ def main():
     os.makedirs("/tmp/bromure", exist_ok=True)
 
     # Connect to host on vsock (retry until host listener is ready).
-    # Pre-warmed VMs may sit idle for hours/days before being claimed,
-    # so we back off aggressively to avoid wasting CPU.
     sock = None
-    attempt = 0
     while True:
         try:
             s = socket.socket(socket.AF_VSOCK, socket.SOCK_STREAM)
@@ -277,14 +274,7 @@ def main():
             break
         except (ConnectionRefusedError, ConnectionResetError, OSError):
             s.close()
-            attempt += 1
-            # Fast retries for 3s, then 1s for 30s, then settle at 5s
-            if attempt < 30:
-                time.sleep(0.1)
-            elif attempt < 60:
-                time.sleep(1.0)
-            else:
-                time.sleep(5.0)
+            time.sleep(0.1)
     print("config-agent: connected to host", file=sys.stderr)
 
     # Read length-prefixed JSON: [u32be length][json payload]
