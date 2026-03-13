@@ -357,6 +357,7 @@ struct MainView: View {
                         let trimmed = newProfileName.trimmingCharacters(in: .whitespaces)
                         guard !trimmed.isEmpty else { return }
                         var settings = ProfileSettings()
+                        settings.persistent = true
                         settings.enableClipboardSharing = true
                         settings.enableLinkSender = true
                         let profile = state.profileManager.createProfile(

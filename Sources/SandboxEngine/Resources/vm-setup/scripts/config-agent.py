@@ -143,6 +143,10 @@ def write_chrome_env(cfg):
         extra_flags.append("--force-webrtc-ip-handling-policy=disable_non_proxied_udp")
         extra_flags.append("--enforce-webrtc-ip-permission-check")
 
+    app_version = cfg.get("appVersion", "")
+    if app_version:
+        extra_flags.append(f"--append-user-agent=Bromure/{app_version}")
+
     if enable_features:
         extra_flags.append(f"--enable-features={','.join(enable_features)}")
     if disable_features:

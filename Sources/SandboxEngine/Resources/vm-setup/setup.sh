@@ -170,6 +170,13 @@ install_config configs/sysctl-warp.conf    /mnt/etc/sysctl.d/warp.conf
 install_config configs/network-interfaces /mnt/etc/network/interfaces
 install_config configs/fstab              /mnt/etc/fstab
 
+# Font rendering (match macOS Core Text: no hinting, stem darkening, SF Pro default)
+install_config configs/fontconfig-local.conf /mnt/etc/fonts/local.conf
+
+# GTK3 settings (Chromium reads these for its UI chrome font)
+mkdir -p /mnt/home/chrome/.config/gtk-3.0
+install_config configs/gtk3-settings.ini /mnt/home/chrome/.config/gtk-3.0/settings.ini
+
 # ---------------------------------------------------------------------------
 # Configuration files (templated)
 # ---------------------------------------------------------------------------
@@ -255,6 +262,23 @@ install_config configs/openbox-menu.xml /mnt/home/chrome/.config/openbox/menu.xm
 mkdir -p /mnt/home/chrome/.config/chromium/Default
 install_config configs/chromium-preferences.json /mnt/home/chrome/.config/chromium/Default/Preferences
 chroot /mnt chown -R chrome:chrome /home/chrome/.config /home/chrome/.cache
+
+# ---------------------------------------------------------------------------
+# macOS fonts (shared from host via VirtioFS for web rendering parity)
+# ---------------------------------------------------------------------------
+
+mkdir -p /mnt/usr/share/fonts/macos
+for tag in fonts userfonts; do
+    FMNT="/tmp/$tag"
+    mkdir -p "$FMNT"
+    mount -t virtiofs "$tag" "$FMNT" 2>/dev/null || continue
+    # Copy TrueType, OpenType, and TrueType Collection fonts (skip .dfont — Linux can't use them)
+    find "$FMNT" -type f \( -iname '*.ttf' -o -iname '*.otf' -o -iname '*.ttc' \) \
+        -exec cp {} /mnt/usr/share/fonts/macos/ \;
+    umount "$FMNT"
+done
+MACOS_FONT_COUNT=$(find /mnt/usr/share/fonts/macos/ -type f 2>/dev/null | wc -l)
+echo "Copied $MACOS_FONT_COUNT macOS font files"
 
 # Pre-compute font cache so X11/Chromium don't scan fonts on first boot
 chroot /mnt fc-cache -f

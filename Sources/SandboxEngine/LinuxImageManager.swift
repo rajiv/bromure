@@ -11,7 +11,7 @@ import Virtualization
 /// - virtio drivers for GPU, network, and disk
 public final class LinuxImageManager {
     /// Bump this to force a rebuild of the base image on next launch.
-    public static let imageVersion = "10"
+    public static let imageVersion = "11"
 
     private let storageDir: URL
 
@@ -489,6 +489,36 @@ public final class LinuxImageManager {
         vzConfig.keyboards = [VZUSBKeyboardConfiguration()]
         vzConfig.pointingDevices = [VZUSBScreenCoordinatePointingDeviceConfiguration()]
 
+        // VirtioFS shares — replace slow base64-over-serial file transfer
+        guard let setupDir = Self.resourceBundle.url(forResource: "vm-setup", withExtension: nil) else {
+            throw SandboxError.diskCreationFailed("vm-setup resources not found in bundle")
+        }
+        let setupFS = VZVirtioFileSystemDeviceConfiguration(tag: "setup")
+        setupFS.share = VZSingleDirectoryShare(
+            directory: VZSharedDirectory(url: setupDir, readOnly: true)
+        )
+
+        // Share macOS system fonts so the guest renders pages identically
+        let systemFontsURL = URL(fileURLWithPath: "/System/Library/Fonts")
+        let fontsFS = VZVirtioFileSystemDeviceConfiguration(tag: "fonts")
+        fontsFS.share = VZSingleDirectoryShare(
+            directory: VZSharedDirectory(url: systemFontsURL, readOnly: true)
+        )
+
+        var shares: [VZDirectorySharingDeviceConfiguration] = [setupFS, fontsFS]
+
+        // Also share /Library/Fonts (user-installed fonts) if present
+        let userFontsURL = URL(fileURLWithPath: "/Library/Fonts")
+        if FileManager.default.fileExists(atPath: userFontsURL.path) {
+            let userFontsFS = VZVirtioFileSystemDeviceConfiguration(tag: "userfonts")
+            userFontsFS.share = VZSingleDirectoryShare(
+                directory: VZSharedDirectory(url: userFontsURL, readOnly: true)
+            )
+            shares.append(userFontsFS)
+        }
+
+        vzConfig.directorySharingDevices = shares
+
         try vzConfig.validate()
 
         let vm = VZVirtualMachine(configuration: vzConfig)
@@ -544,27 +574,14 @@ public final class LinuxImageManager {
         writer.write(Data("root\n".utf8))
         try await consoleOutput.waitFor(marker: "localhost:~#", timeout: 30, progress: progress)
 
-        progress(.message("Transferring setup files..."))
+        progress(.message("Mounting setup files via VirtioFS..."))
 
-        // Create a tar.gz archive of the bundled vm-setup resources and
-        // transfer it to the installer VM via base64 over serial.
-        let archive = try Self.createSetupArchive()
-        let base64 = archive.base64EncodedString()
-        let chunkSize = 800
-        writer.write(Data("mkdir -p /tmp/vm-setup\n".utf8))
+        // Mount the vm-setup resources shared from the host via VirtioFS.
+        // This replaces the old base64-over-serial transfer which was very slow.
+        writer.write(Data("modprobe virtiofs\n".utf8))
         try await consoleOutput.waitFor(marker: "localhost:~#", timeout: 30, progress: progress)
-        var offset = base64.startIndex
-        while offset < base64.endIndex {
-            let end = base64.index(offset, offsetBy: chunkSize, limitedBy: base64.endIndex) ?? base64.endIndex
-            let chunk = base64[offset..<end]
-            writer.write(Data("echo '\(chunk)' >> /tmp/s.b64\n".utf8))
-            try await consoleOutput.waitFor(marker: "localhost:~#", timeout: 30, progress: progress)
-            offset = end
-        }
-        writer.write(Data("base64 -d /tmp/s.b64 | tar xz -C /tmp\n".utf8))
-        try await consoleOutput.waitFor(marker: "localhost:~#", timeout: 30, progress: progress)
-        writer.write(Data("rm -f /tmp/s.b64\n".utf8))
-        try await consoleOutput.waitFor(marker: "localhost:~#", timeout: 30, progress: progress)
+        writer.write(Data("mkdir -p /tmp/vm-setup && mount -t virtiofs setup /tmp/vm-setup\n".utf8))
+        try await consoleOutput.waitFor(marker: "localhost:~#", timeout: 60, progress: progress)
 
         progress(.message("Running setup script (installing packages)"))
 
@@ -704,30 +721,6 @@ public final class LinuxImageManager {
         }
         try? FileManager.default.removeItem(at: initrdDest)
         try initrdData.write(to: initrdDest)
-    }
-
-    /// Create a tar.gz archive of the bundled vm-setup resources.
-    private static func createSetupArchive() throws -> Data {
-        guard let setupDir = Self.resourceBundle.url(forResource: "vm-setup", withExtension: nil) else {
-            throw SandboxError.diskCreationFailed("vm-setup resources not found in bundle")
-        }
-        let tempTar = FileManager.default.temporaryDirectory
-            .appendingPathComponent("vm-setup-\(UUID().uuidString).tar.gz")
-        defer { try? FileManager.default.removeItem(at: tempTar) }
-
-        let process = Process()
-        process.executableURL = URL(fileURLWithPath: "/usr/bin/tar")
-        process.arguments = [
-            "-czf", tempTar.path,
-            "-C", setupDir.deletingLastPathComponent().path,
-            setupDir.lastPathComponent,
-        ]
-        try process.run()
-        process.waitUntilExit()
-        guard process.terminationStatus == 0 else {
-            throw SandboxError.diskCreationFailed("Failed to create setup archive (tar exit \(process.terminationStatus))")
-        }
-        return try Data(contentsOf: tempTar)
     }
 
     /// Escape a string for safe use in a shell command.

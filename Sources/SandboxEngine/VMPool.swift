@@ -285,6 +285,11 @@ public final class VMPool {
         if !config.rootCAs.isEmpty { cfg["rootCAs"] = config.rootCAs }
         cfg["locale"] = config.locale
 
+        // App version for user-agent suffix
+        if let version = Bundle.main.infoDictionary?["CFBundleVersion"] as? String {
+            cfg["appVersion"] = version
+        }
+
         // Send config to guest via vsock.
         // Host listens on port 5000; guest config-agent.py connects to it.
         guard let socketDevice = warm.vm.socketDevices.first as? VZVirtioSocketDevice else {
