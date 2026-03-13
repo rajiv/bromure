@@ -886,6 +886,23 @@ final class BrowserSession {
             }
             self.filePickerBridge = fpBridge
 
+            // Wire drag hover: notify guest extension so it can highlight dropzones
+            dropTarget.onDragEnter = { [weak self] guestX, guestY in
+                MainActor.assumeIsolated {
+                    self?.filePickerBridge?.sendDragEnter(guestX: guestX, guestY: guestY)
+                }
+            }
+            dropTarget.onDragMove = { [weak self] guestX, guestY in
+                MainActor.assumeIsolated {
+                    self?.filePickerBridge?.sendDragMove(guestX: guestX, guestY: guestY)
+                }
+            }
+            dropTarget.onDragExit = { [weak self] in
+                MainActor.assumeIsolated {
+                    self?.filePickerBridge?.sendDragExit()
+                }
+            }
+
             // Wire drag-and-drop: send files via port 5100, metadata via port 5600
             dropTarget.onDrop = { [weak self] urls, guestX, guestY in
                 MainActor.assumeIsolated {
@@ -1396,6 +1413,13 @@ private final class VMDropTargetView: NSView {
     private let displayWidth: Int
     private let displayHeight: Int
     var onDrop: (([URL], Int, Int) -> Void)?
+    var onDragEnter: ((Int, Int) -> Void)?
+    var onDragMove: ((Int, Int) -> Void)?
+    var onDragExit: (() -> Void)?
+
+    /// Throttle draggingUpdated to avoid flooding the vsock channel.
+    private var lastMoveTime: CFAbsoluteTime = 0
+    private static let moveThrottleInterval: CFAbsoluteTime = 0.05 // 50ms
 
     init(vmView: NSView, displayWidth: Int, displayHeight: Int) {
         self.displayWidth = displayWidth
@@ -1415,8 +1439,33 @@ private final class VMDropTargetView: NSView {
 
     required init?(coder: NSCoder) { fatalError() }
 
-    override func draggingEntered(_ sender: NSDraggingInfo) -> NSDragOperation { .copy }
-    override func draggingUpdated(_ sender: NSDraggingInfo) -> NSDragOperation { .copy }
+    private func guestCoordinates(from sender: NSDraggingInfo) -> (Int, Int) {
+        let pt = convert(sender.draggingLocation, from: nil)
+        let guestX = Int(pt.x * CGFloat(displayWidth) / bounds.width)
+        let guestY = Int((bounds.height - pt.y) * CGFloat(displayHeight) / bounds.height)
+        return (guestX, guestY)
+    }
+
+    override func draggingEntered(_ sender: NSDraggingInfo) -> NSDragOperation {
+        let (x, y) = guestCoordinates(from: sender)
+        onDragEnter?(x, y)
+        lastMoveTime = CFAbsoluteTimeGetCurrent()
+        return .copy
+    }
+
+    override func draggingUpdated(_ sender: NSDraggingInfo) -> NSDragOperation {
+        let now = CFAbsoluteTimeGetCurrent()
+        if now - lastMoveTime >= Self.moveThrottleInterval {
+            let (x, y) = guestCoordinates(from: sender)
+            onDragMove?(x, y)
+            lastMoveTime = now
+        }
+        return .copy
+    }
+
+    override func draggingExited(_ sender: NSDraggingInfo?) {
+        onDragExit?()
+    }
 
     override func performDragOperation(_ sender: NSDraggingInfo) -> Bool {
         guard let urls = sender.draggingPasteboard.readObjects(
@@ -1424,11 +1473,7 @@ private final class VMDropTargetView: NSView {
             options: [.urlReadingFileURLsOnly: true]
         ) as? [URL], !urls.isEmpty else { return false }
 
-        // Convert NSView coordinates (origin bottom-left) to guest screen pixels (origin top-left)
-        let pt = convert(sender.draggingLocation, from: nil)
-        let guestX = Int(pt.x * CGFloat(displayWidth) / bounds.width)
-        let guestY = Int((bounds.height - pt.y) * CGFloat(displayHeight) / bounds.height)
-
+        let (guestX, guestY) = guestCoordinates(from: sender)
         onDrop?(urls, guestX, guestY)
         return true
     }

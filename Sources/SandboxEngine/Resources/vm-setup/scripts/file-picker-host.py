@@ -235,6 +235,10 @@ def run(sock):
                         # Host-initiated drag-and-drop
                         handle_drop(vmsg)
 
+                    elif msg_type in ("drag_enter", "drag_move", "drag_exit"):
+                        # Drag hover events — forward directly to Chrome
+                        nm_write(vmsg)
+
 
 def main():
     signal.signal(signal.SIGTERM, lambda *_: sys.exit(0))

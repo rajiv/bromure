@@ -19,6 +19,9 @@ const NATIVE_HOST = "com.bromure.file_picker";
 let nativePort = null;
 const pendingRequests = new Map(); // requestId -> { tabId, frameId }
 
+// Drag hover state — keeps debugger attached between dragEnter and drop/dragExit
+let dragState = null; // { tabId, dpr, toolbarHeight }
+
 function connectNative() {
   try {
     nativePort = chrome.runtime.connectNative(NATIVE_HOST);
@@ -35,6 +38,12 @@ function connectNative() {
       await handlePickResult(msg);
     } else if (msg.type === "drop") {
       await handleDrop(msg);
+    } else if (msg.type === "drag_enter") {
+      await handleDragEnter(msg);
+    } else if (msg.type === "drag_move") {
+      await handleDragMove(msg);
+    } else if (msg.type === "drag_exit") {
+      await handleDragExit();
     }
   });
 
@@ -117,9 +126,125 @@ async function handlePickResult(msg) {
   }
 }
 
+// MARK: - Drag hover handlers
+
+/**
+ * Convert guest screen pixel coordinates to CSS viewport coordinates.
+ * Requires dpr and toolbarHeight (cached in dragState or passed in).
+ */
+function toViewport(screenX, screenY, dpr, toolbarHeight) {
+  return {
+    x: Math.round(screenX / dpr),
+    y: Math.round(screenY / dpr) - toolbarHeight,
+  };
+}
+
+/**
+ * Attach the debugger to the active tab and cache viewport info for drag hover.
+ * Returns the target { tabId } or null if no active tab.
+ */
+async function attachForDrag() {
+  const [tab] = await chrome.tabs.query({ active: true, currentWindow: true });
+  if (!tab) return null;
+
+  const target = { tabId: tab.id };
+  try {
+    await chrome.debugger.attach(target, "1.3");
+  } catch (e) {
+    // May already be attached (e.g. from a prior hover that didn't clean up)
+    if (!e.message?.includes("Already attached")) {
+      console.error("[FilePicker] drag attach error:", e.message);
+      return null;
+    }
+  }
+
+  const evalResult = await chrome.debugger.sendCommand(target, "Runtime.evaluate", {
+    expression: "JSON.stringify({ dpr: window.devicePixelRatio, chrome: window.outerHeight - window.innerHeight })",
+  });
+  const info = JSON.parse(evalResult.result.value);
+
+  dragState = {
+    tabId: tab.id,
+    dpr: info.dpr || 1,
+    toolbarHeight: info.chrome || 0,
+  };
+  return target;
+}
+
+/**
+ * Detach the debugger and clear drag state.
+ */
+async function detachDrag() {
+  if (!dragState) return;
+  const target = { tabId: dragState.tabId };
+  dragState = null;
+  try { await chrome.debugger.detach(target); } catch (_) {}
+}
+
+/** Placeholder drag data used during hover (no real files yet). */
+const hoverDragData = {
+  items: [{ mimeType: "application/octet-stream", data: "" }],
+  files: [],
+  dragOperationsMask: 1,
+};
+
+async function handleDragEnter(msg) {
+  const target = await attachForDrag();
+  if (!target || !dragState) return;
+
+  const vp = toViewport(msg.x, msg.y, dragState.dpr, dragState.toolbarHeight);
+  if (vp.y < 0) return;
+
+  try {
+    await chrome.debugger.sendCommand(target, "Input.dispatchDragEvent", {
+      type: "dragEnter", x: vp.x, y: vp.y, data: hoverDragData,
+    });
+    await chrome.debugger.sendCommand(target, "Input.dispatchDragEvent", {
+      type: "dragOver", x: vp.x, y: vp.y, data: hoverDragData,
+    });
+  } catch (e) {
+    console.error("[FilePicker] dragEnter error:", e.message);
+    await detachDrag();
+  }
+}
+
+async function handleDragMove(msg) {
+  if (!dragState) return;
+
+  const target = { tabId: dragState.tabId };
+  const vp = toViewport(msg.x, msg.y, dragState.dpr, dragState.toolbarHeight);
+  if (vp.y < 0) return;
+
+  try {
+    await chrome.debugger.sendCommand(target, "Input.dispatchDragEvent", {
+      type: "dragOver", x: vp.x, y: vp.y, data: hoverDragData,
+    });
+  } catch (e) {
+    console.error("[FilePicker] dragMove error:", e.message);
+    await detachDrag();
+  }
+}
+
+async function handleDragExit() {
+  if (!dragState) return;
+
+  const target = { tabId: dragState.tabId };
+  try {
+    await chrome.debugger.sendCommand(target, "Input.dispatchDragEvent", {
+      type: "dragLeave", x: 0, y: 0, data: hoverDragData,
+    });
+  } catch (e) {
+    console.error("[FilePicker] dragExit error:", e.message);
+  }
+  await detachDrag();
+}
+
+// MARK: - Drop handler
+
 /**
  * Handle a drop message from the native host (drag-and-drop flow).
  * Dispatches CDP drag events at the given coordinates with the file paths.
+ * Reuses the debugger session from hover if one is active.
  */
 async function handleDrop(msg) {
   const filePaths = msg.files; // array of "/home/chrome/..." paths
@@ -128,30 +253,44 @@ async function handleDrop(msg) {
 
   console.log("[FilePicker] drop:", filePaths.length, "file(s) at screen", screenX, screenY);
 
-  // Find the active tab to dispatch the drop on
-  const [tab] = await chrome.tabs.query({ active: true, currentWindow: true });
-  if (!tab) {
-    console.warn("[FilePicker] drop: no active tab");
-    return;
-  }
+  // Reuse debugger from hover, or attach fresh
+  let target;
+  let dpr, toolbarHeight;
+  const hadDragState = !!dragState;
 
-  const target = { tabId: tab.id };
-  try {
-    await chrome.debugger.attach(target, "1.3");
+  if (dragState) {
+    target = { tabId: dragState.tabId };
+    dpr = dragState.dpr;
+    toolbarHeight = dragState.toolbarHeight;
+    dragState = null; // consume the state
+  } else {
+    const [tab] = await chrome.tabs.query({ active: true, currentWindow: true });
+    if (!tab) {
+      console.warn("[FilePicker] drop: no active tab");
+      return;
+    }
+    target = { tabId: tab.id };
+    try {
+      await chrome.debugger.attach(target, "1.3");
+    } catch (e) {
+      if (!e.message?.includes("Already attached")) {
+        console.error("[FilePicker] drop attach error:", e.message);
+        return;
+      }
+    }
 
-    // Query device pixel ratio and toolbar height to convert
-    // guest screen coordinates to CSS viewport coordinates.
     const evalResult = await chrome.debugger.sendCommand(target, "Runtime.evaluate", {
       expression: "JSON.stringify({ dpr: window.devicePixelRatio, chrome: window.outerHeight - window.innerHeight })",
     });
     const info = JSON.parse(evalResult.result.value);
-    const dpr = info.dpr || 1;
-    const toolbarHeight = info.chrome || 0;
+    dpr = info.dpr || 1;
+    toolbarHeight = info.chrome || 0;
+  }
 
-    // Convert guest screen pixels to CSS viewport coordinates
-    const vpX = Math.round(screenX / dpr);
-    const vpY = Math.round(screenY / dpr) - toolbarHeight;
+  const vpX = Math.round(screenX / dpr);
+  const vpY = Math.round(screenY / dpr) - toolbarHeight;
 
+  try {
     if (vpY < 0) {
       console.log("[FilePicker] drop landed on Chrome toolbar, ignoring");
       await chrome.debugger.detach(target);
@@ -231,12 +370,16 @@ async function handleDrop(msg) {
       dragOperationsMask: 1, // copy
     };
 
-    await chrome.debugger.sendCommand(target, "Input.dispatchDragEvent", {
-      type: "dragEnter", x: vpX, y: vpY, data: dragData,
-    });
-    await chrome.debugger.sendCommand(target, "Input.dispatchDragEvent", {
-      type: "dragOver", x: vpX, y: vpY, data: dragData,
-    });
+    // If we had hover state, the page already has dragEnter — just send drop.
+    // Otherwise send the full sequence.
+    if (!hadDragState) {
+      await chrome.debugger.sendCommand(target, "Input.dispatchDragEvent", {
+        type: "dragEnter", x: vpX, y: vpY, data: dragData,
+      });
+      await chrome.debugger.sendCommand(target, "Input.dispatchDragEvent", {
+        type: "dragOver", x: vpX, y: vpY, data: dragData,
+      });
+    }
     await chrome.debugger.sendCommand(target, "Input.dispatchDragEvent", {
       type: "drop", x: vpX, y: vpY, data: dragData,
     });

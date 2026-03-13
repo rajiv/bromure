@@ -236,6 +236,29 @@ public final class FilePickerBridge: NSObject, @unchecked Sendable {
         print("[FilePicker] sent drop: \(fileInfos.count) file(s) at (\(guestX), \(guestY))")
     }
 
+    // MARK: - Drag hover
+
+    /// Notify the guest that a file drag entered the VM view.
+    public func sendDragEnter(guestX: Int, guestY: Int) {
+        guard let conn = connection else { return }
+        let msg: [String: Any] = ["type": "drag_enter", "x": guestX, "y": guestY]
+        sendJSON(fd: conn.fileDescriptor, json: msg)
+    }
+
+    /// Notify the guest that a file drag moved within the VM view.
+    public func sendDragMove(guestX: Int, guestY: Int) {
+        guard let conn = connection else { return }
+        let msg: [String: Any] = ["type": "drag_move", "x": guestX, "y": guestY]
+        sendJSON(fd: conn.fileDescriptor, json: msg)
+    }
+
+    /// Notify the guest that a file drag exited the VM view.
+    public func sendDragExit() {
+        guard let conn = connection else { return }
+        let msg: [String: Any] = ["type": "drag_exit"]
+        sendJSON(fd: conn.fileDescriptor, json: msg)
+    }
+
     // MARK: - Helpers
 
     private func sendJSON(fd: Int32, json: [String: Any]) {
