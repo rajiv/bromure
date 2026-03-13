@@ -208,6 +208,34 @@ public final class FilePickerBridge: NSObject, @unchecked Sendable {
         print("[FilePicker] sent pick_result for \(requestId): \(filename)")
     }
 
+    // MARK: - Drag-and-drop
+
+    /// Send drop metadata to the guest after files have been sent via FileTransferBridge.
+    public func sendDrop(files: [URL], guestX: Int, guestY: Int) {
+        guard let conn = connection else {
+            print("[FilePicker] sendDrop: no connection!")
+            return
+        }
+
+        var fileInfos: [[String: Any]] = []
+        for url in files {
+            let size = (try? FileManager.default.attributesOfItem(atPath: url.path)[.size] as? Int) ?? 0
+            fileInfos.append([
+                "filename": url.lastPathComponent,
+                "size": size,
+            ])
+        }
+
+        let msg: [String: Any] = [
+            "type": "drop",
+            "files": fileInfos,
+            "x": guestX,
+            "y": guestY,
+        ]
+        sendJSON(fd: conn.fileDescriptor, json: msg)
+        print("[FilePicker] sent drop: \(fileInfos.count) file(s) at (\(guestX), \(guestY))")
+    }
+
     // MARK: - Helpers
 
     private func sendJSON(fd: Int32, json: [String: Any]) {

@@ -7,6 +7,5 @@
     "https://chromewebstore.google.com",
     "https://chrome.google.com/webstore"
   ],
-  "URLAllowlist": ["file:///home/chrome/"],
-  "ExtensionInstallBlocklist": ["*"]
+  "URLAllowlist": ["file:///home/chrome/"]
 }

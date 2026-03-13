@@ -765,8 +765,11 @@ final class BrowserSession {
         let windowWidth = CGFloat(config.displayWidth) / 2
         let windowHeight = CGFloat(config.displayHeight)
 
+        // Wrap vmView in a drop target that accepts file drags from macOS.
+        let dropTarget = VMDropTargetView(vmView: vmView, displayWidth: config.displayWidth, displayHeight: config.displayHeight)
+
         // If file transfer is enabled, set up the bridge and show drawer alongside VM
-        var contentView: NSView = vmView
+        var contentView: NSView = dropTarget
         if config.enableFileTransfer {
             if let socketDevices = warmVM.vm.socketDevices as? [VZVirtioSocketDevice],
                let socketDevice = socketDevices.first {
@@ -783,7 +786,7 @@ final class BrowserSession {
                 let split = NSSplitView()
                 split.isVertical = true
                 split.dividerStyle = .thin
-                split.addSubview(vmView)
+                split.addSubview(dropTarget)
                 split.addSubview(hostView)
                 split.setHoldingPriority(.defaultLow, forSubviewAt: 0)
                 split.setHoldingPriority(.defaultHigh, forSubviewAt: 1)
@@ -882,6 +885,17 @@ final class BrowserSession {
                 }
             }
             self.filePickerBridge = fpBridge
+
+            // Wire drag-and-drop: send files via port 5100, metadata via port 5600
+            dropTarget.onDrop = { [weak self] urls, guestX, guestY in
+                MainActor.assumeIsolated {
+                    guard let self, let fpBridge = self.filePickerBridge else { return }
+                    for url in urls {
+                        self.fileTransferBridge?.sendFile(url: url)
+                    }
+                    fpBridge.sendDrop(files: urls, guestX: guestX, guestY: guestY)
+                }
+            }
         }
 
         // Set up webcam bridge (vsock port 5400) for camera sharing.
@@ -1369,6 +1383,54 @@ struct Run: ParsableCommand {
             app.run()
             _ = delegate
         }
+    }
+}
+
+// MARK: - Drag-and-drop onto VM view
+
+/// Wraps VZVirtualMachineView to accept file drags from macOS Finder.
+/// Normal mouse/keyboard events pass through to VZVirtualMachineView because
+/// AppKit's drag system walks up the view hierarchy when the child doesn't
+/// register for dragged types.
+private final class VMDropTargetView: NSView {
+    private let displayWidth: Int
+    private let displayHeight: Int
+    var onDrop: (([URL], Int, Int) -> Void)?
+
+    init(vmView: NSView, displayWidth: Int, displayHeight: Int) {
+        self.displayWidth = displayWidth
+        self.displayHeight = displayHeight
+        super.init(frame: .zero)
+        registerForDraggedTypes([.fileURL])
+
+        vmView.translatesAutoresizingMaskIntoConstraints = false
+        addSubview(vmView)
+        NSLayoutConstraint.activate([
+            vmView.topAnchor.constraint(equalTo: topAnchor),
+            vmView.bottomAnchor.constraint(equalTo: bottomAnchor),
+            vmView.leadingAnchor.constraint(equalTo: leadingAnchor),
+            vmView.trailingAnchor.constraint(equalTo: trailingAnchor),
+        ])
+    }
+
+    required init?(coder: NSCoder) { fatalError() }
+
+    override func draggingEntered(_ sender: NSDraggingInfo) -> NSDragOperation { .copy }
+    override func draggingUpdated(_ sender: NSDraggingInfo) -> NSDragOperation { .copy }
+
+    override func performDragOperation(_ sender: NSDraggingInfo) -> Bool {
+        guard let urls = sender.draggingPasteboard.readObjects(
+            forClasses: [NSURL.self],
+            options: [.urlReadingFileURLsOnly: true]
+        ) as? [URL], !urls.isEmpty else { return false }
+
+        // Convert NSView coordinates (origin bottom-left) to guest screen pixels (origin top-left)
+        let pt = convert(sender.draggingLocation, from: nil)
+        let guestX = Int(pt.x * CGFloat(displayWidth) / bounds.width)
+        let guestY = Int((bounds.height - pt.y) * CGFloat(displayHeight) / bounds.height)
+
+        onDrop?(urls, guestX, guestY)
+        return true
     }
 }
 

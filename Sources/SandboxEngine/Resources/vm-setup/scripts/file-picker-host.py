@@ -2,20 +2,19 @@
 """Bromure file picker native messaging host — runs inside the guest VM.
 
 Bridges Chrome native messaging (stdin/stdout) to the host over vsock.
-The Chrome extension sends "pick a file" requests; this agent forwards
-them to the host FilePickerBridge (vsock port 5600, JSON-only control channel).
 
-The actual file data is sent by the host via the existing file-agent.py
-(vsock port 5100) which writes to /home/chrome/. This agent waits for
-the file to appear on disk, then tells Chrome the local path so the
-background SW can use chrome.debugger + DOM.setFileInputFiles.
+Two flows:
+  1. File picker (guest-initiated): Chrome extension sends "pick" →
+     this agent forwards to host → host shows NSOpenPanel → file sent via
+     port 5100 → this agent waits for file on disk → tells Chrome the path →
+     background.js uses chrome.debugger + DOM.setFileInputFiles.
+
+  2. Drag-and-drop (host-initiated): host sends "drop" on vsock with
+     filenames + coordinates → files arrive via port 5100 → this agent waits
+     for files on disk → tells Chrome the paths + coordinates →
+     background.js uses chrome.debugger + Input.dispatchDragEvent.
 
 Protocol with host (vsock port 5600): newline-delimited JSON.
-
-  Guest → Host:  {"type":"pick","accept":"image/*,.pdf","requestId":"..."}
-  Host → Guest:  {"type":"pick_result","requestId":"...","status":"ok",
-                   "filename":"photo.jpg","mimeType":"image/jpeg","size":12345}
-            OR:  {"type":"pick_result","requestId":"...","status":"cancelled"}
 """
 
 import json
@@ -66,16 +65,22 @@ def send_json(sock, obj):
     sock.sendall(line.encode("utf-8"))
 
 
-def recv_line(sock, buf):
-    """Read a complete newline-delimited JSON line from buffer + socket.
-    Returns (parsed_dict, remaining_buf)."""
-    while b"\n" not in buf:
+def drain_vsock(sock, buf):
+    """Read available data from vsock and yield complete JSON messages."""
+    try:
         chunk = sock.recv(65536)
         if not chunk:
             raise ConnectionError("connection closed")
         buf += chunk
-    line, buf = buf.split(b"\n", 1)
-    return json.loads(line), buf
+    except BlockingIOError:
+        pass
+
+    messages = []
+    while b"\n" in buf:
+        line, buf = buf.split(b"\n", 1)
+        if line:
+            messages.append(json.loads(line))
+    return messages, buf
 
 
 def wait_for_file(filepath, expected_size, timeout):
@@ -93,22 +98,16 @@ def wait_for_file(filepath, expected_size, timeout):
     return False
 
 
-def handle_pick_request(sock, msg, vsock_buf):
-    """Forward a pick request to the host and relay the response back to Chrome."""
-    request_id = msg.get("requestId", "")
-    log(f"pick request: requestId={request_id}")
+def safe_filepath(filename):
+    """Return a safe path under FILE_DIR for the given filename."""
+    safe_name = os.path.basename(filename)
+    if not safe_name or safe_name in (".", ".."):
+        safe_name = "upload"
+    return os.path.join(FILE_DIR, safe_name)
 
-    # Forward to host
-    send_json(sock, {
-        "type": "pick",
-        "accept": msg.get("accept", ""),
-        "multiple": msg.get("multiple", False),
-        "requestId": request_id,
-    })
-    log("forwarded to host, waiting for response...")
 
-    # Wait for host JSON response (metadata only, no file data on this channel)
-    resp, vsock_buf = recv_line(sock, vsock_buf)
+def handle_pick_response(resp, request_id):
+    """Process a pick_result from the host and forward to Chrome."""
     log(f"host response: status={resp.get('status')} filename={resp.get('filename', '')}")
 
     if resp.get("status") == "cancelled":
@@ -118,16 +117,11 @@ def handle_pick_request(sock, msg, vsock_buf):
             "status": "cancelled",
         })
         log("cancelled, notified Chrome")
-        return vsock_buf
+        return
 
     filename = resp.get("filename", "file")
     expected_size = resp.get("size", 0)
-
-    # The file data arrives via file-agent.py (port 5100) → /home/chrome/<filename>
-    safe_name = os.path.basename(filename)
-    if not safe_name or safe_name in (".", ".."):
-        safe_name = "upload"
-    filepath = os.path.join(FILE_DIR, safe_name)
+    filepath = safe_filepath(filename)
 
     log(f"waiting for {filepath} ({expected_size} bytes via file-agent)...")
     if not wait_for_file(filepath, expected_size, FILE_WAIT_TIMEOUT):
@@ -142,12 +136,9 @@ def handle_pick_request(sock, msg, vsock_buf):
             "requestId": request_id,
             "status": "cancelled",
         })
-        return vsock_buf
+        return
 
     log(f"file ready: {filepath} ({os.path.getsize(filepath)} bytes)")
-
-    # Tell Chrome the local path — background.js will use chrome.debugger
-    # + DOM.setFileInputFiles to set it on the <input>
     nm_write({
         "type": "pick_result",
         "requestId": request_id,
@@ -156,18 +147,55 @@ def handle_pick_request(sock, msg, vsock_buf):
     })
     log(f"sent path to Chrome: {filepath}")
 
-    return vsock_buf
+
+def handle_drop(msg):
+    """Process a drop message from the host: wait for files, forward to Chrome."""
+    files_info = msg.get("files", [])
+    x = msg.get("x", 0)
+    y = msg.get("y", 0)
+    log(f"drop: {len(files_info)} file(s) at ({x}, {y})")
+
+    # Wait for all files to appear on disk
+    paths = []
+    for finfo in files_info:
+        filename = finfo.get("filename", "file")
+        expected_size = finfo.get("size", 0)
+        filepath = safe_filepath(filename)
+
+        log(f"waiting for {filepath} ({expected_size} bytes)...")
+        if not wait_for_file(filepath, expected_size, FILE_WAIT_TIMEOUT):
+            actual = -1
+            try:
+                actual = os.path.getsize(filepath)
+            except OSError:
+                pass
+            log(f"timeout waiting for {filepath} (expected={expected_size}, actual={actual})")
+            return  # silently abort if any file doesn't arrive
+        paths.append(filepath)
+
+    log(f"all {len(paths)} file(s) ready, forwarding to Chrome")
+    nm_write({
+        "type": "drop",
+        "files": paths,
+        "x": x,
+        "y": y,
+    })
 
 
 def run(sock):
     """Main loop: bridge native messaging <-> vsock."""
     vsock_buf = b""
     stdin_fd = sys.stdin.buffer.fileno()
+    sock_fd = sock.fileno()
+    sock.setblocking(False)
+
+    # Pending pick requests waiting for host response: requestId -> True
+    pending_picks = {}
 
     log("connected to host, entering main loop")
 
     while True:
-        readable, _, _ = select.select([stdin_fd], [], [], 5.0)
+        readable, _, _ = select.select([stdin_fd, sock_fd], [], [], 5.0)
 
         for fd in readable:
             if fd == stdin_fd:
@@ -175,9 +203,37 @@ def run(sock):
                 if msg is None:
                     log("stdin closed (Chrome disconnected)")
                     return
+
                 log(f"Chrome message: type={msg.get('type')}")
                 if msg.get("type") == "pick":
-                    vsock_buf = handle_pick_request(sock, msg, vsock_buf)
+                    request_id = msg.get("requestId", "")
+                    # Forward pick request to host
+                    send_json(sock, {
+                        "type": "pick",
+                        "accept": msg.get("accept", ""),
+                        "multiple": msg.get("multiple", False),
+                        "requestId": request_id,
+                    })
+                    pending_picks[request_id] = True
+                    log(f"forwarded pick to host: {request_id}")
+
+            elif fd == sock_fd:
+                messages, vsock_buf = drain_vsock(sock, vsock_buf)
+                for vmsg in messages:
+                    msg_type = vmsg.get("type", "")
+
+                    if msg_type == "pick_result":
+                        # Response to a pending pick request
+                        request_id = vmsg.get("requestId", "")
+                        if request_id in pending_picks:
+                            del pending_picks[request_id]
+                            handle_pick_response(vmsg, request_id)
+                        else:
+                            log(f"pick_result for unknown request: {request_id}")
+
+                    elif msg_type == "drop":
+                        # Host-initiated drag-and-drop
+                        handle_drop(vmsg)
 
 
 def main():
