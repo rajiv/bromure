@@ -381,7 +381,7 @@ struct ProfileSettingsView: View {
                         webcamDeviceID: $draft.settings.webcamDeviceID,
                         microphoneDeviceID: $draft.settings.microphoneDeviceID,
                         speakerDeviceID: $draft.settings.speakerDeviceID,
-                        enableWebcam: draft.settings.enableWebcam,
+                        enableWebcam: draft.settings.enableWebcam && !showWebcamEffects,
                         enableMicrophone: draft.settings.enableMicrophone
                     )
                 } else {
