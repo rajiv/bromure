@@ -1,0 +1,344 @@
+/* Localizable.strings — Japanese */
+
+/* MainView — Header */
+"Bromure" = "Bromure";
+"Secure, ephemeral browsing in a disposable VM" = "使い捨てVMによる安全で一時的なブラウジング";
+
+/* MainView — Setup */
+"First-Time Setup" = "初回セットアップ";
+"Downloads Alpine Linux (~50 MB) and installs\nChromium. This only needs to happen once." = "Alpine Linux（約50 MB）をダウンロードし、\nChromiumをインストールします。この操作は一度だけ必要です。";
+"Get Started" = "はじめる";
+
+/* MainView — Warming up */
+"Starting browser engine..." = "ブラウザエンジンを起動中...";
+"First launch is slower, subsequent ones will be faster." = "初回の起動には時間がかかりますが、次回以降は高速になります。";
+
+/* MainView — Initializing */
+"Console Output" = "コンソール出力";
+
+/* MainView — Ready */
+"Encrypted" = "暗号化済み";
+"Edit profile settings" = "プロファイル設定を編集";
+"Add a new profile" = "新しいプロファイルを追加";
+"Delete selected profile" = "選択したプロファイルを削除";
+"Starting..." = "起動中...";
+"Open Browser" = "ブラウザを開く";
+"Ready" = "準備完了";
+"Warming up..." = "準備中...";
+"%lld open" = "%lld件を開いています";
+
+/* MainView — New Profile sheet */
+"New Profile" = "新規プロファイル";
+"Profile Name" = "プロファイル名";
+"Color" = "カラー";
+"None" = "なし";
+"Cancel" = "キャンセル";
+"Create" = "作成";
+
+/* MainView — Delete confirmation */
+"Delete" = "削除";
+"This will permanently delete the profile and all its saved browsing data." = "プロファイルと保存されたすべてのブラウジングデータが完全に削除されます。";
+"This will delete the profile." = "プロファイルが削除されます。";
+
+/* MainView — Error */
+"Something went wrong" = "エラーが発生しました";
+"Try Again" = "やり直す";
+
+/* ProfileSettingsView — Categories */
+"General" = "一般";
+"Performance" = "パフォーマンス";
+"Media" = "メディア";
+"Privacy & Safety" = "プライバシーとセキュリティ";
+"Network Isolation" = "ネットワーク分離";
+"VPN & Ads" = "VPNと広告";
+"Enterprise" = "エンタープライズ";
+"Advanced" = "詳細";
+
+/* ProfileSettingsView — Buttons */
+"Save" = "保存";
+
+/* ProfileSettingsView — General */
+"Basic profile settings" = "プロファイルの基本設定";
+"Name" = "名前";
+"Comments" = "コメント";
+"A short note about this profile. Shown when you hover over it in the profile list." = "プロファイルについての簡単なメモです。プロファイル一覧でカーソルを合わせると表示されます。";
+"e.g. Work browsing, banking only, etc." = "例：仕事用、銀行専用など";
+"Window Color" = "ウインドウカラー";
+"A colored border around the browser window helps you tell profiles apart at a glance." = "ブラウザウインドウの周囲に色付きの枠線を表示して、プロファイルをひと目で区別できるようにします。";
+"Home Page" = "ホームページ";
+"The website that opens when you launch this profile." = "このプロファイルを起動したときに開くWebサイトです。";
+"Language" = "言語";
+"The language used by the browser. \U201CSame as System\U201D follows your Mac\U2019s language. Choosing a specific language reduces browser fingerprinting." = "ブラウザで使用する言語です。\U201Cシステムと同じ\U201Dを選ぶとMacの言語に従います。特定の言語を選ぶとブラウザのフィンガープリントを減らせます。";
+"Retain Browsing Data" = "ブラウジングデータを保持";
+"Keep your bookmarks, history, cookies, and passwords between sessions. When turned off, everything is erased each time you close the browser." = "ブックマーク、履歴、Cookie、パスワードをセッション間で保持します。オフにすると、ブラウザを閉じるたびにすべてが消去されます。";
+
+/* ProfileSettingsView — Performance */
+"Control how the browser uses your Mac\U2019s hardware" = "ブラウザによるMacのハードウェア使用を制御します";
+"GPU Acceleration" = "GPUアクセラレーション";
+"Uses your Mac\U2019s graphics chip to make web pages render faster. Turn this off if you notice visual glitches or display problems." = "MacのGPUを使用してWebページのレンダリングを高速化します。表示の乱れや問題がある場合はオフにしてください。";
+"WebGL" = "WebGL";
+"Lets websites display 3D graphics and interactive content. Required by some games, maps, and data visualizations." = "Webサイトで3Dグラフィックスやインタラクティブコンテンツを表示できるようにします。一部のゲーム、マップ、データビジュアライゼーションに必要です。";
+
+/* ProfileSettingsView — Media */
+"Audio and device sharing" = "オーディオとデバイス共有";
+"Audio" = "オーディオ";
+"Play sounds, music, and video audio from websites." = "Webサイトからのサウンド、音楽、動画の音声を再生します。";
+"Volume" = "音量";
+"Share Webcam" = "Webカメラを共有";
+"Let websites in this browser access your Mac\U2019s camera for video calls and meetings." = "このブラウザ内のWebサイトがMacのカメラにアクセスして、ビデオ通話や会議に使用できるようにします。";
+"Share Microphone" = "マイクを共有";
+"Let websites in this browser access your Mac\U2019s microphone for calls and voice input." = "このブラウザ内のWebサイトがMacのマイクにアクセスして、通話や音声入力に使用できるようにします。";
+"Device Selection" = "デバイスの選択";
+"Choose which camera, microphone, and speaker to use with this profile." = "このプロファイルで使用するカメラ、マイク、スピーカーを選択します。";
+"Speaker" = "スピーカー";
+"Choose which speaker to use for audio output." = "オーディオ出力に使用するスピーカーを選択します。";
+"Default" = "デフォルト";
+
+/* ProfileSettingsView — Privacy & Safety */
+"Control what this browser can access and share" = "このブラウザがアクセス・共有できる内容を制御します";
+"Shared Clipboard" = "クリップボードの共有";
+"Copy and paste text and images between your Mac and this browser. When turned off, the browser\U2019s clipboard is completely isolated." = "Macとこのブラウザの間でテキストや画像をコピー＆ペーストできます。オフにすると、ブラウザのクリップボードは完全に分離されます。";
+"File Upload" = "ファイルのアップロード";
+"Allow sending files from your Mac to websites in this browser." = "Macからこのブラウザ内のWebサイトへファイルを送信できるようにします。";
+"File Download" = "ファイルのダウンロード";
+"Allow saving files from websites to your Mac." = "WebサイトからMacにファイルを保存できるようにします。";
+"Scan Downloads with VirusTotal" = "VirusTotalでダウンロードをスキャン";
+"Automatically check downloaded files for viruses and malware before they reach your Mac." = "ダウンロードしたファイルがMacに届く前に、ウイルスやマルウェアを自動的にチェックします。";
+"VirusTotal API Key" = "VirusTotal APIキー";
+"Block Threats" = "脅威をブロック";
+"Automatically block files that VirusTotal identifies as malicious. Blocked files cannot be saved or dragged to your Mac." = "VirusTotalが悪意のあるファイルと判定したファイルを自動的にブロックします。ブロックされたファイルはMacに保存またはドラッグできません。";
+"Block Unscannable Files" = "スキャンできないファイルをブロック";
+"Block files that could not be scanned by VirusTotal (too large, rate-limited, or unknown). When turned off, unscannable files can still be saved manually." = "VirusTotalでスキャンできなかったファイル（サイズ超過、レート制限、不明）をブロックします。オフにすると、スキャンできないファイルも手動で保存できます。";
+"Block Malware Sites" = "マルウェアサイトをブロック";
+"Blocks access to websites known to distribute viruses or steal information, using Cloudflare\U2019s security DNS." = "Cloudflareのセキュリティ用DNSを使用して、ウイルスの配布や情報の窃取で知られるWebサイトへのアクセスをブロックします。";
+"Phishing Warning" = "フィッシング警告";
+"Shows a warning when you\U2019re about to enter a password on a website that looks suspicious or fake." = "不審なWebサイトや偽のWebサイトでパスワードを入力しようとしたときに警告を表示します。";
+"Beta" = "ベータ";
+"Send Link to Other Session" = "ほかのセッションにリンクを送信";
+"Adds a right-click menu option to send a web page link to another Bromure profile." = "右クリックメニューにWebページのリンクを別のBromureプロファイルに送信するオプションを追加します。";
+
+/* ProfileSettingsView — Network Isolation */
+"Restrict which networks and ports this browser can reach" = "このブラウザがアクセスできるネットワークとポートを制限します";
+"Isolate from Local Network" = "ローカルネットワークから分離";
+"Prevents this browser from reaching devices on your home or office network, like printers, NAS drives, or internal servers. Internet access is not affected." = "自宅やオフィスのネットワーク上のプリンター、NASドライブ、内部サーバーなどのデバイスにこのブラウザからアクセスできないようにします。インターネットアクセスには影響しません。";
+"Restrict Outgoing Ports" = "送信ポートを制限";
+"Only allow the browser to connect on specific network ports. Useful for locking down which services the browser can reach." = "ブラウザが特定のネットワークポートでのみ接続できるようにします。ブラウザがアクセスできるサービスを制限するのに便利です。";
+"Allowed ports (e.g. 80, 443, 8000-9000)" = "許可するポート（例：80, 443, 8000-9000）";
+"DNS (port 53) is always allowed. Separate ports with commas. Use a dash for ranges." = "DNS（ポート53）は常に許可されます。ポートはカンマで区切り、範囲はハイフンで指定してください。";
+
+/* ProfileSettingsView — VPN & Ads */
+"Network privacy and ad blocking" = "ネットワークのプライバシーと広告ブロック";
+"Cloudflare WARP" = "Cloudflare WARP";
+"Routes all browser traffic through Cloudflare\U2019s encrypted network, hiding your IP address from websites. Works like a VPN." = "すべてのブラウザトラフィックをCloudflareの暗号化ネットワーク経由でルーティングし、WebサイトからIPアドレスを隠します。VPNのように機能します。";
+"Block Ads" = "広告をブロック";
+"Blocks ads and tracking scripts from loading on websites. This can make pages load faster and protects your privacy." = "Webサイト上の広告やトラッキングスクリプトの読み込みをブロックします。ページの読み込みが高速になり、プライバシーが保護されます。";
+
+/* ProfileSettingsView — Enterprise */
+"Settings for managed environments" = "管理環境向けの設定";
+"Root Certificates" = "ルート証明書";
+"Install custom root CA certificates so the browser trusts your organization\U2019s internal websites and services. Accepts PEM, DER, CRT, and CER files." = "カスタムルートCA証明書をインストールして、組織の内部Webサイトやサービスをブラウザが信頼できるようにします。PEM、DER、CRT、CERファイルに対応しています。";
+"Add Certificate\U2026" = "証明書を追加\U2026";
+
+/* ProfileSettingsView — Advanced */
+"Additional options for power users" = "上級ユーザー向けの追加オプション";
+"Encrypt Browsing Data" = "ブラウジングデータを暗号化";
+"Encrypts all saved browsing data on your Mac\U2019s disk using LUKS. The encryption key is stored securely in your macOS Keychain. If you lose the key, your data cannot be recovered." = "LUKSを使用して、Mac上に保存されたすべてのブラウジングデータを暗号化します。暗号化キーはmacOSキーチェーンに安全に保管されます。キーを紛失した場合、データを復元することはできません。";
+"Encryption" = "暗号化";
+"Turn on \U201CRetain Browsing Data\U201D in General to access disk encryption options." = "ディスク暗号化オプションにアクセスするには、「一般」で\U201Cブラウジングデータを保持\U201Dをオンにしてください。";
+
+/* ProfileSettingsView — Confirmation dialogs */
+"Increase VM memory?" = "VMのメモリを増やしますか？";
+"Increase to 2 GB" = "2 GBに増やす";
+"Keep current" = "現在の設定を維持";
+"Cloudflare WARP requires at least 2 GB of RAM to run reliably. Would you like to increase the VM memory?" = "Cloudflare WARPを安定して動作させるには、少なくとも2 GBのRAMが必要です。VMのメモリを増やしますか？";
+"Enable encryption?" = "暗号化を有効にしますか？";
+"Disable encryption?" = "暗号化を無効にしますか？";
+"Delete data and continue" = "データを削除して続ける";
+"Changing the encryption setting will delete all existing browsing data for this profile. This cannot be undone." = "暗号化設定を変更すると、このプロファイルの既存のブラウジングデータがすべて削除されます。この操作は取り消せません。";
+
+/* SettingsView — Categories */
+"Hardware" = "ハードウェア";
+"Input" = "入力";
+"Display" = "ディスプレイ";
+"Network" = "ネットワーク";
+"Storage" = "ストレージ";
+
+/* SettingsView — Hardware */
+"Resources allocated to each browser session" = "各ブラウザセッションに割り当てるリソース";
+"Memory" = "メモリ";
+"How much RAM each browser gets. 2 GB works for most websites. Increase to 4 GB or more for heavy web apps." = "各ブラウザに割り当てるRAMの量です。ほとんどのWebサイトには2 GBで十分です。負荷の高いWebアプリには4 GB以上に増やしてください。";
+"1 GB" = "1 GB";
+"2 GB" = "2 GB";
+"3 GB" = "3 GB";
+"4 GB" = "4 GB";
+"8 GB" = "8 GB";
+"16 GB" = "16 GB";
+"CPU Cores" = "CPUコア数";
+"Number of processor cores available to the browser. Automatic scales with memory (2 cores per GB), up to the number of cores on this Mac." = "ブラウザで使用可能なプロセッサコアの数です。「自動」はメモリに応じて調整され（1 GBあたり2コア）、このMacのコア数が上限となります。";
+"Automatic (%lld)" = "自動（%lld）";
+"Changes take effect when the next browser session starts." = "変更は次のブラウザセッションの開始時に反映されます。";
+
+/* SettingsView — Input */
+"Keyboard and trackpad settings" = "キーボードとトラックパッドの設定";
+"Keyboard Layout" = "キーボードレイアウト";
+"Match this to your physical keyboard. Changing the layout requires rebuilding the base image." = "お使いのキーボードに合わせてください。レイアウトの変更にはベースイメージの再構築が必要です。";
+"Natural Scrolling" = "ナチュラルスクロール";
+"Scroll content in the same direction as your finger moves on the trackpad, matching the macOS default." = "トラックパッド上の指の動きと同じ方向にコンテンツをスクロールします。macOSのデフォルトと同じ動作です。";
+"Use Command as Control" = "CommandキーをControlキーとして使用";
+"Makes familiar shortcuts like \U2318C, \U2318V, and \U2318T work inside the browser by swapping the Command and Control keys." = "CommandキーとControlキーを入れ替えることで、\U2318C、\U2318V、\U2318Tなどのおなじみのショートカットをブラウザ内で使えるようにします。";
+
+/* SettingsView — Display */
+"Screen and appearance settings" = "画面と外観の設定";
+"Scale Factor" = "表示倍率";
+"Match your Mac\U2019s display. Use 2x for Retina screens (most modern Macs). Changing this requires rebuilding the base image." = "Macのディスプレイに合わせてください。Retinaスクリーン（最近のほとんどのMac）には2xを使用します。変更にはベースイメージの再構築が必要です。";
+"1x (Standard)" = "1x（標準）";
+"2x (Retina)" = "2x（Retina）";
+"Appearance" = "外観";
+"Controls whether the browser uses a light or dark color scheme. \U201CSame as System\U201D follows your Mac\U2019s current setting." = "ブラウザがライトまたはダークの配色を使用するかを制御します。\U201Cシステムと同じ\U201Dを選ぶと、Macの現在の設定に従います。";
+"Same as System" = "システムと同じ";
+"Light" = "ライト";
+"Dark" = "ダーク";
+
+/* SettingsView — Network */
+"Connection mode and DNS settings" = "接続モードとDNS設定";
+"You probably don\U2019t need to change anything here." = "通常、ここの設定を変更する必要はありません。";
+"These settings are only useful if you\U2019re having trouble during installation or if a VPN, firewall, or other local software is preventing the browser from connecting to the internet." = "これらの設定は、インストール中に問題が発生した場合や、VPN、ファイアウォール、その他のソフトウェアがブラウザのインターネット接続を妨げている場合にのみ必要です。";
+"Connection Mode" = "接続モード";
+"NAT (recommended) gives the browser its own private network address. Bridged mode places the browser directly on your network, as if it were a separate device." = "NAT（推奨）はブラウザに独自のプライベートネットワークアドレスを割り当てます。ブリッジモードでは、ブラウザが別のデバイスのようにネットワークに直接接続されます。";
+"NAT (Recommended)" = "NAT（推奨）";
+"Bridged" = "ブリッジ";
+"Network Interface" = "ネットワークインターフェイス";
+"Choose which network connection the browser should use. Typically this is your Wi-Fi or Ethernet adapter." = "ブラウザが使用するネットワーク接続を選択します。通常はWi-FiまたはEthernetアダプタです。";
+"No network interfaces available." = "使用可能なネットワークインターフェイスがありません。";
+"Select\U2026" = "選択\U2026";
+"LAN isolation and port restriction are not available in bridged mode." = "ブリッジモードではLAN分離とポート制限は使用できません。";
+"DNS Servers" = "DNSサーバ";
+"Override which DNS servers the browser uses to look up website addresses. Leave empty to use the default. Set this if you\U2019re on a VPN or security software that breaks internet access in the browser." = "ブラウザがWebサイトのアドレスを検索する際に使用するDNSサーバを上書きします。デフォルトを使用する場合は空のままにしてください。VPNやセキュリティソフトウェアがブラウザのインターネットアクセスを妨げている場合に設定してください。";
+"e.g. 1.1.1.1, 8.8.8.8" = "例：1.1.1.1, 8.8.8.8";
+"DNS override only works in NAT mode." = "DNSの上書きはNATモードでのみ機能します。";
+
+/* SettingsView — Storage */
+"Disk usage and base image management" = "ディスク使用量とベースイメージの管理";
+"Disk Usage" = "ディスク使用量";
+"Total disk space used by the base image and all profile data." = "ベースイメージとすべてのプロファイルデータが使用しているディスク容量の合計です。";
+"Storage Location" = "保存場所";
+"Reset" = "リセット";
+"Delete the Linux base image. You\U2019ll need to run the initial setup again. This does not delete your profile data or settings." = "Linuxベースイメージを削除します。初回セットアップを再度実行する必要があります。プロファイルデータや設定は削除されません。";
+"Delete Base Image & Reset\U2026" = "ベースイメージを削除してリセット\U2026";
+
+/* SettingsView — Dialogs */
+"Delete the base image?" = "ベースイメージを削除しますか？";
+"This will delete the Linux base image. You\U2019ll need to run setup again." = "Linuxベースイメージが削除されます。セットアップを再度実行する必要があります。";
+"Rebuild required" = "再構築が必要です";
+"Rebuild Image" = "イメージを再構築";
+"Changing this setting requires rebuilding the base image. All open browser windows will be closed and any unsaved data will be lost." = "この設定の変更にはベースイメージの再構築が必要です。開いているブラウザウインドウはすべて閉じられ、保存されていないデータは失われます。";
+
+/* FileDrawerView */
+"File Transfer" = "ファイル転送";
+"Drop files here to upload to VM" = "ここにファイルをドロップしてVMにアップロード";
+"Files downloaded in the VM appear here \U2014 drag or save to keep" = "VMでダウンロードしたファイルはここに表示されます \U2014 ドラッグまたは保存してください";
+"Blocked" = "ブロック済み";
+"Saved \U2014 Show in Finder" = "保存済み \U2014 Finderに表示";
+"Save to Downloads" = "ダウンロードに保存";
+"Pending" = "保留中";
+"Scanning" = "スキャン中";
+"Clean" = "安全";
+
+/* MediaPreviewView */
+"No camera" = "カメラなし";
+"Camera" = "カメラ";
+"Microphone" = "マイク";
+
+/* WarpEULAView */
+"Bromure can route your VM traffic through Cloudflare\U2019s encrypted WARP network for additional privacy and security." = "BromureはVMのトラフィックをCloudflareの暗号化されたWARPネットワーク経由でルーティングし、プライバシーとセキュリティをさらに強化できます。";
+"By clicking Accept, you agree to the Cloudflare Application Terms of Service and Privacy Policy." = "「同意する」をクリックすると、Cloudflareアプリケーション利用規約およびプライバシーポリシーに同意したことになります。";
+"Decline" = "同意しない";
+"Accept" = "同意する";
+
+/* Init steps — Linux image creation */
+"Preparing..." = "準備中…";
+"Downloading Alpine Linux netboot files" = "Alpine Linux ネットブートファイルをダウンロード中";
+"Using cached Alpine netboot files" = "キャッシュ済みの Alpine ネットブートファイルを使用中";
+"Creating disk image" = "ディスクイメージを作成中";
+"Installing Alpine Linux with Chromium" = "Alpine Linux と Chromium をインストール中";
+"Preparing boot files" = "ブートファイルを準備中";
+
+/* Init steps — macOS image creation */
+"Fetching latest macOS restore image metadata" = "最新の macOS 復元イメージのメタデータを取得中";
+"Creating auxiliary storage" = "補助ストレージを作成中";
+"Installing macOS" = "macOS をインストール中";
+"Saving base image metadata" = "ベースイメージのメタデータを保存中";
+
+/* Menu — App */
+"About Bromure" = "Bromureについて";
+"Settings..." = "設定\U2026";
+"Quit Bromure" = "Bromureを終了";
+
+/* Menu — File */
+"File" = "ファイル";
+"New Browser" = "新規ブラウザ";
+"Recreate Base Image\U2026" = "ベースイメージを再作成\U2026";
+"Close Window" = "ウインドウを閉じる";
+
+/* Menu — View */
+"View" = "表示";
+"Toggle File Drawer" = "ファイルドロワーの表示切替";
+
+/* Menu — Edit */
+"Edit" = "編集";
+"Cut" = "カット";
+"Copy" = "コピー";
+"Paste" = "ペースト";
+"Select All" = "すべてを選択";
+
+/* Menu — Window */
+"Window" = "ウインドウ";
+"Minimize" = "しまう";
+
+/* Alerts — Profile chooser */
+"Choose a profile" = "プロファイルを選択";
+"Which profile should open %@?" = "どのプロファイルで %@ を開きますか？";
+"Open" = "開く";
+
+/* Alerts — Recreate base image */
+"Recreate base image?" = "ベースイメージを再作成しますか？";
+"This will close all browser windows, delete the current base image, and rebuild it from scratch. This may take several minutes." = "すべてのブラウザウインドウが閉じられ、現在のベースイメージが削除されてゼロから再構築されます。数分かかる場合があります。";
+"Recreate" = "再作成";
+
+/* Alerts — Restore tabs */
+"Restore previous tabs?" = "以前のタブを復元しますか？";
+"This profile has data from a previous session. Would you like to restore your open tabs?" = "このプロファイルには以前のセッションのデータがあります。開いていたタブを復元しますか？";
+"Restore" = "復元";
+"Start Fresh" = "新しく始める";
+
+/* Alerts — Quit */
+"Quit Bromure?" = "Bromureを終了しますか？";
+"There is 1 open browser session. All session data will be lost." = "1つのブラウザセッションが開いています。すべてのセッションデータが失われます。";
+"There are %lld open browser sessions. All session data will be lost." = "%lld個のブラウザセッションが開いています。すべてのセッションデータが失われます。";
+"Quit" = "終了";
+
+/* Alerts — Close browser */
+"Close this browser?" = "このブラウザを閉じますか？";
+"All browsing data in this window will be permanently lost. This cannot be undone." = "このウインドウのすべての閲覧データが完全に失われます。この操作は取り消せません。";
+"Close" = "閉じる";
+
+/* Window titles */
+"Cloudflare WARP Terms of Service" = "Cloudflare WARP 利用規約";
+"Settings" = "設定";
+"Bromure \U2014 %@" = "Bromure \U2014 %@";
+"Bromure \U2014 Chromium" = "Bromure \U2014 Chromium";
+"Bromure \U2014 Base Image Setup" = "Bromure \U2014 ベースイメージのセットアップ";
+"Profile Settings \U2014 %@" = "プロファイル設定 \U2014 %@";
+
+/* Init steps */
+"Running setup script (installing packages)" = "セットアップスクリプトを実行中（パッケージをインストール中）";
+
+/* ProfileColor labels */
+"Blue" = "ブルー";
+"Red" = "レッド";
+"Green" = "グリーン";
+"Orange" = "オレンジ";
+"Purple" = "パープル";
+"Pink" = "ピンク";
+"Teal" = "ティール";
+"Gray" = "グレイ";

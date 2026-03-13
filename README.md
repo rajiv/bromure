@@ -5,67 +5,124 @@
 <h1 align="center">Bromure</h1>
 
 <p align="center">
-  An ephemeral browser that runs in a disposable virtual machine on macOS.
+  Secure, ephemeral browsing in a disposable virtual machine on macOS.
 </p>
 
 ---
 
 ## What is Bromure?
 
-Bromure launches a full Chromium browser inside a lightweight, disposable Linux VM using Apple's [Virtualization.framework](https://developer.apple.com/documentation/virtualization). Every browsing session starts from a clean slate -- when you close the window, the VM and all its data are destroyed. Nothing persists: no cookies, no history, no cached files, no traces.
-
-It runs as a native macOS app with a pre-warmed VM pool, so new browser windows open almost instantly.
-
-## Security
-
-Each browser session runs in a fully isolated virtual machine with its own ephemeral disk. This gives you strong security guarantees that browser sandboxing alone cannot provide:
-
-- **Complete isolation** -- malware, exploits, or malicious scripts are confined to the VM and destroyed when the window closes.
-- **No persistent state** -- there is nothing to steal. Cookies, session tokens, and browsing data exist only for the lifetime of the window.
-- **Clean environment** -- every session starts from an identical, known-good base image. There is no accumulated attack surface from previous browsing.
-- **Network segmentation** -- each VM has its own network stack, isolated from the host and other sessions.
-
-## Performance
-
-Bromure uses Apple's Virtualization.framework for near-native performance on Apple Silicon:
-
-- **Instant windows** -- a pre-warmed VM pool keeps a fully booted VM ready in the background. Opening a new browser window takes under a second.
-- **Lightweight VMs** -- each session runs Alpine Linux with Chromium, using 2 GB of RAM (okay, that's not super lightweight, that's the price to pay for security).
-- **Native acceleration** -- Virtio GPU, audio, and input drivers provide a smooth browsing experience with no noticeable overhead.
-
-## Screenshot
+Bromure is a native macOS app that runs every browser session inside a lightweight, disposable Linux virtual machine using Apple's [Virtualization.framework](https://developer.apple.com/documentation/virtualization). By default, when you close the window, the VM is destroyed -- cookies, history, malware, trackers, all of it. Gone. Profiles that need continuity can opt in to persistent storage, but the default is zero trace.
 
 <p align="center">
-  <img src="Resources/screenshot.png" width="720" alt="Bromure screenshot">
+  <img src="Resources/screenshot.png" width="720" alt="Bromure main window and browser">
 </p>
 
+## Why a VM Changes Everything
 
-## Features
+This isn't browser-level sandboxing or a private browsing mode. Bromure runs a complete, separate operating system for every browser window. That distinction matters:
 
-### Ad Blocking
+- **Ransomware can't escape.** If a malicious website or download tries to encrypt your files, it can only see the VM's temporary filesystem -- your Mac's documents, photos, and drives are completely unreachable. Close the window and the ransomware is gone, along with the entire OS it was running on. No cleanup, no decryption keys, no ransom.
+- **Drive-by downloads are harmless.** Exploit kits that silently install malware through browser vulnerabilities are trapped inside a VM that gets destroyed. They never touch your real system.
+- **Credential theft is contained.** Keyloggers, clipboard hijackers, and screen capture malware running inside the VM can't see anything outside of it -- not your other apps, not your password manager, not your macOS Keychain.
+- **Zero-day exploits have nowhere to go.** Even if an attacker chains a browser zero-day with an OS-level exploit, they've compromised a throwaway Linux VM with no personal data, no network access to your other devices (with LAN isolation on), and no way to persist -- because the VM won't exist in a few minutes.
+- **No forensic residue.** Unlike a regular browser, there's no cache, no DNS history, no temp files left on your Mac's disk. The VM's entire filesystem lives in a temporary disk image that's deleted on close.
 
-Bromure includes built-in ad and tracker blocking powered by Pi-hole DNS filtering with a local Squid proxy running inside each VM. No external services, no browser extensions -- ads are blocked at the network level before they reach the browser.
+Traditional browsers try to protect you with layers of sandboxing inside the same operating system your files live on. Bromure eliminates the problem entirely: the browser and your Mac don't share an OS, a filesystem, or even a kernel.
 
-Enable it with a single toggle in Preferences.
+## Instant Launch
 
-### Built-in VPN
+Bromure pre-warms a pool of ready-to-go VMs in the background using Virtio GPU, audio, and input drivers for a smooth, native-feeling browsing experience. Your first window takes a few seconds; every window after that opens in under a second.
 
-Bromure integrates [Cloudflare WARP](https://one.one.one.one/) directly into each VM. When enabled, all browser traffic is routed through Cloudflare's encrypted network via a SOCKS5 proxy -- no system-wide VPN configuration required.
+Add Bromure to your Login Items and a warm VM is always ready when you need it.
+
+## Profiles
+
+<!-- TODO: screenshot of main window with profile list -->
+
+Create named profiles for different contexts: Work, Personal, Banking, Shopping, Research. Each profile gets its own color-coded window border so you can tell them apart at a glance.
+
+Every profile carries its own independent settings:
+
+- **Home page** -- each profile opens to its own start page
+- **Persistent storage** -- optionally keep bookmarks, history, and cookies between sessions (off by default)
+- **Encryption** -- persistent profiles can encrypt their data with LUKS, with the key stored in your macOS Keychain
+- **Security posture** -- different ad blocking, VPN, clipboard, and network rules per profile
+
+Profiles sync across your Macs via iCloud, so your setup follows you.
+
+## Built-in VPN
+
+Bromure integrates [Cloudflare WARP](https://one.one.one.one/) directly into each VM. When enabled, all browser traffic is routed through Cloudflare's encrypted network -- your IP address is hidden from every website you visit. No system-wide VPN required.
 
 WARP runs entirely inside the disposable VM, so Cloudflare never sees your host machine's identity. When the session ends, the WARP registration is destroyed along with everything else.
 
-### Other Features
+## Network-Level Ad Blocking
 
-- **Dark mode** -- follows the system appearance or can be forced to light/dark.
-- **Custom home page** -- set any URL as the default page for new sessions.
-- **Keyboard layouts** -- supports a wide range of international keyboard layouts.
-- **Configurable resources** -- adjust CPU cores, memory, and display scaling per your needs.
-- **Registered as a web browser** -- can be set as the default browser in macOS. Links from other apps open in a fresh, isolated session.
+Bromure blocks ads and trackers at the network layer using a built-in Pi-hole DNS sinkhole and Squid proxy. This is more effective than browser extensions -- ads are blocked before they even reach the browser, making pages load faster and eliminating tracking scripts.
+
+## Privacy & Safety
+
+<!-- TODO: screenshot of Privacy & Safety settings panel -->
+
+Each profile has granular privacy controls:
+
+- **Shared Clipboard** -- allow or block copy-paste between your Mac and the browser. Off by default.
+- **File Upload / Download** -- independently control whether the browser can send files to websites or save files to your Mac.
+- **VirusTotal Scanning** -- automatically scan every downloaded file for malware before it reaches your Mac. Optionally block files flagged as threats or files that couldn't be scanned.
+- **Malware Site Blocking** -- block known malicious websites using Cloudflare's security DNS.
+- **Phishing Warnings** (Beta) -- get alerted when you're about to enter a password on a suspicious website.
+- **Cross-Profile Link Sharing** -- right-click any link to send it to a different Bromure profile.
+
+## Network Isolation
+
+Lock down what the browser can reach on your network:
+
+- **LAN Isolation** -- prevent the browser from accessing devices on your local network (printers, NAS, internal servers) while keeping full internet access.
+- **Port Restriction** -- whitelist specific outgoing ports to control exactly which services the browser can connect to.
+
+## Media
+
+<!-- TODO: screenshot of Media settings panel with device selection -->
+
+Use Bromure for video calls and meetings:
+
+- **Webcam** -- share your Mac's camera with websites inside the VM.
+- **Microphone** -- share your Mac's microphone for calls and voice input.
+- **Speaker Selection** -- choose which audio output device each profile uses.
+- **Per-device assignment** -- assign specific cameras, mics, and speakers to different profiles.
+- **Volume control** -- independent volume slider per profile.
+
+## Enterprise
+
+- **Custom Root CA Certificates** -- install your organization's internal certificates so the browser trusts internal websites and services. Supports PEM, DER, CRT, and CER formats.
+- **Encrypted Persistent Storage** -- LUKS encryption with keys stored in macOS Keychain for profiles that need to retain data.
+- **Network Controls** -- LAN isolation and port restriction for compliance with corporate security policies.
+
+## Hardware & Display
+
+<!-- TODO: screenshot of app-wide Settings window -->
+
+Fine-tune how the VM uses your Mac's resources:
+
+- **Memory** -- 1 GB, 2 GB, 3 GB, 4 GB, 8 GB, or 16 GB per session
+- **CPU Cores** -- automatic scaling based on memory, or manual override
+- **GPU Acceleration** -- hardware-accelerated rendering for faster page loads
+- **WebGL** -- enable 3D graphics for games, maps, and data visualizations
+- **Display Scaling** -- 1x or 2x for Retina displays
+- **Dark Mode** -- follow system appearance, or force light/dark
+- **28+ Keyboard Layouts** -- QWERTY, AZERTY, QWERTZ, Dvorak, Colemak, and international layouts including Japanese, Korean, Arabic, Hebrew, and more
+- **Natural Scrolling** -- matches your macOS trackpad preference
+- **Command Key Swap** -- use Cmd instead of Ctrl for familiar macOS shortcuts
+
+## Default Browser
+
+Register Bromure as your macOS default browser (System Settings > Desktop & Dock > Default web browser). Every link you click in other apps opens in a fresh, isolated VM.
 
 ## Requirements
 
 - macOS 14 (Sonoma) or later
-- Apple Silicon
+- Apple Silicon (M1 or newer)
 
 ## Getting Started
 
@@ -82,6 +139,15 @@ WARP runs entirely inside the disposable VM, so Cloudflare never sees your host 
 open .build/arm64-apple-macosx/release/bromure.app
 ```
 
+## How It Works
+
+1. Bromure downloads a minimal Alpine Linux base image (~50 MB)
+2. Each new window clones the base image using APFS copy-on-write (near-zero disk cost)
+3. A full Chromium browser launches inside the VM with your profile's settings applied
+4. When you close the window, the VM and its disk are destroyed (unless the profile retains data)
+
+No Docker. No containers. Full hardware-level virtualization via Apple's Virtualization.framework.
+
 ## FAQ
 
 **The first browser window takes a long time to open. Will it always be this slow?**
@@ -90,27 +156,23 @@ No. The very first time you launch Bromure, it needs to boot a VM from scratch, 
 
 **How much memory should I allocate to the VM?**
 
-The default of 2 GB is sufficient for most browsing. Video playback works great thanks to GPU hardware acceleration, but if you notice choppy playback on high-definition videos or use memory-heavy web apps, consider increasing it to 4 GB in Preferences. Going above 4 GB is rarely necessary.
+The default of 2 GB is sufficient for most browsing. Video playback works great thanks to GPU hardware acceleration, but if you notice choppy playback on high-definition videos or use memory-heavy web apps, consider increasing it to 4 GB in Settings. Going above 4 GB is rarely necessary.
 
 **How do I enable the VPN? Is it free?**
 
-Open Preferences and toggle "Cloudflare WARP". The first time you enable it, you will be asked to accept Cloudflare's terms of service. WARP is a free service provided by [Cloudflare](https://one.one.one.one/) -- it encrypts your DNS queries and routes your traffic through Cloudflare's network. It runs entirely inside the disposable VM, so no configuration is needed on your host machine, and the WARP registration is destroyed when the session ends.
+Open the profile settings and toggle "Cloudflare WARP" under VPN & Ads. The first time you enable it, you will be asked to accept Cloudflare's terms of service. WARP is a free service provided by [Cloudflare](https://one.one.one.one/) -- it encrypts your DNS queries and routes your traffic through Cloudflare's network. It runs entirely inside the disposable VM, so no configuration is needed on your host machine, and the WARP registration is destroyed when the session ends.
 
-**Can I make my browsing data persistent or save a baseline image?**
+**Can I make my browsing data persistent?**
 
-Not currently. Every session is ephemeral by design -- all data is destroyed when the window closes. If persistent profiles or custom base images would be useful to you, please [open a feature request](https://github.com/rderaison/bromure/issues).
+Yes. Open the profile settings and turn on "Retain Browsing Data" under General. Your bookmarks, history, cookies, and passwords will persist between sessions. You can also enable LUKS encryption for the persistent data under Advanced.
 
-**Can I download files from the VM to my Mac?**
+**Can I upload or download files?**
 
-No, and this is by design. The VM is fully isolated from your host filesystem to prevent malicious downloads or drive-by attacks from escaping the sandbox. If you need this capability, please [open a feature request](https://github.com/rderaison/bromure/issues).
+Yes. File upload and download are controlled independently per profile under Privacy & Safety. When downloads are enabled, you can optionally enable VirusTotal scanning to check files for malware before they reach your Mac.
 
-**Can I use Bromure as my default browser?**
+**Does each VM session require a lot of disk space?**
 
-Yes. Go to System Settings > Desktop & Dock > Default web browser and select Bromure. Links clicked in other apps will open in a fresh, isolated VM session.
-
-**Does each VM session require 4 GB of disk space?**
-
-No. Bromure uses `clonefile()` to create each session's disk image, which leverages APFS copy-on-write (COW) semantics. The cloned image initially takes up almost no additional space -- only the blocks that the VM actually modifies during the session consume real disk storage. A typical browsing session writes very little to disk, so the actual cost per session is usually just a few megabytes rather than the full 4 GB.
+No. Bromure uses `clonefile()` to create each session's disk image, which leverages APFS copy-on-write (COW) semantics. The cloned image initially takes up almost no additional space -- only the blocks that the VM actually modifies during the session consume real disk storage. A typical browsing session writes very little to disk, so the actual cost per session is usually just a few megabytes.
 
 **Networking in the VM is broken when my VPN is active.**
 

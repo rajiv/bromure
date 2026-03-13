@@ -121,10 +121,12 @@ def main():
 
     my_pid = str(os.getpid())
 
-    # Wait for /dev/video0 (created by config-agent when webcam is enabled)
+    # Wait for /dev/video0 (created by config-agent when webcam is enabled).
+    # The device won't exist until a session is claimed and config-agent loads
+    # v4l2loopback, so use a long sleep to avoid burning CPU in pre-warmed VMs.
     log("waiting for " + VIDEO_DEV)
     while not os.path.exists(VIDEO_DEV):
-        time.sleep(0.5)
+        time.sleep(5)
 
     # Read camera resolution from chrome-env (written by config-agent before v4l2loopback)
     width = int(read_chrome_env("WEBCAM_WIDTH", "640"))
@@ -148,7 +150,7 @@ def main():
         # Main loop: wait for readers, then stream
         while True:
             if not has_readers(my_pid):
-                time.sleep(0.5)
+                time.sleep(2)
                 continue
 
             log("reader detected, connecting to host")

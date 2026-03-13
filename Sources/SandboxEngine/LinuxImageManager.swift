@@ -71,9 +71,9 @@ public final class LinuxImageManager {
         }
 
         // 2. Create raw disk image
-        progress(.stepStart("Creating \(diskSizeGB)GB disk image"))
+        progress(.stepStart("Creating disk image"))
         try createRawDisk(at: linuxDiskURL, sizeGB: diskSizeGB)
-        progress(.stepDone("Creating \(diskSizeGB)GB disk image"))
+        progress(.stepDone("Creating disk image"))
 
         // 3. Boot Alpine netboot, install to disk, add Chromium.
         progress(.stepStart("Installing Alpine Linux with Chromium"))
@@ -566,7 +566,7 @@ public final class LinuxImageManager {
         writer.write(Data("rm -f /tmp/s.b64\n".utf8))
         try await consoleOutput.waitFor(marker: "localhost:~#", timeout: 30, progress: progress)
 
-        progress(.message("Running setup script (installing packages, this may take a few minutes)..."))
+        progress(.message("Running setup script (installing packages)"))
 
         // Run the setup script as a single command. It will print
         // SANDBOX_SETUP_DONE on success or SANDBOX_SETUP_FAILED on error.

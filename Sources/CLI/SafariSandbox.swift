@@ -13,6 +13,23 @@ struct Bromure: ParsableCommand {
         subcommands: [Launch.self, Init.self, Run.self, Setup.self],
         defaultSubcommand: Launch.self
     )
+
+    /// Strip Apple-internal flags (e.g. -AppleLanguages, -AppleLocale) from
+    /// CommandLine.arguments so ArgumentParser doesn't reject them.
+    /// This lets `bromure -AppleLanguages "(fr)"` work for locale testing.
+    static func main() {
+        // Strip Apple-internal flags (e.g. -AppleLanguages, -AppleLocale) so
+        // ArgumentParser doesn't reject them. Lets `bromure -AppleLanguages "(fr)"` work.
+        let args = Array(CommandLine.arguments.dropFirst()) // drop argv[0]
+        var filtered: [String] = []
+        var skipNext = false
+        for arg in args {
+            if skipNext { skipNext = false; continue }
+            if arg.hasPrefix("-Apple") { skipNext = true; continue }
+            filtered.append(arg)
+        }
+        Self.main(filtered)
+    }
 }
 
 // MARK: - Launch: Open the GUI app (default)
@@ -23,6 +40,11 @@ struct Launch: ParsableCommand {
     )
 
     func run() throws {
+        // Copy localization .lproj directories from the SPM module bundle into
+        // the main app bundle's Resources so SwiftUI's Text() can find them.
+        // In release builds, build.sh handles this; this covers debug builds.
+        Self.installLocalizations()
+
         let osVersion = ProcessInfo.processInfo.operatingSystemVersion
         if osVersion.majorVersion < 14 {
             print("Error: Bromure requires macOS 14 (Sonoma) or later.")
@@ -36,10 +58,30 @@ struct Launch: ParsableCommand {
 
             let state = AppState()
             let delegate = GUIAppDelegate(state: state)
+
             app.delegate = delegate
 
             app.run()
             _ = delegate
+        }
+    }
+
+    /// Copy .lproj directories from SPM's Bundle.module into Bundle.main's
+    /// Resources directory so SwiftUI's Text() localization works.
+    /// In release builds build.sh does this at build time; this handles debug.
+    private static func installLocalizations() {
+        let moduleBundle = Bundle.module
+        guard let mainResources = Bundle.main.resourceURL else { return }
+        let fm = FileManager.default
+        guard let contents = try? fm.contentsOfDirectory(
+            at: moduleBundle.bundleURL,
+            includingPropertiesForKeys: nil
+        ) else { return }
+        for url in contents where url.pathExtension == "lproj" {
+            let dest = mainResources.appendingPathComponent(url.lastPathComponent)
+            if !fm.fileExists(atPath: dest.path) {
+                try? fm.copyItem(at: url, to: dest)
+            }
         }
     }
 }
@@ -147,10 +189,10 @@ final class GUIAppDelegate: NSObject, NSApplicationDelegate, NSWindowDelegate {
             : urlString
 
         let alert = NSAlert()
-        alert.messageText = "Choose a profile"
-        alert.informativeText = "Which profile should open \(truncatedURL)?"
-        alert.addButton(withTitle: "Open")
-        alert.addButton(withTitle: "Cancel")
+        alert.messageText = NSLocalizedString("Choose a profile", comment: "")
+        alert.informativeText = String(format: NSLocalizedString("Which profile should open %@?", comment: ""), truncatedURL)
+        alert.addButton(withTitle: NSLocalizedString("Open", comment: ""))
+        alert.addButton(withTitle: NSLocalizedString("Cancel", comment: ""))
         alert.alertStyle = .informational
 
         let containerWidth: CGFloat = 400
@@ -295,7 +337,7 @@ final class GUIAppDelegate: NSObject, NSApplicationDelegate, NSWindowDelegate {
             defer: false
         )
         window.contentView = hostingView
-        window.title = "Cloudflare WARP Terms of Service"
+        window.title = NSLocalizedString("Cloudflare WARP Terms of Service", comment: "")
         window.animationBehavior = .none
         window.center()
         window.makeKeyAndOrderFront(nil)
@@ -363,7 +405,7 @@ final class GUIAppDelegate: NSObject, NSApplicationDelegate, NSWindowDelegate {
         )
         window.isReleasedWhenClosed = false
         window.contentView = hostingView
-        window.title = "Settings"
+        window.title = NSLocalizedString("Settings", comment: "")
         window.center()
         window.makeKeyAndOrderFront(nil)
 
@@ -377,15 +419,15 @@ final class GUIAppDelegate: NSObject, NSApplicationDelegate, NSWindowDelegate {
 
         // App menu
         let appMenu = NSMenu()
-        appMenu.addItem(withTitle: "About Bromure",
+        appMenu.addItem(withTitle: NSLocalizedString("About Bromure", comment: ""),
                         action: #selector(NSApplication.orderFrontStandardAboutPanel(_:)),
                         keyEquivalent: "")
         appMenu.addItem(NSMenuItem.separator())
-        appMenu.addItem(withTitle: "Settings...",
+        appMenu.addItem(withTitle: NSLocalizedString("Settings...", comment: ""),
                         action: #selector(showSettings(_:)),
                         keyEquivalent: ",")
         appMenu.addItem(NSMenuItem.separator())
-        appMenu.addItem(withTitle: "Quit Bromure",
+        appMenu.addItem(withTitle: NSLocalizedString("Quit Bromure", comment: ""),
                         action: #selector(NSApplication.terminate(_:)),
                         keyEquivalent: "q")
         let appItem = NSMenuItem()
@@ -393,16 +435,16 @@ final class GUIAppDelegate: NSObject, NSApplicationDelegate, NSWindowDelegate {
         mainMenu.addItem(appItem)
 
         // File menu
-        let fileMenu = NSMenu(title: "File")
-        fileMenu.addItem(withTitle: "New Browser",
+        let fileMenu = NSMenu(title: NSLocalizedString("File", comment: ""))
+        fileMenu.addItem(withTitle: NSLocalizedString("New Browser", comment: ""),
                          action: #selector(newBrowserAction(_:)),
                          keyEquivalent: "n")
         fileMenu.addItem(NSMenuItem.separator())
-        fileMenu.addItem(withTitle: "Recreate Base Image\u{2026}",
+        fileMenu.addItem(withTitle: NSLocalizedString("Recreate Base Image\u{2026}", comment: ""),
                          action: #selector(recreateBaseImageAction(_:)),
                          keyEquivalent: "")
         fileMenu.addItem(NSMenuItem.separator())
-        fileMenu.addItem(withTitle: "Close Window",
+        fileMenu.addItem(withTitle: NSLocalizedString("Close Window", comment: ""),
                          action: #selector(NSWindow.performClose(_:)),
                          keyEquivalent: "w")
         let fileItem = NSMenuItem()
@@ -410,8 +452,8 @@ final class GUIAppDelegate: NSObject, NSApplicationDelegate, NSWindowDelegate {
         mainMenu.addItem(fileItem)
 
         // View menu
-        let viewMenu = NSMenu(title: "View")
-        viewMenu.addItem(withTitle: "Toggle File Drawer",
+        let viewMenu = NSMenu(title: NSLocalizedString("View", comment: ""))
+        viewMenu.addItem(withTitle: NSLocalizedString("Toggle File Drawer", comment: ""),
                          action: #selector(toggleFileDrawerAction(_:)),
                          keyEquivalent: "d")
         let viewItem = NSMenuItem()
@@ -419,19 +461,19 @@ final class GUIAppDelegate: NSObject, NSApplicationDelegate, NSWindowDelegate {
         mainMenu.addItem(viewItem)
 
         // Edit menu
-        let editMenu = NSMenu(title: "Edit")
-        editMenu.addItem(withTitle: "Cut", action: #selector(NSText.cut(_:)), keyEquivalent: "x")
-        editMenu.addItem(withTitle: "Copy", action: #selector(NSText.copy(_:)), keyEquivalent: "c")
-        editMenu.addItem(withTitle: "Paste", action: #selector(NSText.paste(_:)), keyEquivalent: "v")
-        editMenu.addItem(withTitle: "Select All", action: #selector(NSText.selectAll(_:)), keyEquivalent: "a")
+        let editMenu = NSMenu(title: NSLocalizedString("Edit", comment: ""))
+        editMenu.addItem(withTitle: NSLocalizedString("Cut", comment: ""), action: #selector(NSText.cut(_:)), keyEquivalent: "x")
+        editMenu.addItem(withTitle: NSLocalizedString("Copy", comment: ""), action: #selector(NSText.copy(_:)), keyEquivalent: "c")
+        editMenu.addItem(withTitle: NSLocalizedString("Paste", comment: ""), action: #selector(NSText.paste(_:)), keyEquivalent: "v")
+        editMenu.addItem(withTitle: NSLocalizedString("Select All", comment: ""), action: #selector(NSText.selectAll(_:)), keyEquivalent: "a")
         let editItem = NSMenuItem()
         editItem.submenu = editMenu
         mainMenu.addItem(editItem)
 
         // Window menu
-        let windowMenu = NSMenu(title: "Window")
-        windowMenu.addItem(withTitle: "Minimize", action: #selector(NSWindow.performMiniaturize(_:)), keyEquivalent: "m")
-        windowMenu.addItem(withTitle: "Bromure",
+        let windowMenu = NSMenu(title: NSLocalizedString("Window", comment: ""))
+        windowMenu.addItem(withTitle: NSLocalizedString("Minimize", comment: ""), action: #selector(NSWindow.performMiniaturize(_:)), keyEquivalent: "m")
+        windowMenu.addItem(withTitle: NSLocalizedString("Bromure", comment: ""),
                            action: #selector(showMainWindowAction(_:)),
                            keyEquivalent: "0")
         let windowItem = NSMenuItem()
@@ -458,11 +500,11 @@ final class GUIAppDelegate: NSObject, NSApplicationDelegate, NSWindowDelegate {
 
     @MainActor @objc func recreateBaseImageAction(_ sender: Any?) {
         let alert = NSAlert()
-        alert.messageText = "Recreate base image?"
-        alert.informativeText = "This will close all browser windows, delete the current base image, and rebuild it from scratch. This may take several minutes."
+        alert.messageText = NSLocalizedString("Recreate base image?", comment: "")
+        alert.informativeText = NSLocalizedString("This will close all browser windows, delete the current base image, and rebuild it from scratch. This may take several minutes.", comment: "")
         alert.alertStyle = .warning
-        alert.addButton(withTitle: "Recreate")
-        alert.addButton(withTitle: "Cancel")
+        alert.addButton(withTitle: NSLocalizedString("Recreate", comment: ""))
+        alert.addButton(withTitle: NSLocalizedString("Cancel", comment: ""))
         if alert.runModal() == .alertFirstButtonReturn {
             // Kill all running VMs first
             Task { @MainActor in
@@ -570,10 +612,10 @@ final class GUIAppDelegate: NSObject, NSApplicationDelegate, NSWindowDelegate {
         var restoreSession = false
         if profile.isPersistent, !isFirstBoot, profileImageDir != nil {
             let alert = NSAlert()
-            alert.messageText = "Restore previous tabs?"
-            alert.informativeText = "This profile has data from a previous session. Would you like to restore your open tabs?"
-            alert.addButton(withTitle: "Restore")
-            alert.addButton(withTitle: "Start Fresh")
+            alert.messageText = NSLocalizedString("Restore previous tabs?", comment: "")
+            alert.informativeText = NSLocalizedString("This profile has data from a previous session. Would you like to restore your open tabs?", comment: "")
+            alert.addButton(withTitle: NSLocalizedString("Restore", comment: ""))
+            alert.addButton(withTitle: NSLocalizedString("Start Fresh", comment: ""))
             alert.alertStyle = .informational
             restoreSession = alert.runModal() == .alertFirstButtonReturn
         }
@@ -645,14 +687,14 @@ final class GUIAppDelegate: NSObject, NSApplicationDelegate, NSWindowDelegate {
         // If there are active sessions, confirm before quitting
         if !sessions.isEmpty {
             let alert = NSAlert()
-            alert.messageText = "Quit Bromure?"
+            alert.messageText = NSLocalizedString("Quit Bromure?", comment: "")
             let count = sessions.count
             alert.informativeText = count == 1
-                ? "There is 1 open browser session. All session data will be lost."
-                : "There are \(count) open browser sessions. All session data will be lost."
+                ? NSLocalizedString("There is 1 open browser session. All session data will be lost.", comment: "")
+                : String(format: NSLocalizedString("There are %lld open browser sessions. All session data will be lost.", comment: ""), count)
             alert.alertStyle = .warning
-            alert.addButton(withTitle: "Quit")
-            alert.addButton(withTitle: "Cancel")
+            alert.addButton(withTitle: NSLocalizedString("Quit", comment: ""))
+            alert.addButton(withTitle: NSLocalizedString("Cancel", comment: ""))
             let response = alert.runModal()
             if response == .alertSecondButtonReturn {
                 return .terminateCancel
@@ -786,9 +828,9 @@ final class BrowserSession {
         )
 
         if let profile {
-            window.title = "Bromure \u{2014} \(profile.name)"
+            window.title = String(format: NSLocalizedString("Bromure — %@", comment: ""), profile.name)
         } else {
-            window.title = "Bromure \u{2014} Chromium"
+            window.title = NSLocalizedString("Bromure — Chromium", comment: "")
         }
 
         window.contentView = contentView
@@ -1042,11 +1084,11 @@ private final class SessionDelegateHelper: NSObject, VZVirtualMachineDelegate, N
         guard let session else { return true }
         if session.closing || session.confirmed { return true }
         let alert = NSAlert()
-        alert.messageText = "Close this browser?"
-        alert.informativeText = "All browsing data in this window will be permanently lost. This cannot be undone."
+        alert.messageText = NSLocalizedString("Close this browser?", comment: "")
+        alert.informativeText = NSLocalizedString("All browsing data in this window will be permanently lost. This cannot be undone.", comment: "")
         alert.alertStyle = .warning
-        alert.addButton(withTitle: "Close")
-        alert.addButton(withTitle: "Cancel")
+        alert.addButton(withTitle: NSLocalizedString("Close", comment: ""))
+        alert.addButton(withTitle: NSLocalizedString("Cancel", comment: ""))
         alert.beginSheetModal(for: sender) { [weak session] response in
             if response == .alertFirstButtonReturn {
                 session?.confirmed = true
@@ -1201,7 +1243,7 @@ struct Setup: ParsableCommand {
             backing: .buffered,
             defer: false
         )
-        window.title = "Bromure \u{2014} Base Image Setup"
+        window.title = NSLocalizedString("Bromure — Base Image Setup", comment: "")
         window.contentView = vmView
         window.center()
         window.makeKeyAndOrderFront(nil)

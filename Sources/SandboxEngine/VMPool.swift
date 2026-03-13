@@ -134,7 +134,8 @@ public final class VMPool {
         // Wait for boot (shell prompt), just create /tmp/bromure — no config yet.
         // After boot detection, the handler switches to drain mode (keeps reading
         // so the pipe buffer doesn't fill up and block the VM's shell).
-        let waiter = await waitForBoot(outputPipe: outputPipe, inputPipe: inputPipe, onBootDetected: "/usr/local/bin/on-boot.sh")
+        let onBoot = "/usr/local/bin/on-boot.sh"
+        let waiter = await waitForBoot(outputPipe: outputPipe, inputPipe: inputPipe, onBootDetected: onBoot)
 
         warmVM = WarmVM(
             vm: vm,
@@ -275,6 +276,7 @@ public final class VMPool {
         }
         if config.enableMicrophone { cfg["microphone"] = true }
         if !config.rootCAs.isEmpty { cfg["rootCAs"] = config.rootCAs }
+        cfg["locale"] = config.locale
 
         // Send config to guest via vsock.
         // Host listens on port 5000; guest config-agent.py connects to it.
@@ -498,7 +500,7 @@ public final class VMPool {
     private func inflateBalloon(vm: VZVirtualMachine) {
         guard let balloon = vm.memoryBalloonDevices.first
                 as? VZVirtioTraditionalMemoryBalloonDevice else { return }
-        let keep: UInt64 = 128 * 1024 * 1024  // 128 MB for idle guest
+        let keep: UInt64 = 256 * 1024 * 1024  // 256 MB for idle guest
         let total = config.memorySize
         let target = total > keep ? total - keep : 0
         balloon.targetVirtualMachineMemorySize = keep

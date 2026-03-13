@@ -94,7 +94,7 @@ mount --bind /dev /mnt/dev
 retry chroot /mnt apk update
 retry chroot /mnt apk add openrc linux-lts linux-firmware-none mkinitfs e2fsprogs
 retry chroot /mnt apk add \
-    chromium xorg-server xinit mesa-dri-gallium mesa-egl mesa-gl mesa-gles \
+    chromium chromium-lang xorg-server xinit mesa-dri-gallium mesa-egl mesa-gl mesa-gles \
     mesa-gbm eudev dbus dbus-x11 ttf-freefont ttf-dejavu font-noto-emoji font-liberation \
     xf86-input-libinput agetty util-linux openbox xrandr xdotool setxkbmap \
     pipewire pipewire-pulse wireplumber pipewire-tools alsa-utils alsa-plugins-pulse adwaita-icon-theme \

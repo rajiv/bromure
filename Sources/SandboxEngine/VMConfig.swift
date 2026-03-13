@@ -237,11 +237,47 @@ public struct VMConfig {
     }
 
     /// Detect macOS language and map to Linux locale.
+    ///
+    /// macOS uses BCP 47 tags like "en-US", "zh-Hant-TW", "zh-Hans-CN", "pt-BR".
+    /// Linux expects POSIX locales like "en_US", "zh_TW", "zh_CN", "pt_BR".
+    /// The script subtag (Hant/Hans) must be stripped and mapped to a region.
     static func detectLocale() -> String {
         let langs = Locale.preferredLanguages
         guard let first = langs.first else { return "en_US" }
-        // "en-US" → "en_US"
-        return first.replacingOccurrences(of: "-", with: "_")
+
+        let parts = first.split(separator: "-")
+        let lang = String(parts[0])  // "en", "zh", "pt", etc.
+
+        // Script-based locales (e.g. "zh-Hant", "zh-Hant-TW", "zh-Hans-CN")
+        if parts.count >= 2 {
+            let second = String(parts[1])
+            // If the second component is a script (4 letters), map it to a region
+            if second.count == 4 {
+                // Use explicit region if present (e.g. "zh-Hant-TW" → "zh_TW")
+                if parts.count >= 3 {
+                    return "\(lang)_\(parts[2])"
+                }
+                // Map script to default region
+                switch "\(lang)-\(second)" {
+                case "zh-Hant": return "zh_TW"
+                case "zh-Hans": return "zh_CN"
+                default: return "\(lang)_\(second)"
+                }
+            }
+            // Normal lang-region (e.g. "en-US", "pt-BR")
+            return "\(lang)_\(second)"
+        }
+
+        // Language only (e.g. "fr", "de") — add default region
+        let defaultRegions = [
+            "en": "US", "fr": "FR", "de": "DE", "es": "ES", "it": "IT",
+            "pt": "BR", "ja": "JP", "ko": "KR", "zh": "CN",
+            "nl": "NL", "sv": "SE", "nb": "NO", "da": "DK", "fi": "FI",
+            "pl": "PL", "cs": "CZ", "tr": "TR", "ru": "RU", "ar": "SA",
+            "he": "IL",
+        ]
+        let region = defaultRegions[lang] ?? lang.uppercased()
+        return "\(lang)_\(region)"
     }
 
     /// Default storage directory: ~/Library/Application Support/Bromure

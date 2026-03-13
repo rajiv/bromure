@@ -108,8 +108,8 @@ public final class ProfileManager {
 
     /// Create a new profile and save it.
     @discardableResult
-    public func createProfile(name: String, color: ProfileColor? = .blue, settings: ProfileSettings = ProfileSettings()) -> Profile {
-        let profile = Profile(name: name, color: color, settings: settings)
+    public func createProfile(name: String, comments: String = "", color: ProfileColor? = .blue, settings: ProfileSettings = ProfileSettings()) -> Profile {
+        let profile = Profile(name: name, comments: comments, color: color, settings: settings)
         profiles.append(profile)
         save(profile)
         return profile
@@ -171,7 +171,7 @@ public final class ProfileManager {
             settings.canDownload = true
         }
 
-        let profile = createProfile(name: "Default", color: nil, settings: settings)
+        let profile = createProfile(name: "Private Browsing", color: nil, settings: settings)
         defaults.set(true, forKey: "vm.profilesMigrated")
         return profile
     }

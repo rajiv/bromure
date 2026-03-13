@@ -95,6 +95,12 @@ for bundle in "$BUILD_DIR"/*.bundle; do
     [ -e "$bundle" ] && cp -R "$bundle" "$RESOURCES_DIR/"
 done
 
+# Copy localization .lproj directories into the app bundle so Bundle.main can find them.
+# SwiftUI looks up localized strings in Bundle.main, not Bundle.module.
+for lproj in "$BUILD_DIR"/bromure_bromure.bundle/*.lproj; do
+    [ -d "$lproj" ] && cp -R "$lproj" "$RESOURCES_DIR/"
+done
+
 # --- Sign ---
 echo "=== Signing with: $DEVELOPER_ID ==="
 codesign --force --options runtime \

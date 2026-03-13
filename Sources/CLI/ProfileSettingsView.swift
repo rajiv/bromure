@@ -72,7 +72,7 @@ struct ProfileSettingsView: View {
                 // Sidebar
                 List(SettingsCategory.allCases, selection: $selectedCategory) { category in
                     Label {
-                        Text(category.rawValue)
+                        Text(LocalizedStringKey(category.rawValue))
                     } icon: {
                         Image(systemName: category.icon)
                             .font(.system(size: 12))
@@ -187,6 +187,22 @@ struct ProfileSettingsView: View {
 
             settingsDivider
 
+            // Comments
+            VStack(alignment: .leading, spacing: 6) {
+                Text("Comments").font(.headline)
+                Text("A short note about this profile. Shown when you hover over it in the profile list.")
+                    .settingDescription()
+                TextEditor(text: $draft.comments)
+                    .font(.body)
+                    .frame(height: 56)
+                    .overlay(
+                        RoundedRectangle(cornerRadius: 5)
+                            .stroke(.quaternary, lineWidth: 1)
+                    )
+            }
+
+            settingsDivider
+
             // Color
             VStack(alignment: .leading, spacing: 6) {
                 Text("Window Color").font(.headline)
@@ -200,7 +216,7 @@ struct ProfileSettingsView: View {
                             Circle()
                                 .fill(Self.swiftUIColor(for: color))
                                 .frame(width: 12, height: 12)
-                            Text(color.label)
+                            Text(LocalizedStringKey(color.label))
                         }
                         .tag(Optional(color))
                     }
@@ -218,6 +234,31 @@ struct ProfileSettingsView: View {
                     .settingDescription()
                 TextField("https://", text: $draft.settings.homePage)
                     .textFieldStyle(.roundedBorder)
+            }
+
+            settingsDivider
+
+            // Language
+            VStack(alignment: .leading, spacing: 6) {
+                Text("Language").font(.headline)
+                Text("The language used by the browser. \u{201C}Same as System\u{201D} follows your Mac\u{2019}s language. Choosing a specific language reduces browser fingerprinting.")
+                    .settingDescription()
+                Picker("", selection: Binding(
+                    get: { draft.settings.locale ?? "" },
+                    set: { draft.settings.locale = $0.isEmpty ? nil : $0 }
+                )) {
+                    Text("Same as System").tag("")
+                    Divider()
+                    Text("English").tag("en_US")
+                    Text("Fran\u{00e7}ais").tag("fr_FR")
+                    Text("Deutsch").tag("de_DE")
+                    Text("Espa\u{00f1}ol").tag("es_ES")
+                    Text("Portugu\u{00ea}s").tag("pt_BR")
+                    Text("\u{65e5}\u{672c}\u{8a9e}").tag("ja_JP")
+                    Text("\u{4e2d}\u{6587}\u{ff08}\u{7e41}\u{9ad4}\u{ff09}").tag("zh_TW")
+                    Text("\u{4e2d}\u{6587}\u{ff08}\u{7b80}\u{4f53}\u{ff09}").tag("zh_CN")
+                }
+                .labelsHidden()
             }
 
             settingsDivider
@@ -592,7 +633,7 @@ struct ProfileSettingsView: View {
 
     // MARK: - Reusable Components
 
-    private func sectionHeader(_ title: String, subtitle: String) -> some View {
+    private func sectionHeader(_ title: LocalizedStringKey, subtitle: LocalizedStringKey) -> some View {
         VStack(alignment: .leading, spacing: 2) {
             Text(title)
                 .font(.title2.bold())
@@ -608,10 +649,10 @@ struct ProfileSettingsView: View {
     }
 
     private func settingToggle(
-        _ title: String,
-        description: String,
+        _ title: LocalizedStringKey,
+        description: LocalizedStringKey,
         isOn: Binding<Bool>,
-        badge: String? = nil
+        badge: LocalizedStringKey? = nil
     ) -> some View {
         VStack(alignment: .leading, spacing: 4) {
             HStack(spacing: 6) {

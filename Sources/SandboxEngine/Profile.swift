@@ -14,14 +14,16 @@ public enum ProfileColor: String, Codable, CaseIterable, Equatable {
 public struct Profile: Codable, Identifiable, Equatable {
     public let id: UUID
     public var name: String
+    public var comments: String
     public var color: ProfileColor?
     public var settings: ProfileSettings
     public var createdAt: Date
     public var lastUsedAt: Date?
 
-    public init(name: String, color: ProfileColor? = .blue, settings: ProfileSettings = ProfileSettings()) {
+    public init(name: String, comments: String = "", color: ProfileColor? = .blue, settings: ProfileSettings = ProfileSettings()) {
         self.id = UUID()
         self.name = name
+        self.comments = comments
         self.color = color
         self.settings = settings
         self.createdAt = Date()
@@ -39,7 +41,7 @@ public struct Profile: Codable, Identifiable, Equatable {
 
     // Migration: decode old `isPersistent` field as `encryptOnDisk`
     enum CodingKeys: String, CodingKey {
-        case id, name, color, settings, createdAt, lastUsedAt
+        case id, name, comments, color, settings, createdAt, lastUsedAt
         case isPersistent  // legacy key
     }
 
@@ -47,6 +49,7 @@ public struct Profile: Codable, Identifiable, Equatable {
         let c = try decoder.container(keyedBy: CodingKeys.self)
         id = try c.decode(UUID.self, forKey: .id)
         name = try c.decode(String.self, forKey: .name)
+        comments = try c.decodeIfPresent(String.self, forKey: .comments) ?? ""
         color = try c.decodeIfPresent(ProfileColor.self, forKey: .color)
         settings = try c.decodeIfPresent(ProfileSettings.self, forKey: .settings) ?? ProfileSettings()
         createdAt = try c.decodeIfPresent(Date.self, forKey: .createdAt) ?? Date()
@@ -63,6 +66,7 @@ public struct Profile: Codable, Identifiable, Equatable {
         var c = encoder.container(keyedBy: CodingKeys.self)
         try c.encode(id, forKey: .id)
         try c.encode(name, forKey: .name)
+        try c.encode(comments, forKey: .comments)
         try c.encodeIfPresent(color, forKey: .color)
         try c.encode(settings, forKey: .settings)
         try c.encode(createdAt, forKey: .createdAt)
@@ -131,6 +135,9 @@ public struct ProfileSettings: Codable, Equatable {
     // Certificates
     public var rootCAs: [CustomRootCA] = []
 
+    // Locale
+    public var locale: String?  // nil = auto-detect from OS
+
     // Advanced
     public var persistent: Bool = false
     public var encryptOnDisk: Bool = false
@@ -167,6 +174,7 @@ public struct ProfileSettings: Codable, Equatable {
         microphoneDeviceID = try c.decodeIfPresent(String.self, forKey: .microphoneDeviceID)
         speakerDeviceID = try c.decodeIfPresent(String.self, forKey: .speakerDeviceID)
         rootCAs = try c.decodeIfPresent([CustomRootCA].self, forKey: .rootCAs) ?? defaults.rootCAs
+        locale = try c.decodeIfPresent(String.self, forKey: .locale)
         persistent = try c.decodeIfPresent(Bool.self, forKey: .persistent) ?? defaults.persistent
         encryptOnDisk = try c.decodeIfPresent(Bool.self, forKey: .encryptOnDisk) ?? defaults.encryptOnDisk
     }
@@ -210,7 +218,8 @@ public struct ProfileSettings: Codable, Equatable {
             speakerDeviceID: speakerDeviceID,
             rootCAs: rootCAs.map(\.pem),
             isolateFromLAN: isolateFromLAN,
-            allowedPorts: restrictPorts ? allowedPorts : nil
+            allowedPorts: restrictPorts ? allowedPorts : nil,
+            locale: locale
         )
     }
 }

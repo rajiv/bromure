@@ -153,6 +153,17 @@ def write_chrome_env(cfg):
     if cfg.get("microphone"):
         lines.append("MICROPHONE=1")
 
+    # Locale: forward host OS locale to Chromium
+    locale = cfg.get("locale", "en_US")
+    # Map macOS locale (e.g. "en_US") to Chromium --lang format (e.g. "en-US")
+    chrome_lang = locale.replace("_", "-")
+    # Strip region for base language (e.g. "en-US" -> "en")
+    base_lang = locale.split("_")[0]
+    lines.append(f'CHROME_LANG="{chrome_lang}"')
+    lines.append(f'export LANG="{locale}.UTF-8"')
+    lines.append(f'export LC_ALL="{locale}.UTF-8"')
+    lines.append(f'export LANGUAGE="{base_lang}"')
+
     with open(env_file, "w") as f:
         f.write("\n".join(lines) + "\n")
 
@@ -254,10 +265,11 @@ def main():
     os.makedirs("/tmp/bromure", exist_ok=True)
 
     # Connect to host on vsock (retry until host listener is ready).
-    # The host sets up the listener at claim time, which may be seconds
-    # after boot, so we poll with a short interval.
+    # Pre-warmed VMs may sit idle for hours/days before being claimed,
+    # so we back off aggressively to avoid wasting CPU.
     sock = None
-    for _ in range(600):  # up to 60s
+    attempt = 0
+    while True:
         try:
             s = socket.socket(socket.AF_VSOCK, socket.SOCK_STREAM)
             s.connect((HOST_CID, VSOCK_PORT))
@@ -265,10 +277,14 @@ def main():
             break
         except (ConnectionRefusedError, ConnectionResetError, OSError):
             s.close()
-            time.sleep(0.1)
-    if sock is None:
-        print("config-agent: failed to connect after 60s", file=sys.stderr)
-        sys.exit(1)
+            attempt += 1
+            # Fast retries for 3s, then 1s for 30s, then settle at 5s
+            if attempt < 30:
+                time.sleep(0.1)
+            elif attempt < 60:
+                time.sleep(1.0)
+            else:
+                time.sleep(5.0)
     print("config-agent: connected to host", file=sys.stderr)
 
     # Read length-prefixed JSON: [u32be length][json payload]

@@ -70,9 +70,19 @@ final class AppState: @unchecked Sendable {
             if let migrated = self.profileManager.migrateFromUserDefaults() {
                 self.selectedProfileID = migrated.id
             }
-            // Ensure a Default profile always exists
+            // Ensure a Private Browsing profile always exists
             if self.profileManager.allProfiles.isEmpty {
-                let defaultProfile = self.profileManager.createProfile(name: "Default", color: nil)
+                var settings = ProfileSettings()
+                settings.enableGPU = true
+                settings.enableAudio = true
+                settings.enableClipboardSharing = true
+                settings.enableLinkSender = true
+                let defaultProfile = self.profileManager.createProfile(
+                    name: "Private Browsing",
+                    comments: "Fully stateless browsing. Nothing is saved between sessions \u{2014} no cookies, no history, no cache. Only the clipboard is shared with your Mac.",
+                    color: nil,
+                    settings: settings
+                )
                 self.selectedProfileID = defaultProfile.id
             }
             // Select first profile if none selected
@@ -192,9 +202,11 @@ final class AppState: @unchecked Sendable {
         let config = buildBaseConfig()
         pool = VMPool(config: config, storageDir: storageDir)
         poolReady = false
-        if ProcessInfo.processInfo.environment["BROMURE_DEBUG"] != nil {
+        let env = ProcessInfo.processInfo.environment
+        if env["BROMURE_DEBUG"] != nil && env["BROMURE_DEBUG_PREWARM"] == nil {
             // Skip pre-warming in debug mode to keep logs clean.
             // The pool is still needed for bootDedicated() — just don't warm up.
+            // Set BROMURE_DEBUG_PREWARM=1 to re-enable pre-warming in debug mode.
             poolReady = true
             phase = .ready
             return

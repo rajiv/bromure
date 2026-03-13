@@ -99,7 +99,7 @@ struct SettingsView: View {
             // Sidebar
             List(AppSettingsCategory.allCases, selection: $selectedCategory) { category in
                 Label {
-                    Text(category.rawValue)
+                    Text(LocalizedStringKey(category.rawValue))
                 } icon: {
                     Image(systemName: category.icon)
                         .font(.system(size: 12))
@@ -463,7 +463,7 @@ struct SettingsView: View {
 
     // MARK: - Reusable Components
 
-    private func sectionHeader(_ title: String, subtitle: String) -> some View {
+    private func sectionHeader(_ title: LocalizedStringKey, subtitle: LocalizedStringKey) -> some View {
         VStack(alignment: .leading, spacing: 2) {
             Text(title)
                 .font(.title2.bold())
@@ -479,8 +479,8 @@ struct SettingsView: View {
     }
 
     private func settingToggle(
-        _ title: String,
-        description: String,
+        _ title: LocalizedStringKey,
+        description: LocalizedStringKey,
         isOn: Binding<Bool>
     ) -> some View {
         VStack(alignment: .leading, spacing: 4) {

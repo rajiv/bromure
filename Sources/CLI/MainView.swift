@@ -139,7 +139,7 @@ struct MainView: View {
                             ProgressView()
                                 .controlSize(.small)
                         }
-                        Text(step.name)
+                        Text(LocalizedStringKey(step.name))
                             .font(.subheadline)
                             .foregroundStyle(step.done ? .secondary : .primary)
                     }
@@ -160,7 +160,7 @@ struct MainView: View {
                 .padding(.horizontal, 40)
             }
 
-            Text(status)
+            Text(LocalizedStringKey(status))
                 .font(.caption)
                 .foregroundStyle(.secondary)
 
@@ -229,6 +229,7 @@ struct MainView: View {
                         .help("Edit profile settings")
                     }
                     .tag(profile.id)
+                    .help(profile.comments.isEmpty ? "" : profile.comments)
                 }
             }
             .listStyle(.bordered(alternatesRowBackgrounds: true))
@@ -341,7 +342,7 @@ struct MainView: View {
                             Circle()
                                 .fill(ProfileSettingsView.swiftUIColor(for: color))
                                 .frame(width: 10, height: 10)
-                            Text(color.label)
+                            Text(LocalizedStringKey(color.label))
                         }
                         .tag(Optional(color))
                     }
@@ -470,7 +471,7 @@ struct MainView: View {
             defer: false
         )
         panel.contentView = hostingView
-        panel.title = "Profile Settings — \(profile.name)"
+        panel.title = String(format: NSLocalizedString("Profile Settings — %@", comment: ""), profile.name)
         panel.isReleasedWhenClosed = false
         panel.center()
         panel.makeKeyAndOrderFront(nil)
