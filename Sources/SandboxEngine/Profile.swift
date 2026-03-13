@@ -86,6 +86,29 @@ public struct CustomRootCA: Codable, Equatable, Identifiable {
     }
 }
 
+/// Webcam overlay effects (city/time, name badge, logo).
+public struct WebcamEffects: Codable, Equatable {
+    /// City name shown in the top-left corner.
+    public var cityName: String = ""
+    /// IANA time zone identifier (e.g. "America/New_York").
+    public var timeZoneIdentifier: String = ""
+    /// Display name shown in the bottom-right corner (TV anchor style).
+    public var displayName: String = ""
+    /// PNG data for the logo shown in the top-right corner.
+    public var logoPNGData: Data?
+    /// Font family name (e.g. "Helvetica Neue", "SF Pro").
+    public var fontFamily: String = "Helvetica Neue"
+    /// Font size as a percentage of video height (default 4.5 ≈ height/22).
+    public var fontSizePercent: Double = 4.5
+
+    public init() {}
+
+    /// Whether any effect is configured.
+    public var hasAnyEffect: Bool {
+        !cityName.isEmpty || !displayName.isEmpty || logoPNGData != nil
+    }
+}
+
 /// Per-profile settings. Hardware settings (memory, CPU, audio) are app-wide
 /// and read from UserDefaults at VM creation time.
 public struct ProfileSettings: Codable, Equatable {
@@ -132,6 +155,9 @@ public struct ProfileSettings: Codable, Equatable {
     public var microphoneDeviceID: String?
     public var speakerDeviceID: String?
 
+    // Webcam effects
+    public var webcamEffects: WebcamEffects = WebcamEffects()
+
     // Certificates
     public var rootCAs: [CustomRootCA] = []
 
@@ -173,6 +199,7 @@ public struct ProfileSettings: Codable, Equatable {
         webcamDeviceID = try c.decodeIfPresent(String.self, forKey: .webcamDeviceID)
         microphoneDeviceID = try c.decodeIfPresent(String.self, forKey: .microphoneDeviceID)
         speakerDeviceID = try c.decodeIfPresent(String.self, forKey: .speakerDeviceID)
+        webcamEffects = try c.decodeIfPresent(WebcamEffects.self, forKey: .webcamEffects) ?? defaults.webcamEffects
         rootCAs = try c.decodeIfPresent([CustomRootCA].self, forKey: .rootCAs) ?? defaults.rootCAs
         locale = try c.decodeIfPresent(String.self, forKey: .locale)
         persistent = try c.decodeIfPresent(Bool.self, forKey: .persistent) ?? defaults.persistent
@@ -216,6 +243,7 @@ public struct ProfileSettings: Codable, Equatable {
             webcamDeviceID: webcamDeviceID,
             microphoneDeviceID: microphoneDeviceID,
             speakerDeviceID: speakerDeviceID,
+            webcamEffects: webcamEffects,
             rootCAs: rootCAs.map(\.pem),
             isolateFromLAN: isolateFromLAN,
             allowedPorts: restrictPorts ? allowedPorts : nil,

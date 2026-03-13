@@ -65,6 +65,7 @@ struct ProfileSettingsView: View {
     @State private var pendingEncryptOnDisk = false
     @State private var showCAPicker = false
     @State private var caImportError: String?
+    @State private var showWebcamEffects = false
 
     var body: some View {
         VStack(spacing: 0) {
@@ -130,6 +131,13 @@ struct ProfileSettingsView: View {
             Button("Cancel", role: .cancel) { }
         } message: {
             Text("Changing the encryption setting will delete all existing browsing data for this profile. This cannot be undone.")
+        }
+        .sheet(isPresented: $showWebcamEffects) {
+            WebcamEffectsView(
+                effects: $draft.settings.webcamEffects,
+                webcamDeviceID: draft.settings.webcamDeviceID,
+                onDismiss: { showWebcamEffects = false }
+            )
         }
         .fileImporter(
             isPresented: $showCAPicker,
@@ -335,6 +343,23 @@ struct ProfileSettingsView: View {
                 description: "Let websites in this browser access your Mac\u{2019}s camera for video calls and meetings.",
                 isOn: $draft.settings.enableWebcam
             )
+
+            if draft.settings.enableWebcam {
+                Button {
+                    showWebcamEffects = true
+                } label: {
+                    HStack(spacing: 4) {
+                        Label("Effects\u{2026}", systemImage: "sparkles")
+                        if draft.settings.webcamEffects.hasAnyEffect {
+                            Circle()
+                                .fill(.blue)
+                                .frame(width: 6, height: 6)
+                        }
+                    }
+                }
+                .controlSize(.small)
+                .padding(.leading, 20)
+            }
 
             settingsDivider
 

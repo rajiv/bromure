@@ -110,6 +110,9 @@ public struct VMConfig {
     /// Unique ID of the speaker device to use (nil = default speaker).
     public var speakerDeviceID: String?
 
+    /// Webcam overlay effects (city/time, name badge, logo).
+    public var webcamEffects: WebcamEffects
+
     /// PEM-encoded custom root CA certificates to install in the guest.
     public var rootCAs: [String]
 
@@ -147,6 +150,7 @@ public struct VMConfig {
         webcamDeviceID: String? = nil,
         microphoneDeviceID: String? = nil,
         speakerDeviceID: String? = nil,
+        webcamEffects: WebcamEffects = WebcamEffects(),
         rootCAs: [String] = [],
         isolateFromLAN: Bool = false,
         allowedPorts: String? = nil,
@@ -179,6 +183,7 @@ public struct VMConfig {
         self.webcamDeviceID = webcamDeviceID
         self.microphoneDeviceID = microphoneDeviceID
         self.speakerDeviceID = speakerDeviceID
+        self.webcamEffects = webcamEffects
         self.rootCAs = rootCAs
         self.isolateFromLAN = isolateFromLAN
         self.allowedPorts = allowedPorts

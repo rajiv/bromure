@@ -873,7 +873,7 @@ final class BrowserSession {
 
         // Set up webcam bridge (vsock port 5400) for camera sharing.
         if config.enableWebcam, let dev = linkSocketDevice {
-            let bridge = MainActor.assumeIsolated { WebcamBridge(socketDevice: dev, cameraID: config.webcamDeviceID) }
+            let bridge = MainActor.assumeIsolated { WebcamBridge(socketDevice: dev, cameraID: config.webcamDeviceID, effects: config.webcamEffects) }
             self.webcamBridge = bridge
         }
 
