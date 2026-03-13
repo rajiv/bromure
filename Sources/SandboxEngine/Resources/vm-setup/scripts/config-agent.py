@@ -220,6 +220,10 @@ def write_dynamic_policy(cfg):
         policy["WebRtcUdpPortRange"] = "0-0"
         policy["WebRtcLocalIpsAllowedUrls"] = []
 
+    # Block all downloads at the browser level
+    if cfg.get("blockDownloads"):
+        policy["DownloadRestrictions"] = 3  # Block all downloads
+
     policy_path = "/etc/chromium/policies/managed/session.json"
     os.makedirs(os.path.dirname(policy_path), exist_ok=True)
     with open(policy_path, "w") as f:
@@ -369,6 +373,13 @@ def main():
     if not cfg.get("webcam"):
         run("pkill -f webcam-agent.py")
         subprocess.Popen(["rmmod", "v4l2loopback"], stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
+
+    # Start download guard daemon: inotify watcher that deletes files created
+    # outside dot-directories in /home/chrome (prevents saving downloads to the VM)
+    if cfg.get("blockDownloads"):
+        subprocess.Popen(
+            ["/usr/local/bin/download-guard.sh"],
+            stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
 
     # Configure services
     bg_pids, fire_and_forget = configure_services(cfg, ca_count)

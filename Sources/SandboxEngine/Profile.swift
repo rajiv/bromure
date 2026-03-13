@@ -270,6 +270,7 @@ public struct ProfileSettings: Codable, Equatable {
             proxyPort: hasProxy ? proxyPort : nil,
             proxyUsername: hasProxy && !proxyUsername.isEmpty ? proxyUsername : nil,
             proxyPassword: hasProxy && !proxyPassword.isEmpty ? proxyPassword : nil,
+            blockDownloads: !canDownload,
             locale: locale
         )
     }

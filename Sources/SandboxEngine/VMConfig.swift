@@ -137,6 +137,11 @@ public struct VMConfig {
     /// Password for proxy authentication (optional).
     public var proxyPassword: String?
 
+    /// Block all file downloads inside the guest browser.
+    /// When true, Chrome policy blocks downloads and an inotify guard deletes any
+    /// files created outside dot-directories in /home/chrome.
+    public var blockDownloads: Bool
+
     public init(
         cpuCount: Int? = nil,
         memorySize: UInt64 = 4 * 1024 * 1024 * 1024,
@@ -170,6 +175,7 @@ public struct VMConfig {
         proxyPort: Int? = nil,
         proxyUsername: String? = nil,
         proxyPassword: String? = nil,
+        blockDownloads: Bool = false,
         keyboardLayout: String? = nil,
         naturalScrolling: Bool? = nil,
         locale: String? = nil
@@ -207,6 +213,7 @@ public struct VMConfig {
         self.proxyPort = proxyPort
         self.proxyUsername = proxyUsername
         self.proxyPassword = proxyPassword
+        self.blockDownloads = blockDownloads
         self.keyboardLayout = keyboardLayout ?? VMConfig.detectKeyboardLayout()
         self.naturalScrolling = naturalScrolling ?? VMConfig.detectNaturalScrolling()
         self.locale = locale ?? VMConfig.detectLocale()

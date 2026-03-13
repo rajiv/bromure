@@ -281,6 +281,7 @@ public final class VMPool {
             if config.audioVolume < 100 { cfg["audioVolume"] = config.audioVolume }
         }
         if config.enableMicrophone { cfg["microphone"] = true }
+        if config.blockDownloads { cfg["blockDownloads"] = true }
         if !config.rootCAs.isEmpty { cfg["rootCAs"] = config.rootCAs }
         cfg["locale"] = config.locale
 
