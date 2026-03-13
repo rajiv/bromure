@@ -121,6 +121,9 @@ def write_chrome_env(cfg):
     if cfg.get("fileTransfer"):
         extra_flags.append("--silent-debugger-extension-api")
         extensions.append("/opt/bromure/extensions/file-picker")
+    # WebRTC block extension: loaded only when both webcam and microphone are off
+    if not cfg.get("webcam") and not cfg.get("microphone"):
+        extensions.append("/opt/bromure/extensions/webrtc-block")
     if extensions:
         extra_flags.append(f"--load-extension={','.join(extensions)}")
         # Only allow our extensions, disable any others
@@ -128,6 +131,7 @@ def write_chrome_env(cfg):
             "/opt/bromure/extensions/file-picker": "cjdidalalgkgekmhonlcaleiafjbkdfn",
             "/opt/bromure/extensions/link-sender": "enbpbmcnhegfldincheobkbmcddgngeo",
             "/opt/bromure/extensions/phishing-guard": "bihpbnfdiechljfdimgmkpbfmfpoejgm",
+            "/opt/bromure/extensions/webrtc-block": "glekfcbcaohbkpbaeiomgcklmlghmeki",
         }
         ids = [allowed_ids[e] for e in extensions if e in allowed_ids]
         if ids:
@@ -210,9 +214,11 @@ def write_dynamic_policy(cfg):
     policy["VideoCaptureAllowed"] = bool(cfg.get("webcam"))
     policy["AudioCaptureAllowed"] = bool(cfg.get("microphone"))
 
-    # Lock down WebRTC when both webcam and microphone are off
+    # Kill WebRTC entirely when both webcam and microphone are off
     if not cfg.get("webcam") and not cfg.get("microphone"):
         policy["WebRtcIPHandlingPolicy"] = "disable_non_proxied_udp"
+        policy["WebRtcUdpPortRange"] = "0-0"
+        policy["WebRtcLocalIpsAllowedUrls"] = []
 
     policy_path = "/etc/chromium/policies/managed/session.json"
     os.makedirs(os.path.dirname(policy_path), exist_ok=True)

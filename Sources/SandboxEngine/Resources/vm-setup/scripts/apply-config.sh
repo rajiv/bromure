@@ -92,6 +92,10 @@ if [ "$FILE_TRANSFER" = "1" ]; then
     EXTRA_FLAGS="$EXTRA_FLAGS --silent-debugger-extension-api"
     EXTENSIONS="${EXTENSIONS:+$EXTENSIONS,}/opt/bromure/extensions/file-picker"
 fi
+# WebRTC block extension: loaded only when both webcam and microphone are off
+if [ "$WEBCAM" != "1" ] && [ "$MICROPHONE" != "1" ]; then
+    EXTENSIONS="${EXTENSIONS:+$EXTENSIONS,}/opt/bromure/extensions/webrtc-block"
+fi
 if [ -n "$EXTENSIONS" ]; then
     EXTRA_FLAGS="$EXTRA_FLAGS --load-extension=$EXTENSIONS"
     # Only allow our extensions, disable any others
@@ -102,6 +106,8 @@ if [ -n "$EXTENSIONS" ]; then
         ALLOWED_IDS="${ALLOWED_IDS:+$ALLOWED_IDS,}enbpbmcnhegfldincheobkbmcddgngeo"
     echo "$EXTENSIONS" | grep -q "file-picker" && \
         ALLOWED_IDS="${ALLOWED_IDS:+$ALLOWED_IDS,}cjdidalalgkgekmhonlcaleiafjbkdfn"
+    echo "$EXTENSIONS" | grep -q "webrtc-block" && \
+        ALLOWED_IDS="${ALLOWED_IDS:+$ALLOWED_IDS,}glekfcbcaohbkpbaeiomgcklmlghmeki"
     [ -n "$ALLOWED_IDS" ] && \
         EXTRA_FLAGS="$EXTRA_FLAGS --disable-extensions-except=$ALLOWED_IDS"
 fi
@@ -146,9 +152,11 @@ else
     echo '  "AudioCaptureAllowed": false' >> "$SESSION_POLICY"
 fi
 if [ "$WEBCAM" != "1" ] && [ "$MICROPHONE" != "1" ]; then
-    # Replace last line to add comma, then add WebRTC policy
+    # Replace last line to add comma, then add WebRTC policies
     sed -i '$ s/$/,/' "$SESSION_POLICY"
-    echo '  "WebRtcIPHandlingPolicy": "disable_non_proxied_udp"' >> "$SESSION_POLICY"
+    echo '  "WebRtcIPHandlingPolicy": "disable_non_proxied_udp",' >> "$SESSION_POLICY"
+    echo '  "WebRtcUdpPortRange": "0-0",' >> "$SESSION_POLICY"
+    echo '  "WebRtcLocalIpsAllowedUrls": []' >> "$SESSION_POLICY"
 fi
 echo "}" >> "$SESSION_POLICY"
 

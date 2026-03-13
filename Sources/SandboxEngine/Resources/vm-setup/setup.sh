@@ -303,6 +303,16 @@ for f in manifest.json background.js content.js; do
         cp "$SCRIPT_DIR/extensions/file-picker/$f" /mnt/opt/bromure/extensions/file-picker/
 done
 
+# ---------------------------------------------------------------------------
+# WebRTC block extension (conditionally loaded at runtime)
+# ---------------------------------------------------------------------------
+
+mkdir -p /mnt/opt/bromure/extensions/webrtc-block
+for f in manifest.json block.js; do
+    [ -f "$SCRIPT_DIR/extensions/webrtc-block/$f" ] && \
+        cp "$SCRIPT_DIR/extensions/webrtc-block/$f" /mnt/opt/bromure/extensions/webrtc-block/
+done
+
 # Native messaging hosts (link sender + file picker)
 mkdir -p /mnt/etc/chromium/native-messaging-hosts
 install_config configs/com.bromure.link_sender.json \
