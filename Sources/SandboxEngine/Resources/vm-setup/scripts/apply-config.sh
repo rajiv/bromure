@@ -92,8 +92,19 @@ if [ "$FILE_TRANSFER" = "1" ]; then
     EXTRA_FLAGS="$EXTRA_FLAGS --silent-debugger-extension-api"
     EXTENSIONS="${EXTENSIONS:+$EXTENSIONS,}/opt/bromure/extensions/file-picker"
 fi
-[ -n "$EXTENSIONS" ] && \
+if [ -n "$EXTENSIONS" ]; then
     EXTRA_FLAGS="$EXTRA_FLAGS --load-extension=$EXTENSIONS"
+    # Only allow our extensions, disable any others
+    ALLOWED_IDS=""
+    echo "$EXTENSIONS" | grep -q "phishing-guard" && \
+        ALLOWED_IDS="${ALLOWED_IDS:+$ALLOWED_IDS,}bihpbnfdiechljfdimgmkpbfmfpoejgm"
+    echo "$EXTENSIONS" | grep -q "link-sender" && \
+        ALLOWED_IDS="${ALLOWED_IDS:+$ALLOWED_IDS,}enbpbmcnhegfldincheobkbmcddgngeo"
+    echo "$EXTENSIONS" | grep -q "file-picker" && \
+        ALLOWED_IDS="${ALLOWED_IDS:+$ALLOWED_IDS,}cjdidalalgkgekmhonlcaleiafjbkdfn"
+    [ -n "$ALLOWED_IDS" ] && \
+        EXTRA_FLAGS="$EXTRA_FLAGS --disable-extensions-except=$ALLOWED_IDS"
+fi
 
 [ -n "$PROFILE_DIR" ] && \
     EXTRA_FLAGS="$EXTRA_FLAGS --user-data-dir=$PROFILE_DIR" && \
