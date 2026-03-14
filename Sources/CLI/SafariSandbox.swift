@@ -66,11 +66,23 @@ struct Launch: ParsableCommand {
         }
     }
 
+    /// SPM resource bundle, checking Contents/Resources/ for app bundles.
+    /// SPM's auto-generated accessor checks Bundle.main.bundleURL (the .app root),
+    /// but codesign requires resources in Contents/Resources/.
+    private static let resourceBundle: Bundle = {
+        let bundleName = "bromure_bromure"
+        if let resourceURL = Bundle.main.resourceURL,
+           let bundle = Bundle(url: resourceURL.appendingPathComponent("\(bundleName).bundle")) {
+            return bundle
+        }
+        return Bundle.module
+    }()
+
     /// Copy .lproj directories from SPM's Bundle.module into Bundle.main's
     /// Resources directory so SwiftUI's Text() localization works.
     /// In release builds build.sh does this at build time; this handles debug.
     private static func installLocalizations() {
-        let moduleBundle = Bundle.module
+        let moduleBundle = Self.resourceBundle
         guard let mainResources = Bundle.main.resourceURL else { return }
         let fm = FileManager.default
         guard let contents = try? fm.contentsOfDirectory(
