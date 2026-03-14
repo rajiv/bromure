@@ -26,5 +26,11 @@
     <!-- vmnet framework for host-side network filtering (LAN isolation) -->
     <key>com.apple.developer.networking.vmnet</key>
     <true/>
+    <!-- Camera access for webcam passthrough to VM -->
+    <key>com.apple.security.device.camera</key>
+    <true/>
+    <!-- Microphone access for audio input passthrough to VM -->
+    <key>com.apple.security.device.audio-input</key>
+    <true/>
 </dict>
 </plist>
