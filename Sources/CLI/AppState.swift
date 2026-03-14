@@ -232,9 +232,15 @@ final class AppState: @unchecked Sendable {
         let defaults = UserDefaults.standard
         let memGB = defaults.integer(forKey: "vm.memoryGB")
         let cpus = defaults.integer(forKey: "vm.cpuCount")
+        let defaultMemGB: Int = {
+            let hostMemGB = ProcessInfo.processInfo.physicalMemory / (1024 * 1024 * 1024)
+            if hostMemGB < 18 { return 2 }
+            if hostMemGB < 36 { return 3 }
+            return 4
+        }()
         return VMConfig(
             cpuCount: cpus > 0 ? cpus : nil,
-            memorySize: UInt64(memGB > 0 ? memGB : 2) * 1024 * 1024 * 1024,
+            memorySize: UInt64(memGB > 0 ? memGB : defaultMemGB) * 1024 * 1024 * 1024,
             enableAudio: true,
             enableFileTransfer: true,
             enableClipboardSharing: true

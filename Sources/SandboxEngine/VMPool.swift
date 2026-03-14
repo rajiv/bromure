@@ -557,7 +557,7 @@ public final class VMPool {
     private func inflateBalloon(vm: VZVirtualMachine) {
         guard let balloon = vm.memoryBalloonDevices.first
                 as? VZVirtioTraditionalMemoryBalloonDevice else { return }
-        let keep: UInt64 = 256 * 1024 * 1024  // 256 MB for idle guest
+        let keep: UInt64 = 512 * 1024 * 1024  // 512 MB for idle guest
         let total = config.memorySize
         let target = total > keep ? total - keep : 0
         balloon.targetVirtualMachineMemorySize = keep

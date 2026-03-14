@@ -258,6 +258,12 @@ public struct ProfileSettings: Codable, Equatable {
         let defaults = UserDefaults.standard
         let memGB = defaults.integer(forKey: "vm.memoryGB")
         let cpus = defaults.integer(forKey: "vm.cpuCount")
+        let defaultMemGB: Int = {
+            let hostMemGB = ProcessInfo.processInfo.physicalMemory / (1024 * 1024 * 1024)
+            if hostMemGB < 18 { return 2 }
+            if hostMemGB < 36 { return 3 }
+            return 4
+        }()
 
         let appearancePref = defaults.string(forKey: "vm.appearance") ?? "system"
         let forceDark: Bool
@@ -275,7 +281,7 @@ public struct ProfileSettings: Codable, Equatable {
 
         return VMConfig(
             cpuCount: cpus > 0 ? cpus : nil,
-            memorySize: UInt64(max(memGB > 0 ? memGB : 2, 1)) * 1024 * 1024 * 1024,
+            memorySize: UInt64(max(memGB > 0 ? memGB : defaultMemGB, 1)) * 1024 * 1024 * 1024,
             enableAudio: enableAudio,
             audioVolume: audioVolume,
             enableWarp: effectiveWarp,
