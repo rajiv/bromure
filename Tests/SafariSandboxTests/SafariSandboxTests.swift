@@ -93,7 +93,7 @@ struct ProfileSettingsTests {
     @Test("Defaults are sensible")
     func defaults() {
         let s = ProfileSettings()
-        #expect(s.homePage == "https://www.google.com")
+        #expect(s.homePage == "https://bromure.io/hello")
         #expect(s.enableGPU == true)
         #expect(s.enableWebGL == false)
         #expect(s.enableAdBlocking == false)
@@ -480,7 +480,7 @@ struct VMConfigTests {
         #expect(config.forceDarkMode == false)
         #expect(config.enableAdBlocking == false)
         #expect(config.swapCmdCtrl == true)
-        #expect(config.homePage == "https://www.google.com")
+        #expect(config.homePage == "https://bromure.io/hello")
         #expect(config.enableGPU == true)
         #expect(config.enableWebGL == false)
         #expect(config.blockMalwareSites == false)

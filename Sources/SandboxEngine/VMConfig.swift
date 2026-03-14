@@ -158,7 +158,7 @@ public struct VMConfig {
         forceDarkMode: Bool = false,
         enableAdBlocking: Bool = false,
         swapCmdCtrl: Bool = true,
-        homePage: String = "https://www.google.com",
+        homePage: String = "https://bromure.io/hello",
         enableGPU: Bool = true,
         enableWebGL: Bool = false,
         blockMalwareSites: Bool = false,

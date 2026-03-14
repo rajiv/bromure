@@ -157,7 +157,7 @@ public final class ProfileManager {
         }
 
         var settings = ProfileSettings()
-        settings.homePage = defaults.string(forKey: "vm.homePage") ?? "https://www.google.com"
+        settings.homePage = defaults.string(forKey: "vm.homePage") ?? "https://bromure.io/hello"
         settings.enableGPU = defaults.object(forKey: "vm.enableGPU") as? Bool ?? true
         settings.enableWebGL = defaults.object(forKey: "vm.enableWebGL") as? Bool ?? false
         settings.enableAdBlocking = defaults.object(forKey: "vm.enableAdBlocking") as? Bool ?? false

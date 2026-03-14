@@ -125,7 +125,7 @@ public struct WebcamEffects: Codable, Equatable {
 /// and read from UserDefaults at VM creation time.
 public struct ProfileSettings: Codable, Equatable {
     // Browser
-    public var homePage: String = "https://www.google.com"
+    public var homePage: String = "https://bromure.io/hello"
     public var enableGPU: Bool = true
     public var enableWebGL: Bool = false
 
