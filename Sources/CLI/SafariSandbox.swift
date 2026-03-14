@@ -174,14 +174,18 @@ final class GUIAppDelegate: NSObject, NSApplicationDelegate, NSWindowDelegate {
             return
         }
 
-        // Single profile or no profiles — use original behaviour
+        // Single profile or no profiles
+        let singleProfile = profiles.count == 1 ? profiles.first : nil
         let activeSession = sessions.first(where: { !$0.closing && $0.window.isKeyWindow })
             ?? sessions.last(where: { !$0.closing })
         if let session = activeSession {
             print("[URL] sending to existing session")
             session.navigateTo(url: url)
+        } else if state.phase == .ready, let profile = singleProfile {
+            print("[URL] opening new browser for single profile '\(profile.name)' with URL")
+            openNewBrowser(with: profile, initialURL: url)
         } else if state.phase == .ready {
-            print("[URL] opening new browser with URL")
+            print("[URL] opening new browser with URL (no profiles)")
             openNewBrowser(initialURL: url)
         } else {
             print("[URL] storing as pending URL")
@@ -611,7 +615,10 @@ final class GUIAppDelegate: NSObject, NSApplicationDelegate, NSWindowDelegate {
 
         state.isLaunching = true
         state.profileManager.markUsed(id: profile.id)
-        let config = state.buildConfig(for: profile)
+        var config = state.buildConfig(for: profile)
+        // Override homepage so xinitrc launches Chromium with the URL using
+        // all proper flags, instead of a bare navigateTo after the fact.
+        if let initialURL { config.homePage = initialURL.absoluteString }
         let vtKey = profile.settings.virusTotalEnabled ? profile.settings.virusTotalAPIKey : nil
 
         // For persistent profiles, ensure the disk image exists
@@ -673,7 +680,6 @@ final class GUIAppDelegate: NSObject, NSApplicationDelegate, NSWindowDelegate {
             let session = BrowserSession(
                 warmVM: warm, config: config,
                 profile: profile,
-                initialURL: initialURL,
                 virusTotalAPIKey: vtKey,
                 blockThreats: profile.settings.blockThreats,
                 blockUnscannable: profile.settings.blockUnscannable
@@ -783,12 +789,9 @@ final class BrowserSession {
     private var webcamEffects: WebcamEffects
     private var webcamDeviceID: String?
 
-    private var initialURL: URL?
-
-    init(warmVM: VMPool.WarmVM, config: VMConfig, profile: Profile? = nil, initialURL: URL? = nil, virusTotalAPIKey: String? = nil, blockThreats: Bool = false, blockUnscannable: Bool = false) {
+    init(warmVM: VMPool.WarmVM, config: VMConfig, profile: Profile? = nil, virusTotalAPIKey: String? = nil, blockThreats: Bool = false, blockUnscannable: Bool = false) {
         self.warmVM = warmVM
         self.profile = profile
-        self.initialURL = initialURL
         self.webcamEffects = config.webcamEffects
         self.webcamDeviceID = config.webcamDeviceID
         BrowserSession.windowCount += 1
@@ -1282,12 +1285,6 @@ final class BrowserSession {
             }
         }
 
-        if let url = initialURL {
-            initialURL = nil
-            DispatchQueue.main.asyncAfter(deadline: .now() + 3) { [weak self] in
-                self?.navigateTo(url: url)
-            }
-        }
     }
 
     func teardown() async {
