@@ -312,6 +312,7 @@ public struct ProfileSettings: Codable, Equatable {
             proxyUsername: hasProxy && !proxyUsername.isEmpty ? proxyUsername : nil,
             proxyPassword: hasProxy && !proxyPassword.isEmpty ? proxyPassword : nil,
             blockDownloads: !canDownload,
+            enableAutomation: defaults.bool(forKey: "automation.enabled"),
             testSuite: isTestSuite,
             locale: locale
         )

@@ -111,6 +111,7 @@ final class GUIAppDelegate: NSObject, NSApplicationDelegate, NSWindowDelegate {
     private var eulaWindow: NSWindow?
     private var isTerminating = false
     private var pendingURL: URL?
+    private var automationServer: AutomationServer?
 
     init(state: AppState) {
         self.state = state
@@ -136,6 +137,9 @@ final class GUIAppDelegate: NSObject, NSApplicationDelegate, NSWindowDelegate {
             // Re-enter the normal URL handling flow now that the pool is ready
             self.application(NSApp, open: [url])
         }
+
+        // Start automation server if enabled
+        startAutomationServerIfNeeded()
 
         showMainWindow()
     }
@@ -703,6 +707,256 @@ final class GUIAppDelegate: NSObject, NSApplicationDelegate, NSWindowDelegate {
         }
     }
 
+    // MARK: - Automation
+
+    @MainActor func startAutomationServerIfNeeded() {
+        let defaults = UserDefaults.standard
+        guard defaults.bool(forKey: "automation.enabled") else { return }
+
+        let port = UInt16(defaults.integer(forKey: "automation.port"))
+        let bindAddr = defaults.string(forKey: "automation.bindAddress") ?? "127.0.0.1"
+        let server = AutomationServer(port: port > 0 ? port : 9222, bindAddress: bindAddr)
+
+        server.onListSessions = { [weak self] in
+            guard let self else { return [] }
+            return self.sessions.compactMap { session in
+                guard !session.closing, session.cdpBridge != nil else { return nil }
+                return AutomationSessionInfo(
+                    id: session.id.uuidString,
+                    profileName: session.profile?.name ?? "Anonymous",
+                    profileID: session.profile?.id.uuidString,
+                    cdpURL: "ws://\(server.bindAddress):\(server.port)/cdp/\(session.id.uuidString)"
+                )
+            }
+        }
+
+        server.onListProfiles = { [weak self] in
+            guard let self else { return [] }
+            return self.state.profileManager.allProfiles.map { p in
+                AutomationProfileInfo(
+                    id: p.id.uuidString,
+                    name: p.name,
+                    isPersistent: p.isPersistent,
+                    color: p.color?.rawValue
+                )
+            }
+        }
+
+        server.onCreateSession = { [weak self] profileName, profileID, url in
+            guard let self else { return nil }
+            return await self.automationCreateSession(profileName: profileName, profileID: profileID, url: url)
+        }
+
+        server.onDestroySession = { [weak self] sessionID in
+            guard let self else { return false }
+            return await self.automationDestroySession(id: sessionID)
+        }
+
+        server.onGetCDPConnection = { [weak self] sessionID in
+            guard let self else { return nil }
+            guard let session = self.sessions.first(where: { $0.id.uuidString == sessionID }),
+                  let conn = session.cdpBridge?.dequeueConnection() else { return nil }
+            return CDPProxyConnection(fd: conn.fileDescriptor, conn: conn)
+        }
+
+        server.start()
+        self.automationServer = server
+    }
+
+    @MainActor
+    private func automationCreateSession(profileName: String?, profileID: String?, url: String?) async -> AutomationSessionInfo? {
+        // Find the profile
+        let profile: Profile?
+        if let profileID, let uuid = UUID(uuidString: profileID) {
+            profile = state.profileManager.profile(withID: uuid)
+        } else if let profileName {
+            profile = state.profileManager.allProfiles.first { $0.name.lowercased() == profileName.lowercased() }
+        } else {
+            profile = nil
+        }
+
+        guard let profile else {
+            print("[Automation] Profile not found: \(profileName ?? profileID ?? "nil")")
+            return nil
+        }
+
+        guard state.pool != nil, state.poolReady else {
+            print("[Automation] Pool not ready")
+            return nil
+        }
+
+        // Persistent profiles can only have one session
+        if profile.isPersistent,
+           let existing = sessions.first(where: { $0.profile?.id == profile.id && !$0.closing }) {
+            if let url, let parsed = URL(string: url) {
+                existing.navigateTo(url: parsed)
+            }
+            if existing.cdpBridge != nil, let server = automationServer {
+                return AutomationSessionInfo(
+                    id: existing.id.uuidString,
+                    profileName: profile.name,
+                    profileID: profile.id.uuidString,
+                    cdpURL: "ws://\(server.bindAddress):\(server.port)/cdp/\(existing.id.uuidString)"
+                )
+            }
+            return nil
+        }
+
+        state.profileManager.markUsed(id: profile.id)
+        var config = state.buildConfig(for: profile)
+        // Force automation on regardless of profile setting
+        config.enableAutomation = true
+        if let url { config.homePage = url }
+
+        // For persistent profiles, ensure disk exists
+        var profileImageDir: URL?
+        var profileDiskKey: String?
+        if profile.isPersistent {
+            let diskURL = state.profileManager.profileDiskURL(for: profile.id)
+            if !ProfileDisk.diskExists(at: diskURL) {
+                do {
+                    try ProfileDisk.createDisk(profileID: profile.id, at: diskURL)
+                } catch {
+                    print("[Automation] Failed to create persistent disk: \(error)")
+                }
+            }
+            if ProfileDisk.diskExists(at: diskURL) {
+                profileImageDir = state.profileManager.profileImageDir(for: profile.id)
+                if profile.isEncrypted {
+                    profileDiskKey = try? ProfileDisk.keyForProfile(id: profile.id)
+                }
+            }
+        }
+
+        guard let warm = await state.pool?.claim(
+            config: config,
+            profileID: profile.id,
+            profileImageDir: profileImageDir,
+            profileDiskKey: profileDiskKey
+        ) else {
+            print("[Automation] Failed to claim VM")
+            return nil
+        }
+
+        let session = BrowserSession(warmVM: warm, config: config, profile: profile)
+        session.onClosed = { [weak self] session in
+            guard let self else { return }
+            self.sessions.removeAll { $0 === session }
+            self.state.sessionCount = self.sessions.count
+            self.retiredSessions.append(session)
+        }
+        session.onOpenInProfile = { [weak self] url in
+            self?.handleOpenInProfile(url: url)
+        }
+        self.sessions.append(session)
+        self.state.sessionCount = self.sessions.count
+        session.show()
+        // Shorter warm-up delay for automation — sessions are created/destroyed rapidly
+        state.pool?.scheduleWarmUp(delay: .seconds(3))
+
+        guard let cdp = session.cdpBridge, let server = automationServer else {
+            print("[Automation] Session created but no CDP bridge or server")
+            return nil
+        }
+
+        // Wait for CDP to be ready (guest vsock pool connects)
+        if !cdp.isReady {
+            await withCheckedContinuation { (cont: CheckedContinuation<Void, Never>) in
+                if cdp.isReady {
+                    cont.resume()
+                    return
+                }
+                cdp.onReady = { cont.resume() }
+                // Timeout after 30s
+                DispatchQueue.main.asyncAfter(deadline: .now() + 30) {
+                    if !cdp.isReady {
+                        print("[Automation] CDP ready timeout — returning anyway")
+                        cdp.onReady = nil
+                        cont.resume()
+                    }
+                }
+            }
+        }
+
+        // Resolve the full browser WS endpoint via /json/version so the
+        // client can connect directly without an extra roundtrip.
+        let baseURL = "ws://\(server.bindAddress):\(server.port)/cdp/\(session.id.uuidString)"
+        let fullWSURL: String = await withCheckedContinuation { cont in
+            DispatchQueue.global(qos: .userInitiated).async {
+                let resolved = Self.resolveBrowserWSEndpoint(cdp: cdp, baseURL: baseURL)
+                cont.resume(returning: resolved)
+            }
+        }
+
+        return AutomationSessionInfo(
+            id: session.id.uuidString,
+            profileName: profile.name,
+            profileID: profile.id.uuidString,
+            cdpURL: fullWSURL
+        )
+    }
+
+    /// Fetch /json/version from Chromium via a vsock connection and extract
+    /// the webSocketDebuggerUrl, rewriting it to go through our proxy.
+    /// Runs on a background queue (blocking I/O).
+    private static func resolveBrowserWSEndpoint(cdp: CDPBridge, baseURL: String) -> String {
+        // Dequeue a vsock connection and send an HTTP request
+        guard let conn = DispatchQueue.main.sync(execute: { cdp.dequeueConnection() }) else {
+            print("[Automation] No vsock connection for /json/version")
+            return baseURL
+        }
+        let fd = conn.fileDescriptor
+        let request = "GET /json/version HTTP/1.1\r\nHost: 127.0.0.1\r\nConnection: close\r\n\r\n"
+        guard let reqData = request.data(using: .utf8) else { return baseURL }
+        let sendOK = reqData.withUnsafeBytes { buf -> Bool in
+            var sent = 0
+            while sent < buf.count {
+                let w = Darwin.write(fd, buf.baseAddress! + sent, buf.count - sent)
+                if w <= 0 { return false }
+                sent += w
+            }
+            return true
+        }
+        guard sendOK else { return baseURL }
+
+        // Read response (small JSON, well under 4KB)
+        var response = Data()
+        var buf = [UInt8](repeating: 0, count: 4096)
+        for _ in 0..<20 { // up to 20 reads, ~80KB max
+            let n = Darwin.read(fd, &buf, buf.count)
+            if n <= 0 { break }
+            response.append(contentsOf: buf[0..<n])
+            // Check if we got the full response (Connection: close means EOF)
+            if n < buf.count { break }
+        }
+        _ = conn // keep alive until done
+
+        // Parse: skip HTTP headers, find JSON body
+        guard let str = String(data: response, encoding: .utf8),
+              let bodyStart = str.range(of: "\r\n\r\n") else { return baseURL }
+        let jsonStr = String(str[bodyStart.upperBound...])
+        guard let jsonData = jsonStr.data(using: .utf8),
+              let json = try? JSONSerialization.jsonObject(with: jsonData) as? [String: Any],
+              let wsURL = json["webSocketDebuggerUrl"] as? String,
+              let wsPath = URL(string: wsURL)?.path else { return baseURL }
+
+        // Rewrite: ws://127.0.0.1:9222/devtools/browser/GUID → baseURL/devtools/browser/GUID
+        return baseURL + wsPath
+    }
+
+    @MainActor
+    private func automationDestroySession(id: String) async -> Bool {
+        guard let session = sessions.first(where: { $0.id.uuidString == id }) else {
+            return false
+        }
+        await session.teardown()
+        session.window.orderOut(nil)
+        sessions.removeAll { $0 === session }
+        state.sessionCount = sessions.count
+        retiredSessions.append(session)
+        return true
+    }
+
     // MARK: - App Lifecycle
 
     func applicationShouldTerminateAfterLastWindowClosed(_ sender: NSApplication) -> Bool {
@@ -762,6 +1016,7 @@ final class GUIAppDelegate: NSObject, NSApplicationDelegate, NSWindowDelegate {
 /// This is a plain Swift class (not NSObject) to avoid VZ dispatch source
 /// lifetime issues with ObjC ivar destruction.
 final class BrowserSession {
+    let id = UUID()
     private var warmVM: VMPool.WarmVM?
     let window: NSWindow
     private var vmView: VZVirtualMachineView?
@@ -777,6 +1032,7 @@ final class BrowserSession {
     private var filePickerBridge: FilePickerBridge?
     private var webcamBridge: WebcamBridge?
     private var warpBridge: WarpBridge?
+    private(set) var cdpBridge: CDPBridge?
     private var warpButton: NSButton?
     private var warpPulseTimer: Timer?
     private var effectsPanel: NSWindow?
@@ -1002,6 +1258,12 @@ final class BrowserSession {
                     }
                 }
             }
+        }
+
+        // Set up CDP bridge for automation (Puppeteer/Playwright access).
+        if config.enableAutomation, let dev = linkSocketDevice {
+            let bridge = MainActor.assumeIsolated { CDPBridge(socketDevice: dev) }
+            self.cdpBridge = bridge
         }
 
         let helper = SessionDelegateHelper(session: self)
@@ -1303,6 +1565,8 @@ final class BrowserSession {
             warpBridge = nil
             webcamBridge?.stop()
             webcamBridge = nil
+            cdpBridge?.stop()
+            cdpBridge = nil
             effectsPanel?.orderOut(nil)
             effectsPanel = nil
         }

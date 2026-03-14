@@ -8,6 +8,7 @@ private enum AppSettingsCategory: String, CaseIterable, Identifiable {
     case input = "Input"
     case display = "Display"
     case network = "Network"
+    case automation = "Automation"
     case storage = "Storage"
 
     var id: String { rawValue }
@@ -18,6 +19,7 @@ private enum AppSettingsCategory: String, CaseIterable, Identifiable {
         case .input: "keyboard.fill"
         case .display: "display"
         case .network: "network"
+        case .automation: "terminal.fill"
         case .storage: "internaldrive.fill"
         }
     }
@@ -28,6 +30,7 @@ private enum AppSettingsCategory: String, CaseIterable, Identifiable {
         case .input: .blue
         case .display: .purple
         case .network: .green
+        case .automation: .indigo
         case .storage: .gray
         }
     }
@@ -44,6 +47,9 @@ struct SettingsView: View {
     @AppStorage("vm.dnsServers") private var dnsServers = ""
     @AppStorage("vm.networkMode") private var networkMode = "nat"
     @AppStorage("vm.bridgedInterface") private var bridgedInterface = ""
+    @AppStorage("automation.enabled") private var automationEnabled = false
+    @AppStorage("automation.port") private var automationPort = 9222
+    @AppStorage("automation.bindAddress") private var automationBindAddress = "127.0.0.1"
 
     var state: AppState?
 
@@ -182,6 +188,7 @@ struct SettingsView: View {
         case .input: inputView
         case .display: displayView
         case .network: networkView
+        case .automation: automationView
         case .storage: storageView
         }
     }
@@ -414,6 +421,86 @@ struct SettingsView: View {
                         .foregroundStyle(.secondary)
                 }
             }
+        }
+    }
+
+    // MARK: - Automation
+
+    private var automationView: some View {
+        VStack(alignment: .leading, spacing: 20) {
+            sectionHeader("Automation", subtitle: "Remote browser control via Chrome DevTools Protocol")
+
+            settingToggle(
+                "Enable Automation",
+                description: "Start an HTTP server that lets external tools (Puppeteer, Playwright, Claude Code, Codex) create browser sessions and control them via CDP. Requires restart.",
+                isOn: $automationEnabled
+            )
+
+            if automationEnabled {
+                settingsDivider
+
+                VStack(alignment: .leading, spacing: 6) {
+                    Text("API Port").font(.headline)
+                    Text("The port for the automation API server. Tools connect here to list profiles, create sessions, and get CDP endpoints.")
+                        .settingDescription()
+                    TextField("Port", value: $automationPort, format: .number.grouping(.never))
+                        .textFieldStyle(.roundedBorder)
+                        .frame(width: 100)
+                }
+
+                settingsDivider
+
+                VStack(alignment: .leading, spacing: 6) {
+                    Text("Bind Address").font(.headline)
+                    Text("Use 127.0.0.1 to only allow connections from this Mac. Use 0.0.0.0 to allow connections from other machines on the network.")
+                        .settingDescription()
+                    Picker("", selection: $automationBindAddress) {
+                        Text("127.0.0.1 (localhost only)").tag("127.0.0.1")
+                        Text("0.0.0.0 (all interfaces)").tag("0.0.0.0")
+                    }
+                    .labelsHidden()
+                    .frame(width: 280)
+                }
+
+                settingsDivider
+
+                VStack(alignment: .leading, spacing: 8) {
+                    Text("Usage").font(.headline)
+                    Text("Once enabled, external tools can connect to the API:")
+                        .settingDescription()
+
+                    VStack(alignment: .leading, spacing: 4) {
+                        Text("List profiles:").font(.callout.bold())
+                        Text("curl http://127.0.0.1:\(automationPort)/profiles")
+                            .font(.system(.caption, design: .monospaced))
+                            .textSelection(.enabled)
+
+                        Text("Create session:").font(.callout.bold()).padding(.top, 4)
+                        Text("curl -X POST http://127.0.0.1:\(automationPort)/sessions -d '{\"profile\":\"Private Browsing\"}'")
+                            .font(.system(.caption, design: .monospaced))
+                            .textSelection(.enabled)
+
+                        Text("List sessions:").font(.callout.bold()).padding(.top, 4)
+                        Text("curl http://127.0.0.1:\(automationPort)/sessions")
+                            .font(.system(.caption, design: .monospaced))
+                            .textSelection(.enabled)
+
+                        Text("Close session:").font(.callout.bold()).padding(.top, 4)
+                        Text("curl -X DELETE http://127.0.0.1:\(automationPort)/sessions/<id>")
+                            .font(.system(.caption, design: .monospaced))
+                            .textSelection(.enabled)
+                    }
+                    .padding(12)
+                    .frame(maxWidth: .infinity, alignment: .leading)
+                    .background(.quaternary.opacity(0.5), in: RoundedRectangle(cornerRadius: 8))
+                }
+            }
+
+            Spacer()
+
+            Text("Changes require restarting Bromure.")
+                .font(.caption)
+                .foregroundStyle(.tertiary)
         }
     }
 

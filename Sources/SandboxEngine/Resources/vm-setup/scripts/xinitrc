@@ -21,6 +21,7 @@ EXTRA_FLAGS=
 CHROME_URL=
 SWAP_CMD_CTRL=
 CLIPBOARD=
+AUTOMATION=
 MICROPHONE=
 AUDIO=
 AUDIO_VOLUME=
@@ -50,6 +51,7 @@ fi
 # file-agent.py and webcam-agent.py are started at boot via inittab
 [ "$SWAP_CMD_CTRL" = "1" ] && setxkbmap -option ctrl:swap_lwin_lctl,ctrl:swap_rctl
 [ "$MICROPHONE" = "1" ] && pactl load-module module-alsa-source device=hw:0,1 source_name=virtio_mic source_properties=device.description=Microphone 2>/dev/null &
+[ "$AUTOMATION" = "1" ] && /usr/local/bin/cdp-agent.py &
 echo "xinitrc: EXTRA_FLAGS=$EXTRA_FLAGS CHROME_URL=$CHROME_URL SWAP_CMD_CTRL=$SWAP_CMD_CTRL" > /dev/hvc0
 export LIBGL_ALWAYS_SOFTWARE=1
 

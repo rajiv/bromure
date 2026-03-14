@@ -299,6 +299,7 @@ install_config scripts/webcam-agent.py      /mnt/usr/local/bin/webcam-agent.py  
 install_config scripts/warp-agent.py        /mnt/usr/local/bin/warp-agent.py        755
 install_config scripts/direct-socks.py      /mnt/usr/local/bin/direct-socks.py      755
 install_config scripts/config-agent.py      /mnt/usr/local/bin/config-agent.py      755
+install_config scripts/cdp-agent.py         /mnt/usr/local/bin/cdp-agent.py         755
 install_config scripts/download-guard.sh    /mnt/usr/local/bin/download-guard.sh    755
 install_config scripts/test-runner.sh      /mnt/usr/local/bin/test-runner.sh       755
 

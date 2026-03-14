@@ -170,9 +170,19 @@ public final class VMPool {
         profileDiskKey: String? = nil,
         restoreSession: Bool = false
     ) async -> WarmVM? {
-        // If no pre-warmed VM is available, warm up on demand
+        // If no pre-warmed VM is available, warm up on demand.
+        // If another task is already warming up, wait for it to finish.
         if warmVM == nil {
-            try? await warmUp()
+            if isWarming {
+                // Another task is warming up — poll until it finishes
+                for _ in 0..<300 { // up to 30s
+                    try? await Task.sleep(for: .milliseconds(100))
+                    if warmVM != nil || !isWarming { break }
+                }
+            }
+            if warmVM == nil {
+                try? await warmUp()
+            }
         }
         guard let warm = warmVM else { return nil }
         warmVM = nil
@@ -290,6 +300,7 @@ public final class VMPool {
         }
         if config.enableMicrophone { cfg["microphone"] = true }
         if config.blockDownloads { cfg["blockDownloads"] = true }
+        if config.enableAutomation { cfg["automation"] = true }
         if !config.rootCAs.isEmpty { cfg["rootCAs"] = config.rootCAs }
         cfg["locale"] = config.locale
 
@@ -367,13 +378,12 @@ public final class VMPool {
                 self.configListenerDelegate = delegate
                 self.configListenerCleanup = cleanup
 
-                // Timeout after 30s
+                // Timeout after 30s — always call safeResume (it handles double-resume).
+                // Don't gate on configListenerDelegate; a different session's cleanup
+                // may have nil'd it, causing this continuation to leak.
                 DispatchQueue.main.asyncAfter(deadline: .now() + 30) {
-                    if self.configListenerDelegate != nil {
-                        print("[VMPool] config-agent timed out")
-                        cleanup()
-                        safeResume()
-                    }
+                    cleanup()
+                    safeResume()
                 }
             }
         } catch {

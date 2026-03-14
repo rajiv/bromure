@@ -140,6 +140,11 @@ def write_chrome_env(cfg):
     if cfg.get("microphone"):
         disable_features.append("AudioServiceOutOfProcess")
 
+    # Automation: enable Chrome DevTools Protocol for Puppeteer/Playwright
+    if cfg.get("automation"):
+        extra_flags.append("--remote-debugging-port=9222")
+        extra_flags.append("--remote-debugging-address=127.0.0.1")
+
     # Disable WebRTC when both webcam and microphone are off
     if not cfg.get("webcam") and not cfg.get("microphone"):
         extra_flags.append("--force-webrtc-ip-handling-policy=disable_non_proxied_udp")
@@ -188,6 +193,8 @@ def write_chrome_env(cfg):
             lines.append(f"AUDIO_VOLUME={vol}")
     if cfg.get("microphone"):
         lines.append("MICROPHONE=1")
+    if cfg.get("automation"):
+        lines.append("AUTOMATION=1")
 
     # Locale: forward host OS locale to Chromium
     locale = cfg.get("locale", "en_US")
