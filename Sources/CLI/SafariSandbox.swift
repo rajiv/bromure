@@ -510,6 +510,19 @@ final class GUIAppDelegate: NSObject, NSApplicationDelegate, NSWindowDelegate {
         session.toggleDrawer()
     }
 
+    @MainActor @objc func toggleWarpAction(_ sender: Any?) {
+        guard let keyWindow = NSApp.keyWindow,
+              let session = sessions.first(where: { $0.window === keyWindow }) else { return }
+        session.toggleWarp()
+    }
+
+    @MainActor @objc func toggleWebcamEffectsAction(_ sender: Any?) {
+        guard let keyWindow = NSApp.keyWindow,
+              let session = sessions.first(where: { $0.window === keyWindow }),
+              session.hasWebcam else { return }
+        session.showEffectsPanel()
+    }
+
     @MainActor @objc func recreateBaseImageAction(_ sender: Any?) {
         let alert = NSAlert()
         alert.messageText = NSLocalizedString("Recreate base image?", comment: "")
@@ -755,10 +768,17 @@ final class BrowserSession {
     private var linkSenderBridge: LinkSenderBridge?
     private var filePickerBridge: FilePickerBridge?
     private var webcamBridge: WebcamBridge?
+    private var warpBridge: WarpBridge?
+    private var warpButton: NSButton?
+    private var effectsPanel: NSWindow?
+    private var effectsAccessory: NSTitlebarAccessoryViewController?
     private var splitView: NSSplitView?
     private var drawerHost: NSView?
     fileprivate var hasFileTransfer = false
+    fileprivate var hasWebcam = false
     fileprivate let profile: Profile?
+    private var webcamEffects: WebcamEffects
+    private var webcamDeviceID: String?
 
     private var initialURL: URL?
 
@@ -766,6 +786,8 @@ final class BrowserSession {
         self.warmVM = warmVM
         self.profile = profile
         self.initialURL = initialURL
+        self.webcamEffects = config.webcamEffects
+        self.webcamDeviceID = config.webcamDeviceID
         BrowserSession.windowCount += 1
 
         let vmView = VZVirtualMachineView()
@@ -929,14 +951,164 @@ final class BrowserSession {
 
         // Set up webcam bridge (vsock port 5400) for camera sharing.
         if config.enableWebcam, let dev = linkSocketDevice {
-            let bridge = MainActor.assumeIsolated { WebcamBridge(socketDevice: dev, cameraID: config.webcamDeviceID, effects: config.webcamEffects) }
+            let bridge = MainActor.assumeIsolated { WebcamBridge(socketDevice: dev, cameraID: config.webcamDeviceID, quality: config.webcamQuality, effects: config.webcamEffects) }
             self.webcamBridge = bridge
+            self.hasWebcam = true
+
+            // Show/hide effects button when guest starts/stops using the camera
+            MainActor.assumeIsolated {
+                bridge.onStreamingChanged = { [weak self] streaming in
+                    MainActor.assumeIsolated {
+                        self?.setEffectsButtonVisible(streaming)
+                    }
+                }
+            }
+        }
+
+        // Set up WARP bridge (vsock port 5700) for dynamic VPN control.
+        // Only created when VPN is enabled in the profile — when disabled,
+        // no button, no agent interaction, full isolation.
+        if config.enableWarp, let dev = linkSocketDevice {
+            let bridge = MainActor.assumeIsolated { WarpBridge(socketDevice: dev) }
+            self.warpBridge = bridge
+
+            // VPN toggle button in the titlebar
+            let vpnButton = NSButton(
+                image: NSImage(systemSymbolName: "powerplug", accessibilityDescription: "VPN Status")!,
+                target: nil,
+                action: #selector(GUIAppDelegate.toggleWarpAction(_:))
+            )
+            vpnButton.bezelStyle = NSButton.BezelStyle.recessed
+            vpnButton.toolTip = "VPN: checking\u{2026}"
+            vpnButton.contentTintColor = .secondaryLabelColor
+            self.warpButton = vpnButton
+
+            let vpnAccessory = NSTitlebarAccessoryViewController()
+            vpnAccessory.view = vpnButton
+            vpnAccessory.layoutAttribute = .trailing
+            window.addTitlebarAccessoryViewController(vpnAccessory)
+
+            // React to state changes
+            MainActor.assumeIsolated {
+                bridge.onStateChanged = { [weak self] state in
+                    MainActor.assumeIsolated {
+                        self?.updateWarpButton(state: state)
+                    }
+                }
+            }
         }
 
         let helper = SessionDelegateHelper(session: self)
         self.delegateHelper = helper
         warmVM.vm.delegate = helper
         window.delegate = helper
+    }
+
+    /// Update the VPN titlebar button to reflect the current WARP state.
+    private func updateWarpButton(state: WarpState) {
+        guard let button = warpButton else { return }
+        switch state {
+        case .connected:
+            button.image = NSImage(systemSymbolName: "powerplug.fill", accessibilityDescription: "VPN Connected")
+            button.contentTintColor = .systemGreen
+            button.toolTip = "VPN: Connected — click to disconnect"
+        case .connecting:
+            button.image = NSImage(systemSymbolName: "powerplug.fill", accessibilityDescription: "VPN Connecting")
+            button.contentTintColor = .systemOrange
+            button.toolTip = "VPN: Connecting\u{2026}"
+        case .disconnected:
+            button.image = NSImage(systemSymbolName: "powerplug", accessibilityDescription: "VPN Disconnected")
+            button.contentTintColor = .secondaryLabelColor
+            button.toolTip = "VPN: Disconnected — click to connect"
+        case .notInstalled:
+            button.image = NSImage(systemSymbolName: "powerplug", accessibilityDescription: "VPN Not Available")
+            button.contentTintColor = .systemRed
+            button.toolTip = "VPN: WARP not installed in this VM"
+            button.isEnabled = false
+        case .error(let msg):
+            button.image = NSImage(systemSymbolName: "powerplug", accessibilityDescription: "VPN Error")
+            button.contentTintColor = .systemOrange
+            button.toolTip = "VPN Error: \(msg)"
+        case .unknown:
+            button.image = NSImage(systemSymbolName: "powerplug", accessibilityDescription: "VPN Status")
+            button.contentTintColor = .secondaryLabelColor
+            button.toolTip = "VPN: checking\u{2026}"
+        }
+    }
+
+    /// Called by the app delegate when the VPN button is clicked.
+    func toggleWarp() {
+        MainActor.assumeIsolated {
+            warpBridge?.toggle()
+        }
+    }
+
+    /// Add or remove the camera effects titlebar button.
+    private func setEffectsButtonVisible(_ visible: Bool) {
+        if visible {
+            guard effectsAccessory == nil else { return }
+            let button = NSButton(
+                image: NSImage(systemSymbolName: "sparkles", accessibilityDescription: "Camera Effects")!,
+                target: nil,
+                action: #selector(GUIAppDelegate.toggleWebcamEffectsAction(_:))
+            )
+            button.bezelStyle = NSButton.BezelStyle.recessed
+            button.toolTip = "Camera Effects"
+            let accessory = NSTitlebarAccessoryViewController()
+            accessory.view = button
+            accessory.layoutAttribute = .trailing
+            window.addTitlebarAccessoryViewController(accessory)
+            self.effectsAccessory = accessory
+        } else {
+            if let accessory = effectsAccessory {
+                accessory.removeFromParent()
+                self.effectsAccessory = nil
+            }
+        }
+    }
+
+    /// Show or bring forward the camera effects panel for this session.
+    func showEffectsPanel() {
+        // Reuse existing panel to avoid context leaks
+        if let panel = effectsPanel {
+            panel.makeKeyAndOrderFront(nil)
+            return
+        }
+
+        let effectsView = LiveWebcamEffectsView(
+            effects: webcamEffects,
+            webcamDeviceID: webcamDeviceID,
+            onEffectsChanged: { [weak self] newEffects in
+                MainActor.assumeIsolated {
+                    guard let self else { return }
+                    self.webcamEffects = newEffects
+                    self.webcamBridge?.updateEffects(newEffects)
+                }
+            },
+            onDismiss: { [weak self] in
+                self?.effectsPanel?.orderOut(nil)
+            }
+        )
+
+        let hostView = NSHostingView(rootView: effectsView)
+        hostView.setFrameSize(NSSize(width: 620, height: 680))
+
+        // Use NSWindow (not NSPanel with .utilityWindow) so that
+        // NSOpenPanel from .fileImporter can present properly.
+        let win = NSWindow(
+            contentRect: NSRect(x: 0, y: 0, width: 620, height: 680),
+            styleMask: [.titled, .closable],
+            backing: .buffered,
+            defer: false
+        )
+        win.title = "Camera Effects"
+        win.contentView = hostView
+        win.animationBehavior = .none
+        win.level = .floating
+        win.hidesOnDeactivate = false
+        win.center()
+        win.makeKeyAndOrderFront(nil)
+        self.effectsPanel = win
     }
 
     private static func nsColor(for color: ProfileColor) -> NSColor {
@@ -1098,6 +1270,10 @@ final class BrowserSession {
             linkSenderBridge = nil
             filePickerBridge?.stop()
             filePickerBridge = nil
+            warpBridge?.stop()
+            warpBridge = nil
+            effectsPanel?.orderOut(nil)
+            effectsPanel = nil
         }
         detachView()
         delegateHelper = nil

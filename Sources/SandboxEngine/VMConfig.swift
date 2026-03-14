@@ -53,6 +53,10 @@ public struct VMConfig {
     /// Whether to enable Cloudflare WARP VPN in proxy mode.
     public var enableWarp: Bool
 
+    /// Whether to automatically connect WARP when the session starts.
+    /// Only meaningful when ``enableWarp`` is true.
+    public var warpAutoConnect: Bool
+
     /// Whether to force dark mode in the browser.
     public var forceDarkMode: Bool
 
@@ -97,6 +101,9 @@ public struct VMConfig {
 
     /// Whether to share the host webcam with the guest via vsock + v4l2loopback.
     public var enableWebcam: Bool
+
+    /// Webcam capture quality (maps to AVCaptureSession preset).
+    public var webcamQuality: WebcamQuality
 
     /// Whether to share the host microphone with the guest via virtio-snd.
     public var enableMicrophone: Bool
@@ -155,6 +162,7 @@ public struct VMConfig {
         enableAudio: Bool = true,
         audioVolume: Int = 100,
         enableWarp: Bool = false,
+        warpAutoConnect: Bool = false,
         forceDarkMode: Bool = false,
         enableAdBlocking: Bool = false,
         swapCmdCtrl: Bool = true,
@@ -167,6 +175,7 @@ public struct VMConfig {
         enableClipboardSharing: Bool = false,
         enableLinkSender: Bool = false,
         enableWebcam: Bool = false,
+        webcamQuality: WebcamQuality = .high,
         enableMicrophone: Bool = false,
         webcamDeviceID: String? = nil,
         microphoneDeviceID: String? = nil,
@@ -194,6 +203,7 @@ public struct VMConfig {
         self.enableAudio = enableAudio
         self.audioVolume = audioVolume
         self.enableWarp = enableWarp
+        self.warpAutoConnect = warpAutoConnect
         self.forceDarkMode = forceDarkMode
         self.enableAdBlocking = enableAdBlocking
         self.swapCmdCtrl = swapCmdCtrl
@@ -206,6 +216,7 @@ public struct VMConfig {
         self.enableClipboardSharing = enableClipboardSharing
         self.enableLinkSender = enableLinkSender
         self.enableWebcam = enableWebcam
+        self.webcamQuality = webcamQuality
         self.enableMicrophone = enableMicrophone
         self.webcamDeviceID = webcamDeviceID
         self.microphoneDeviceID = microphoneDeviceID

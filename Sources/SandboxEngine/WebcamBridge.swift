@@ -12,13 +12,15 @@ private let wcDebug = ProcessInfo.processInfo.environment["BROMURE_DEBUG"] != ni
 ///   1. 12-byte header on connect: width(u32le) + height(u32le) + fps(u32le)
 ///   2. Per frame: size(u32le) + raw YUYV pixel data
 ///
-/// Uses 640x480 YUYV (2 bytes/pixel) — ~18 MB/s at 30fps, well within vsock bandwidth.
+/// Resolution is always the camera's native `.high` preset — effects are
+/// processed internally and composited back at native resolution so
+/// v4l2loopback never sees a format change.  This allows effects (including
+/// face swap) to be toggled at runtime without restarting the VM.
 @MainActor
 public final class WebcamBridge: NSObject, @unchecked Sendable {
     private static let webcamPort: UInt32 = 5400
-    private static let captureWidth = 640
-    private static let captureHeight = 480
-    private static let captureFPS = 30
+    private static let defaultWidth = 640
+    private static let defaultHeight = 480
 
     private weak var socketDevice: VZVirtioSocketDevice?
     private var listenerDelegate: WebcamListenerDelegate?
@@ -27,25 +29,42 @@ public final class WebcamBridge: NSObject, @unchecked Sendable {
     private var captureDelegate: CaptureDelegate?
     private var headerSent = false
     private let cameraID: String?
-    private let effects: WebcamEffects
+    private let quality: WebcamQuality
+    private var effects: WebcamEffects
 
-    /// Query the capture resolution by briefly configuring a session with .high preset,
-    /// matching what startCapture will actually produce.
-    public static func queryCameraResolution(cameraID: String?) -> (width: Int, height: Int) {
+    /// Pre-built overlay renderer (includes FaceSwapEngine if face swap enabled).
+    /// Created eagerly so ONNX model loading + CoreML compilation finish before the guest connects.
+    private var overlayRenderer: OverlayRenderer?
+
+    /// Called when the guest starts or stops streaming (connects/disconnects from vsock).
+    public var onStreamingChanged: ((Bool) -> Void)?
+
+    private static func preset(for quality: WebcamQuality) -> AVCaptureSession.Preset {
+        switch quality {
+        case .low: .vga640x480
+        case .medium: .hd1280x720
+        case .high: .high
+        }
+    }
+
+
+
+    /// Query the capture resolution by briefly configuring a session with the
+    /// given quality preset, matching what startCapture will actually produce.
+    public static func queryCameraResolution(cameraID: String?, quality: WebcamQuality = .high) -> (width: Int, height: Int) {
         let camera: AVCaptureDevice?
         if let cameraID, let specific = AVCaptureDevice(uniqueID: cameraID) {
             camera = specific
         } else {
             camera = AVCaptureDevice.default(.builtInWideAngleCamera, for: .video, position: .unspecified)
         }
-        guard let camera else { return (captureWidth, captureHeight) }
+        guard let camera else { return (defaultWidth, defaultHeight) }
 
-        // Simulate the same session setup as startCapture to get the actual resolution
         let session = AVCaptureSession()
-        session.sessionPreset = .high
+        session.sessionPreset = preset(for: quality)
         guard let input = try? AVCaptureDeviceInput(device: camera),
               session.canAddInput(input) else {
-            return (captureWidth, captureHeight)
+            return (defaultWidth, defaultHeight)
         }
         session.addInput(input)
         let dims = CMVideoFormatDescriptionGetDimensions(camera.activeFormat.formatDescription)
@@ -53,15 +72,27 @@ public final class WebcamBridge: NSObject, @unchecked Sendable {
         return (Int(dims.width), Int(dims.height))
     }
 
-    /// - Parameter cameraID: AVCaptureDevice.uniqueID to use, or nil for default.
-    /// - Parameter effects: Webcam overlay effects (city/time, name badge, logo).
-    /// Pre-built overlay renderer (includes FaceSwapEngine if face swap enabled).
-    /// Created eagerly so ONNX model loading + CoreML compilation finish before the guest connects.
-    private var overlayRenderer: OverlayRenderer?
+    /// Returns the quality levels supported by the given camera.
+    public static func supportedQualities(cameraID: String?) -> [WebcamQuality] {
+        let camera: AVCaptureDevice?
+        if let cameraID, let specific = AVCaptureDevice(uniqueID: cameraID) {
+            camera = specific
+        } else {
+            camera = AVCaptureDevice.default(.builtInWideAngleCamera, for: .video, position: .unspecified)
+        }
+        guard let camera else { return [.high] }
 
-    public init(socketDevice: VZVirtioSocketDevice, cameraID: String? = nil, effects: WebcamEffects = WebcamEffects()) {
+        return WebcamQuality.allCases.filter { quality in
+            camera.supportsSessionPreset(preset(for: quality))
+        }
+    }
+
+    /// - Parameter cameraID: AVCaptureDevice.uniqueID to use, or nil for default.
+    /// - Parameter effects: Initial webcam overlay effects.
+    public init(socketDevice: VZVirtioSocketDevice, cameraID: String? = nil, quality: WebcamQuality = .high, effects: WebcamEffects = WebcamEffects()) {
         self.socketDevice = socketDevice
         self.cameraID = cameraID
+        self.quality = quality
         self.effects = effects
         super.init()
 
@@ -91,18 +122,60 @@ public final class WebcamBridge: NSObject, @unchecked Sendable {
         connection = nil
     }
 
+    // MARK: - Live effects update
+
+    /// Update webcam effects at runtime without restarting capture or the VM.
+    /// The renderer is rebuilt on a background queue (ONNX loading) and then
+    /// hot-swapped into the capture delegate.
+    public func updateEffects(_ newEffects: WebcamEffects) {
+        let oldEffects = self.effects
+        self.effects = newEffects
+
+        if !newEffects.hasAnyEffect {
+            overlayRenderer = nil
+            captureDelegate?.setOverlayRenderer(nil)
+            print("[Webcam] effects cleared")
+            return
+        }
+
+        // Check if face swap settings changed (requires expensive ONNX reload)
+        let faceSwapChanged = oldEffects.faceSwapEnabled != newEffects.faceSwapEnabled
+            || oldEffects.faceSwapImageData != newEffects.faceSwapImageData
+
+        if faceSwapChanged && newEffects.faceSwapActive {
+            // Face swap changed — rebuild on background thread (ONNX loading)
+            let effects = newEffects
+            DispatchQueue.global(qos: .userInitiated).async { [weak self] in
+                let renderer = OverlayRenderer(effects: effects)
+                DispatchQueue.main.async {
+                    guard let self else { return }
+                    self.overlayRenderer = renderer
+                    self.captureDelegate?.setOverlayRenderer(renderer)
+                    print("[Webcam] effects updated (face swap rebuilt)")
+                }
+            }
+        } else {
+            // Text/logo/timezone change — reuse existing face swap engine,
+            // rebuild synchronously (instant).
+            let existingEngine = overlayRenderer?.faceSwapEngine
+            let renderer = OverlayRenderer(effects: newEffects, existingEngine: existingEngine)
+            self.overlayRenderer = renderer
+            captureDelegate?.setOverlayRenderer(renderer)
+        }
+    }
+
     // MARK: - Connection handling
 
     private func handleConnection(_ conn: VZVirtioSocketConnection) {
         if wcDebug { print("[Webcam] guest connected (fd=\(conn.fileDescriptor))") }
 
-        // Stop any existing capture
         captureSession?.stopRunning()
         captureSession = nil
         connection = conn
         headerSent = false
 
         startCapture(fd: conn.fileDescriptor)
+        onStreamingChanged?(true)
     }
 
     private static func sendHeader(fd: Int32, width: Int, height: Int, fps: Int) {
@@ -117,13 +190,11 @@ public final class WebcamBridge: NSObject, @unchecked Sendable {
         }
     }
 
-    private static let faceSwapFPS = 12
-
     private func startCapture(fd: Int32) {
         let session = AVCaptureSession()
-        let hasFaceSwap = effects.faceSwapActive
-        // Use .high to match what queryCameraResolution() reports to the guest.
-        session.sessionPreset = .high
+        let capturePreset = Self.preset(for: quality)
+        print("[Webcam] startCapture: quality=\(quality) preset=\(capturePreset.rawValue)")
+        session.sessionPreset = capturePreset
 
         let camera: AVCaptureDevice?
         if let cameraID, let specific = AVCaptureDevice(uniqueID: cameraID) {
@@ -144,18 +215,11 @@ public final class WebcamBridge: NSObject, @unchecked Sendable {
 
         let output = AVCaptureVideoDataOutput()
 
-        let needsEffects = effects.hasAnyEffect
-        if needsEffects {
-            // Capture in BGRA for overlay rendering, then convert to YUYV for output
-            output.videoSettings = [
-                kCVPixelBufferPixelFormatTypeKey as String: kCVPixelFormatType_32BGRA
-            ]
-        } else {
-            // Request YUYV (4:2:2) — universally supported by v4l2loopback
-            output.videoSettings = [
-                kCVPixelBufferPixelFormatTypeKey as String: kCVPixelFormatType_422YpCbCr8_yuvs
-            ]
-        }
+        // Always capture BGRA so we can toggle effects on/off without
+        // restarting the session (v4l2loopback can't change pixel format).
+        output.videoSettings = [
+            kCVPixelBufferPixelFormatTypeKey as String: kCVPixelFormatType_32BGRA
+        ]
         output.alwaysDiscardsLateVideoFrames = true
 
         let queue = DispatchQueue(label: "io.bromure.webcam-capture", qos: .userInteractive)
@@ -173,24 +237,16 @@ public final class WebcamBridge: NSObject, @unchecked Sendable {
         }
         session.addOutput(output)
 
-        // Configure frame rate
-        var actualFPS = Self.captureFPS
+        // Always capture at maximum frame rate.  Face swap throttling is
+        // handled in CaptureDelegate by skipping frames.
+        var actualFPS = 30
         if let range = camera.activeFormat.videoSupportedFrameRateRanges.first {
-            // Only set frame duration if the camera supports a range (min != max)
-            let canAdjust = range.minFrameRate < range.maxFrameRate - 0.5
             do {
                 try camera.lockForConfiguration()
-                if hasFaceSwap && canAdjust && Double(Self.faceSwapFPS) >= range.minFrameRate {
-                    let dur = CMTime(value: 1, timescale: CMTimeScale(Self.faceSwapFPS))
-                    camera.activeVideoMinFrameDuration = dur
-                    camera.activeVideoMaxFrameDuration = dur
-                    actualFPS = Self.faceSwapFPS
-                } else {
-                    camera.activeVideoMinFrameDuration = range.minFrameDuration
-                    camera.activeVideoMaxFrameDuration = range.minFrameDuration
-                    actualFPS = Int(range.maxFrameRate)
-                }
+                camera.activeVideoMinFrameDuration = range.minFrameDuration
+                camera.activeVideoMaxFrameDuration = range.minFrameDuration
                 camera.unlockForConfiguration()
+                actualFPS = Int(range.maxFrameRate)
             } catch {
                 print("[Webcam] failed to configure frame rate: \(error)")
                 actualFPS = Int(range.maxFrameRate)
@@ -203,7 +259,7 @@ public final class WebcamBridge: NSObject, @unchecked Sendable {
             guard !bridge.headerSent else { return }
             Self.sendHeader(fd: fd, width: width, height: height, fps: actualFPS)
             bridge.headerSent = true
-            print("[Webcam] capture started at \(width)x\(height)@\(actualFPS)fps\(needsEffects ? " (effects on)" : "")")
+            print("[Webcam] capture started at \(width)x\(height)@\(actualFPS)fps")
         }
 
         session.startRunning()
@@ -217,6 +273,7 @@ public final class WebcamBridge: NSObject, @unchecked Sendable {
         captureDelegate = nil
         connection = nil
         headerSent = false
+        onStreamingChanged?(false)
     }
 }
 
@@ -228,9 +285,9 @@ final class OverlayRenderer: @unchecked Sendable {
     private let timeZone: TimeZone?
     private let logoImage: CGImage?
     private let dateFormatter: DateFormatter
-    private let faceSwapEngine: FaceSwapEngine?
+    let faceSwapEngine: FaceSwapEngine?
 
-    init(effects: WebcamEffects) {
+    init(effects: WebcamEffects, existingEngine: FaceSwapEngine? = nil) {
         self.effects = effects
         self.timeZone = effects.timeZoneIdentifier.isEmpty ? nil : TimeZone(identifier: effects.timeZoneIdentifier)
 
@@ -249,19 +306,29 @@ final class OverlayRenderer: @unchecked Sendable {
         }
         self.dateFormatter = fmt
 
-        // Initialize face swap engine if enabled and configured
-        if effects.faceSwapActive, let imageData = effects.faceSwapImageData {
-            do {
-                self.faceSwapEngine = try FaceSwapEngine(sourceImageData: imageData)
-                if wcDebug { print("[Webcam] face swap engine initialized") }
-            } catch {
-                print("[Webcam] failed to initialize face swap: \(error)")
+        // Reuse the existing face swap engine if provided (avoids ONNX reload),
+        // otherwise create a new one if face swap is active.
+        if effects.faceSwapActive {
+            if let engine = existingEngine {
+                self.faceSwapEngine = engine
+            } else if let imageData = effects.faceSwapImageData {
+                do {
+                    self.faceSwapEngine = try FaceSwapEngine(sourceImageData: imageData)
+                    if wcDebug { print("[Webcam] face swap engine initialized") }
+                } catch {
+                    print("[Webcam] failed to initialize face swap: \(error)")
+                    self.faceSwapEngine = nil
+                }
+            } else {
                 self.faceSwapEngine = nil
             }
         } else {
             self.faceSwapEngine = nil
         }
     }
+
+    /// Whether this renderer includes face swap processing.
+    var hasFaceSwap: Bool { faceSwapEngine != nil }
 
     /// Render overlays onto a BGRA pixel buffer and return YUYV data.
     func renderOverlayAndConvert(pixelBuffer: CVPixelBuffer) -> Data {
@@ -501,11 +568,16 @@ final class OverlayRenderer: @unchecked Sendable {
     }
 
     /// Draw a CTLine right-side-up in a flipped (top-left origin) CGContext.
-    /// CTLineDraw assumes y-up, so we locally un-flip around the text position.
+    /// ``point`` is the top-left corner of the text's visual bounding box.
+    /// CTLineDraw draws from the baseline, so we un-flip and offset by
+    /// ascent to place the text correctly.
     private func drawLine(_ line: CTLine, at point: CGPoint, in ctx: CGContext) {
-        let bounds = CTLineGetBoundsWithOptions(line, [])
+        var ascent: CGFloat = 0
+        var descent: CGFloat = 0
+        CTLineGetTypographicBounds(line, &ascent, &descent, nil)
         ctx.saveGState()
-        ctx.translateBy(x: point.x, y: point.y + bounds.height)
+        // Flip locally: translate to where the baseline should be, then un-flip
+        ctx.translateBy(x: point.x, y: point.y + ascent)
         ctx.scaleBy(x: 1, y: -1)
         ctx.textPosition = CGPoint(x: 0, y: 0)
         CTLineDraw(line, ctx)
@@ -513,7 +585,7 @@ final class OverlayRenderer: @unchecked Sendable {
     }
 
     /// Convert a BGRA pixel buffer to YUYV data.
-    private func bgraToYUYV(pixelBuffer: CVPixelBuffer, width: Int, height: Int) -> Data {
+    func bgraToYUYV(pixelBuffer: CVPixelBuffer, width: Int, height: Int) -> Data {
         guard let baseAddr = CVPixelBufferGetBaseAddress(pixelBuffer) else {
             return Data(count: width * height * 2)
         }
@@ -574,15 +646,30 @@ final class OverlayRenderer: @unchecked Sendable {
 private final class CaptureDelegate: NSObject, AVCaptureVideoDataOutputSampleBufferDelegate, @unchecked Sendable {
     private let fd: Int32
     private let onDisconnect: () -> Void
-    private let overlayRenderer: OverlayRenderer?
     private var disconnected = false
     var onFirstFrame: ((_ width: Int, _ height: Int) -> Void)?
     private var headerSent = false
 
+    /// Lock-protected renderer reference — can be swapped at runtime.
+    private let rendererLock = NSLock()
+    private var _overlayRenderer: OverlayRenderer?
+
+    /// Minimum interval between face-swap frames (~12 FPS).
+    /// Non-face-swap frames pass through at full camera rate.
+    private static let faceSwapInterval: TimeInterval = 1.0 / 12.0
+    private var lastFaceSwapTime: TimeInterval = 0
+
     init(fd: Int32, overlayRenderer: OverlayRenderer?, onDisconnect: @escaping () -> Void) {
         self.fd = fd
-        self.overlayRenderer = overlayRenderer
+        self._overlayRenderer = overlayRenderer
         self.onDisconnect = onDisconnect
+    }
+
+    /// Hot-swap the overlay renderer (called from the main thread).
+    func setOverlayRenderer(_ renderer: OverlayRenderer?) {
+        rendererLock.lock()
+        _overlayRenderer = renderer
+        rendererLock.unlock()
     }
 
     func captureOutput(
@@ -602,8 +689,21 @@ private final class CaptureDelegate: NSObject, AVCaptureVideoDataOutputSampleBuf
             headerSent = true
         }
 
-        if let renderer = overlayRenderer {
-            // Effects path: render overlays on BGRA, convert to YUYV
+        // Snapshot the current renderer under lock
+        rendererLock.lock()
+        let renderer = _overlayRenderer
+        rendererLock.unlock()
+
+        if let renderer {
+            // Throttle face-swap frames to ~12 FPS to keep up with
+            // Vision + ONNX processing.  Non-face-swap renderers run
+            // at full frame rate.
+            if renderer.hasFaceSwap {
+                let now = CACurrentMediaTime()
+                guard now - lastFaceSwapTime >= Self.faceSwapInterval else { return }
+                lastFaceSwapTime = now
+            }
+
             let yuyvData = renderer.renderOverlayAndConvert(pixelBuffer: pixelBuffer)
             let frameSize = yuyvData.count
             writeFrameSize(frameSize)
@@ -612,7 +712,7 @@ private final class CaptureDelegate: NSObject, AVCaptureVideoDataOutputSampleBuf
                 writeAll(ptr.baseAddress!, count: frameSize)
             }
         } else {
-            // Direct path: send raw YUYV frames
+            // No effects: convert BGRA → YUYV directly
             CVPixelBufferLockBaseAddress(pixelBuffer, .readOnly)
             defer { CVPixelBufferUnlockBaseAddress(pixelBuffer, .readOnly) }
 
@@ -621,16 +721,49 @@ private final class CaptureDelegate: NSObject, AVCaptureVideoDataOutputSampleBuf
             let rowBytes = width * 2  // YUYV = 2 bytes/pixel
             let frameSize = rowBytes * height
 
+            // Inline BGRA → YUYV conversion
+            var yuyv = Data(count: frameSize)
+            yuyv.withUnsafeMutableBytes { yuyvPtr in
+                let dst = yuyvPtr.baseAddress!.assumingMemoryBound(to: UInt8.self)
+                let src = baseAddr.assumingMemoryBound(to: UInt8.self)
+
+                for row in 0..<height {
+                    let srcRow = src + row * bytesPerRow
+                    let dstRow = dst + row * rowBytes
+
+                    for col in stride(from: 0, to: width, by: 2) {
+                        let px0 = srcRow + col * 4
+                        let b0 = Int(px0[0]), g0 = Int(px0[1]), r0 = Int(px0[2])
+
+                        let b1: Int, g1: Int, r1: Int
+                        if col + 1 < width {
+                            let px1 = srcRow + (col + 1) * 4
+                            b1 = Int(px1[0]); g1 = Int(px1[1]); r1 = Int(px1[2])
+                        } else {
+                            b1 = b0; g1 = g0; r1 = r0
+                        }
+
+                        let y0 = UInt8(clamping: (66 * r0 + 129 * g0 + 25 * b0 + 128) >> 8 + 16)
+                        let y1 = UInt8(clamping: (66 * r1 + 129 * g1 + 25 * b1 + 128) >> 8 + 16)
+                        let avgR = (r0 + r1) >> 1
+                        let avgG = (g0 + g1) >> 1
+                        let avgB = (b0 + b1) >> 1
+                        let u = UInt8(clamping: (-38 * avgR - 74 * avgG + 112 * avgB + 128) >> 8 + 128)
+                        let v = UInt8(clamping: (112 * avgR - 94 * avgG - 18 * avgB + 128) >> 8 + 128)
+
+                        let dstPx = dstRow + col * 2
+                        dstPx[0] = y0
+                        dstPx[1] = u
+                        dstPx[2] = y1
+                        dstPx[3] = v
+                    }
+                }
+            }
+
             writeFrameSize(frameSize)
             if disconnected { return }
-
-            if bytesPerRow == rowBytes {
-                writeAll(baseAddr, count: frameSize)
-            } else {
-                for row in 0..<height {
-                    writeAll(baseAddr + row * bytesPerRow, count: rowBytes)
-                    if disconnected { return }
-                }
+            yuyv.withUnsafeBytes { ptr in
+                writeAll(ptr.baseAddress!, count: frameSize)
             }
         }
     }

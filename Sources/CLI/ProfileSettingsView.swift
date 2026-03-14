@@ -2,6 +2,7 @@ import SwiftUI
 import SandboxEngine
 import UniformTypeIdentifiers
 import Security
+import CFNetwork
 
 private extension UTType {
     static let pem = UTType(filenameExtension: "pem") ?? .data
@@ -73,6 +74,8 @@ struct ProfileSettingsView: View {
     @State private var showVirusTotalKeyError = false
     @State private var vtKeyVerifying = false
     @State private var vtKeyStatus: VTKeyStatus?
+    @State private var proxyHostError: String?
+    @State private var proxyHostChecking = false
 
     private enum VTKeyStatus {
         case valid
@@ -403,22 +406,34 @@ struct ProfileSettingsView: View {
                         speakerDeviceID: .constant(nil),
                         enableWebcam: !showWebcamEffects,
                         enableMicrophone: false,
+                        webcamQuality: draft.settings.webcamQuality,
                         webcamEffects: draft.settings.webcamEffects
                     )
 
-                    Button {
-                        showWebcamEffects = true
-                    } label: {
-                        HStack(spacing: 4) {
-                            Label("Effects\u{2026}", systemImage: "sparkles")
-                            if draft.settings.webcamEffects.hasAnyEffect {
-                                Circle()
-                                    .fill(.blue)
-                                    .frame(width: 6, height: 6)
+                    HStack(spacing: 12) {
+                        let supported = WebcamBridge.supportedQualities(cameraID: draft.settings.webcamDeviceID)
+                        Picker("Quality", selection: $draft.settings.webcamQuality) {
+                            ForEach(supported, id: \.self) { q in
+                                Text(q.label).tag(q)
                             }
                         }
+                        .pickerStyle(.menu)
+                        .frame(width: 220)
+
+                        Button {
+                            showWebcamEffects = true
+                        } label: {
+                            HStack(spacing: 4) {
+                                Label("Effects\u{2026}", systemImage: "sparkles")
+                                if draft.settings.webcamEffects.hasAnyEffect {
+                                    Circle()
+                                        .fill(.blue)
+                                        .frame(width: 6, height: 6)
+                                }
+                            }
+                        }
+                        .controlSize(.small)
                     }
-                    .controlSize(.small)
                 }
                 .padding(.leading, 20)
             }
@@ -671,6 +686,15 @@ struct ProfileSettingsView: View {
                         }
                     }
                 }
+
+                if draft.settings.enableWarp {
+                    settingToggle(
+                        "Connect on Startup",
+                        description: "Automatically connect the VPN when the browser session starts. You can always toggle it from the window\u{2019}s VPN button.",
+                        isOn: $draft.settings.warpAutoConnect
+                    )
+                    .padding(.leading, 20)
+                }
             }
 
             settingsDivider
@@ -697,9 +721,27 @@ struct ProfileSettingsView: View {
                     .settingDescription()
 
                 HStack(spacing: 8) {
-                    TextField("Hostname", text: $draft.settings.proxyHost)
-                        .textFieldStyle(.roundedBorder)
-                    TextField("Port", value: $draft.settings.proxyPort, format: .number)
+                    VStack(alignment: .leading, spacing: 4) {
+                        TextField("Hostname", text: $draft.settings.proxyHost)
+                            .textFieldStyle(.roundedBorder)
+                            .onSubmit { validateProxyHost() }
+                            .onChange(of: draft.settings.proxyHost) { _, _ in
+                                proxyHostError = nil
+                            }
+                        if proxyHostChecking {
+                            HStack(spacing: 4) {
+                                ProgressView().controlSize(.small)
+                                Text("Resolving\u{2026}")
+                                    .font(.caption)
+                                    .foregroundStyle(.secondary)
+                            }
+                        } else if let error = proxyHostError {
+                            Text(error)
+                                .font(.caption)
+                                .foregroundStyle(.red)
+                        }
+                    }
+                    TextField("Port", value: $draft.settings.proxyPort, format: .number.grouping(.never))
                         .textFieldStyle(.roundedBorder)
                         .frame(width: 80)
                 }
@@ -887,6 +929,39 @@ struct ProfileSettingsView: View {
     private enum CertError: LocalizedError {
         case invalidCertificate
         var errorDescription: String? { "Not a valid X.509 certificate" }
+    }
+
+    private func validateProxyHost() {
+        let host = draft.settings.proxyHost
+            .trimmingCharacters(in: .whitespacesAndNewlines)
+        guard !host.isEmpty else {
+            proxyHostError = nil
+            return
+        }
+        proxyHostChecking = true
+        proxyHostError = nil
+        Task.detached(priority: .userInitiated) {
+            let valid: Bool
+            // Accept raw IP addresses without DNS lookup
+            var addr = sockaddr_in()
+            var addr6 = sockaddr_in6()
+            if host.withCString({ inet_pton(AF_INET, $0, &addr.sin_addr) }) == 1 ||
+               host.withCString({ inet_pton(AF_INET6, $0, &addr6.sin6_addr) }) == 1 {
+                valid = true
+            } else {
+                let hostRef = CFHostCreateWithName(nil, host as CFString).takeRetainedValue()
+                var resolved = DarwinBoolean(false)
+                CFHostStartInfoResolution(hostRef, .addresses, nil)
+                CFHostGetAddressing(hostRef, &resolved)
+                valid = resolved.boolValue
+            }
+            await MainActor.run {
+                proxyHostChecking = false
+                if !valid {
+                    proxyHostError = "Cannot resolve \u{201c}\(host)\u{201d} \u{2014} check the hostname"
+                }
+            }
+        }
     }
 
     static func swiftUIColor(for color: ProfileColor) -> Color {

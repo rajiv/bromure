@@ -11,8 +11,6 @@ struct WebcamEffectsView: View {
     var onDismiss: () -> Void
 
     @StateObject private var preview = MediaPreviewModel()
-    @State private var showLogoPicker = false
-    @State private var showFaceSwapPicker = false
     @State private var showModelDownloadAlert = false
     @State private var isDownloadingModels = false
     @State private var downloadProgress: Double = 0
@@ -128,7 +126,7 @@ struct WebcamEffectsView: View {
                             }
 
                             Button {
-                                showLogoPicker = true
+                                pickLogo()
                             } label: {
                                 Label(
                                     effects.logoPNGData == nil ? "Choose Image\u{2026}" : "Replace\u{2026}",
@@ -175,7 +173,7 @@ struct WebcamEffectsView: View {
                                 }
 
                                 Button {
-                                    showFaceSwapPicker = true
+                                    pickFaceSwapImage()
                                 } label: {
                                     Label(
                                         effects.faceSwapImageData == nil ? "Choose Face\u{2026}" : "Replace\u{2026}",
@@ -230,62 +228,6 @@ struct WebcamEffectsView: View {
         }
         .onChange(of: effects.faceSwapEnabled) { _, _ in updateFaceSwapProcessor() }
         .onChange(of: effects.faceSwapImageData) { _, _ in updateFaceSwapProcessor() }
-        .fileImporter(
-            isPresented: $showLogoPicker,
-            allowedContentTypes: [.png, .jpeg, .heic, .svg, .image],
-            allowsMultipleSelection: false
-        ) { result in
-            if case .success(let urls) = result, let url = urls.first {
-                guard url.startAccessingSecurityScopedResource() else { return }
-                defer { url.stopAccessingSecurityScopedResource() }
-                if let nsImage = NSImage(contentsOf: url), let pngData = nsImage.pngRepresentation() {
-                    effects.logoPNGData = pngData
-                }
-            }
-        }
-        .fileImporter(
-            isPresented: $showFaceSwapPicker,
-            allowedContentTypes: [.png, .jpeg, .heic, .image],
-            allowsMultipleSelection: false
-        ) { result in
-            if case .success(let urls) = result, let url = urls.first {
-                guard url.startAccessingSecurityScopedResource() else { return }
-                defer { url.stopAccessingSecurityScopedResource() }
-
-                // Validate file size (50 MB limit)
-                let maxSize = 50 * 1024 * 1024
-                if let attrs = try? FileManager.default.attributesOfItem(atPath: url.path),
-                   let fileSize = attrs[.size] as? Int, fileSize > maxSize {
-                    imageError = "Image file is too large (\(fileSize / 1024 / 1024) MB). Maximum is 50 MB."
-                    showImageError = true
-                    return
-                }
-
-                guard let nsImage = NSImage(contentsOf: url) else {
-                    imageError = "Could not open this file. It may be corrupted or in an unsupported format."
-                    showImageError = true
-                    return
-                }
-
-                // Check dimensions (4096×4096 limit)
-                let rep = nsImage.representations.first
-                let pw = rep?.pixelsWide ?? Int(nsImage.size.width)
-                let ph = rep?.pixelsHigh ?? Int(nsImage.size.height)
-                if pw > 4096 || ph > 4096 {
-                    imageError = "Image is too large (\(pw)×\(ph) pixels). Maximum is 4096×4096."
-                    showImageError = true
-                    return
-                }
-
-                guard let pngData = nsImage.pngRepresentation() else {
-                    imageError = "Could not process this image. Try a different file."
-                    showImageError = true
-                    return
-                }
-
-                effects.faceSwapImageData = pngData
-            }
-        }
         .alert("Image Error", isPresented: $showImageError) {
             Button("OK", role: .cancel) { }
         } message: {
@@ -299,6 +241,102 @@ struct WebcamEffectsView: View {
         } message: {
             Text("Face swap requires two AI models (~500 MB total). They will be downloaded from Hugging Face and stored locally.")
         }
+    }
+
+    /// Max logo height in pixels — the overlay renders it at ~50px on 1080p,
+    /// so 256px gives plenty of headroom for retina without wasting memory.
+    private static let maxLogoHeight: CGFloat = 256
+    private static let maxLogoFileSize = 10 * 1024 * 1024  // 10 MB
+
+    private func pickLogo() {
+        let panel = NSOpenPanel()
+        panel.allowedContentTypes = [.png, .jpeg, .heic, .svg, .image]
+        panel.allowsMultipleSelection = false
+        panel.canChooseDirectories = false
+        guard panel.runModal() == .OK, let url = panel.url else { return }
+
+        if let attrs = try? FileManager.default.attributesOfItem(atPath: url.path),
+           let fileSize = attrs[.size] as? Int, fileSize > Self.maxLogoFileSize {
+            imageError = "Logo file is too large (\(fileSize / 1024 / 1024) MB). Maximum is 10 MB."
+            showImageError = true
+            return
+        }
+
+        guard let nsImage = NSImage(contentsOf: url) else {
+            imageError = "Could not open this file."
+            showImageError = true
+            return
+        }
+
+        // Downscale if taller than maxLogoHeight, preserving aspect ratio
+        let rep = nsImage.representations.first
+        let pw = CGFloat(rep?.pixelsWide ?? Int(nsImage.size.width))
+        let ph = CGFloat(rep?.pixelsHigh ?? Int(nsImage.size.height))
+        let maxH = Self.maxLogoHeight
+
+        let finalImage: NSImage
+        if ph > maxH {
+            let scale = maxH / ph
+            let newW = round(pw * scale)
+            let newSize = NSSize(width: newW, height: maxH)
+            let resized = NSImage(size: newSize)
+            resized.lockFocus()
+            nsImage.draw(in: NSRect(origin: .zero, size: newSize),
+                         from: NSRect(x: 0, y: 0, width: pw, height: ph),
+                         operation: .copy, fraction: 1.0)
+            resized.unlockFocus()
+            finalImage = resized
+        } else {
+            finalImage = nsImage
+        }
+
+        guard let pngData = finalImage.pngRepresentation() else {
+            imageError = "Could not process this image."
+            showImageError = true
+            return
+        }
+        effects.logoPNGData = pngData
+    }
+
+    private func pickFaceSwapImage() {
+        let panel = NSOpenPanel()
+        panel.allowedContentTypes = [.png, .jpeg, .heic, .image]
+        panel.allowsMultipleSelection = false
+        panel.canChooseDirectories = false
+        guard panel.runModal() == .OK, let url = panel.url else { return }
+
+        // Validate file size (50 MB limit)
+        let maxSize = 50 * 1024 * 1024
+        if let attrs = try? FileManager.default.attributesOfItem(atPath: url.path),
+           let fileSize = attrs[.size] as? Int, fileSize > maxSize {
+            imageError = "Image file is too large (\(fileSize / 1024 / 1024) MB). Maximum is 50 MB."
+            showImageError = true
+            return
+        }
+
+        guard let nsImage = NSImage(contentsOf: url) else {
+            imageError = "Could not open this file. It may be corrupted or in an unsupported format."
+            showImageError = true
+            return
+        }
+
+        // Check dimensions (4096×4096 limit)
+        let rep = nsImage.representations.first
+        let pw = rep?.pixelsWide ?? Int(nsImage.size.width)
+        let ph = rep?.pixelsHigh ?? Int(nsImage.size.height)
+        if pw > 4096 || ph > 4096 {
+            imageError = "Image is too large (\(pw)×\(ph) pixels). Maximum is 4096×4096."
+            showImageError = true
+            return
+        }
+
+        guard let pngData = nsImage.pngRepresentation() else {
+            imageError = "Could not process this image. Try a different file."
+            showImageError = true
+            return
+        }
+
+        effects.faceSwapImageData = pngData
     }
 
     private func updateFaceSwapProcessor() {
@@ -573,6 +611,38 @@ struct FaceSwapBanner: View {
                 .clipped()
             }
             .frame(height: height)
+        }
+    }
+}
+
+// MARK: - Live Effects View (for in-session editing)
+
+/// Wraps ``WebcamEffectsView`` for use in a floating panel during an active
+/// browser session.  Changes are applied to the running webcam stream in
+/// real time via the ``onEffectsChanged`` callback.
+struct LiveWebcamEffectsView: View {
+    @State private var effects: WebcamEffects
+    let webcamDeviceID: String?
+    let onEffectsChanged: (WebcamEffects) -> Void
+    let onDismiss: () -> Void
+
+    init(effects: WebcamEffects, webcamDeviceID: String?,
+         onEffectsChanged: @escaping (WebcamEffects) -> Void,
+         onDismiss: @escaping () -> Void) {
+        self._effects = State(initialValue: effects)
+        self.webcamDeviceID = webcamDeviceID
+        self.onEffectsChanged = onEffectsChanged
+        self.onDismiss = onDismiss
+    }
+
+    var body: some View {
+        WebcamEffectsView(
+            effects: $effects,
+            webcamDeviceID: webcamDeviceID,
+            onDismiss: onDismiss
+        )
+        .onChange(of: effects) { _, newEffects in
+            onEffectsChanged(newEffects)
         }
     }
 }

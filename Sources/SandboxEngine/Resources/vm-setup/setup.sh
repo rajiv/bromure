@@ -218,6 +218,7 @@ echo 'hvc0::respawn:/bin/login -f root' >> /mnt/etc/inittab
 echo '::once:/usr/local/bin/config-agent.py' >> /mnt/etc/inittab
 echo '::once:su -s /bin/sh chrome -c /usr/local/bin/file-agent.py' >> /mnt/etc/inittab
 echo '::once:/usr/local/bin/webcam-agent.py' >> /mnt/etc/inittab
+echo '::once:/usr/local/bin/warp-agent.py' >> /mnt/etc/inittab
 
 install_config scripts/debug.sh        /mnt/root/debug.sh          755
 install_config scripts/root-profile.sh /mnt/root/.profile
@@ -295,6 +296,8 @@ install_config scripts/file-agent.py        /mnt/usr/local/bin/file-agent.py    
 install_config scripts/file-picker-host.py  /mnt/usr/local/bin/file-picker-host.py  755
 install_config scripts/link-agent.py        /mnt/usr/local/bin/link-agent.py        755
 install_config scripts/webcam-agent.py      /mnt/usr/local/bin/webcam-agent.py      755
+install_config scripts/warp-agent.py        /mnt/usr/local/bin/warp-agent.py        755
+install_config scripts/direct-socks.py      /mnt/usr/local/bin/direct-socks.py      755
 install_config scripts/config-agent.py      /mnt/usr/local/bin/config-agent.py      755
 install_config scripts/download-guard.sh    /mnt/usr/local/bin/download-guard.sh    755
 install_config scripts/test-runner.sh      /mnt/usr/local/bin/test-runner.sh       755

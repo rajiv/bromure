@@ -65,7 +65,7 @@ public final class FilePickerBridge: NSObject, @unchecked Sendable {
 
     private func handleConnection(_ conn: VZVirtioSocketConnection) {
         // Must run on main thread for @MainActor property access
-        let setup = { @MainActor [weak self] in
+        let setup = { @MainActor @Sendable [weak self] in
             guard let self = self else { return }
 
             print("[FilePicker] guest connected (fd=\(conn.fileDescriptor))")

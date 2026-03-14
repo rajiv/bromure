@@ -128,7 +128,7 @@ def main():
     while not os.path.exists(VIDEO_DEV):
         time.sleep(5)
 
-    # Read camera resolution from chrome-env (written by config-agent before v4l2loopback)
+    # Read camera resolution from chrome-env (written by config-agent)
     width = int(read_chrome_env("WEBCAM_WIDTH", "640"))
     height = int(read_chrome_env("WEBCAM_HEIGHT", "480"))
     log(f"host camera: {width}x{height}")
@@ -161,7 +161,7 @@ def main():
                 sock.connect((2, VSOCK_PORT))
                 sock.settimeout(None)  # back to blocking for streaming
 
-                # Read 12-byte header (resolution should match probe)
+                # Read 12-byte header (resolution should match chrome-env)
                 header = read_exact(sock, 12)
                 if not header:
                     log("no header received")

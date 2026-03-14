@@ -86,8 +86,23 @@ public struct CustomRootCA: Codable, Equatable, Identifiable {
     }
 }
 
+/// Webcam capture quality — maps to AVCaptureSession presets.
+public enum WebcamQuality: String, Codable, CaseIterable, Sendable {
+    case low = "low"
+    case medium = "medium"
+    case high = "high"
+
+    public var label: String {
+        switch self {
+        case .low: "Low (640\u{00d7}480)"
+        case .medium: "Medium (1280\u{00d7}720)"
+        case .high: "High (1920\u{00d7}1080)"
+        }
+    }
+}
+
 /// Webcam overlay effects (city/time, name badge, logo, face swap).
-public struct WebcamEffects: Codable, Equatable {
+public struct WebcamEffects: Codable, Equatable, Sendable {
     /// City name shown in the top-left corner.
     public var cityName: String = ""
     /// IANA time zone identifier (e.g. "America/New_York").
@@ -132,6 +147,7 @@ public struct ProfileSettings: Codable, Equatable {
     // Network
     public var enableAdBlocking: Bool = false
     public var enableWarp: Bool = false
+    public var warpAutoConnect: Bool = true
 
     // Proxy
     public var proxyHost: String = ""
@@ -173,6 +189,7 @@ public struct ProfileSettings: Codable, Equatable {
     public var enableAudio: Bool = true
     public var audioVolume: Int = 100
     public var enableWebcam: Bool = false
+    public var webcamQuality: WebcamQuality = .high
     public var enableMicrophone: Bool = false
     public var webcamDeviceID: String?
     public var microphoneDeviceID: String?
@@ -202,6 +219,7 @@ public struct ProfileSettings: Codable, Equatable {
         enableWebGL = try c.decodeIfPresent(Bool.self, forKey: .enableWebGL) ?? defaults.enableWebGL
         enableAdBlocking = try c.decodeIfPresent(Bool.self, forKey: .enableAdBlocking) ?? defaults.enableAdBlocking
         enableWarp = try c.decodeIfPresent(Bool.self, forKey: .enableWarp) ?? defaults.enableWarp
+        warpAutoConnect = try c.decodeIfPresent(Bool.self, forKey: .warpAutoConnect) ?? defaults.warpAutoConnect
         proxyHost = try c.decodeIfPresent(String.self, forKey: .proxyHost) ?? defaults.proxyHost
         proxyPort = try c.decodeIfPresent(Int.self, forKey: .proxyPort) ?? defaults.proxyPort
         proxyUsername = try c.decodeIfPresent(String.self, forKey: .proxyUsername) ?? defaults.proxyUsername
@@ -222,6 +240,7 @@ public struct ProfileSettings: Codable, Equatable {
         enableAudio = try c.decodeIfPresent(Bool.self, forKey: .enableAudio) ?? defaults.enableAudio
         audioVolume = try c.decodeIfPresent(Int.self, forKey: .audioVolume) ?? defaults.audioVolume
         enableWebcam = try c.decodeIfPresent(Bool.self, forKey: .enableWebcam) ?? defaults.enableWebcam
+        webcamQuality = try c.decodeIfPresent(WebcamQuality.self, forKey: .webcamQuality) ?? defaults.webcamQuality
         enableMicrophone = try c.decodeIfPresent(Bool.self, forKey: .enableMicrophone) ?? defaults.enableMicrophone
         webcamDeviceID = try c.decodeIfPresent(String.self, forKey: .webcamDeviceID)
         microphoneDeviceID = try c.decodeIfPresent(String.self, forKey: .microphoneDeviceID)
@@ -260,6 +279,7 @@ public struct ProfileSettings: Codable, Equatable {
             enableAudio: enableAudio,
             audioVolume: audioVolume,
             enableWarp: effectiveWarp,
+            warpAutoConnect: effectiveWarp && warpAutoConnect,
             forceDarkMode: forceDark,
             enableAdBlocking: effectiveAdBlocking,
             swapCmdCtrl: defaults.object(forKey: "vm.swapCmdCtrl") as? Bool ?? true,
@@ -272,6 +292,7 @@ public struct ProfileSettings: Codable, Equatable {
             enableClipboardSharing: enableClipboardSharing,
             enableLinkSender: enableLinkSender,
             enableWebcam: enableWebcam,
+            webcamQuality: webcamQuality,
             enableMicrophone: enableMicrophone,
             webcamDeviceID: webcamDeviceID,
             microphoneDeviceID: microphoneDeviceID,

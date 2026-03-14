@@ -224,6 +224,7 @@ public final class VMPool {
 
         print("[VMPool] Applying config: homePage='\(config.homePage)' forceDarkMode=\(config.forceDarkMode) adBlocking=\(config.enableAdBlocking)")
 
+
         // Activate network filtering based on profile config
         if config.isolateFromLAN {
             if let filter = warm.networkFilter {
@@ -256,7 +257,8 @@ public final class VMPool {
         }
 
         if config.forceDarkMode { cfg["darkMode"] = true }
-        if config.enableAdBlocking || config.enableWarp || config.blockMalwareSites { cfg["useProxy"] = true }
+        // Squid always runs (unless custom proxy is set), so always flag useProxy
+        if config.proxyHost == nil { cfg["useProxy"] = true }
         if !config.enableGPU { cfg["disableGPU"] = true }
         if !config.enableWebGL { cfg["disableWebGL"] = true }
         if config.phishingWarning { cfg["phishingGuard"] = true }
@@ -266,6 +268,7 @@ public final class VMPool {
         if config.blockMalwareSites { cfg["blockMalware"] = true }
         if config.enableAdBlocking { cfg["adBlocking"] = true }
         if config.enableWarp { cfg["enableWarp"] = true }
+        if config.warpAutoConnect { cfg["warpAutoConnect"] = true }
         if let proxyHost = config.proxyHost, let proxyPort = config.proxyPort {
             cfg["proxyHost"] = proxyHost
             cfg["proxyPort"] = proxyPort
@@ -275,7 +278,9 @@ public final class VMPool {
         if config.enableLinkSender { cfg["linkSender"] = true }
         if config.enableWebcam {
             cfg["webcam"] = true
-            let res = WebcamBridge.queryCameraResolution(cameraID: config.webcamDeviceID)
+            let probeT0 = CFAbsoluteTimeGetCurrent()
+            let res = WebcamBridge.queryCameraResolution(cameraID: config.webcamDeviceID, quality: config.webcamQuality)
+            print("[VMPool] webcam probe: \(res.width)x\(res.height) in \(Int((CFAbsoluteTimeGetCurrent() - probeT0) * 1000))ms")
             cfg["webcamWidth"] = res.width
             cfg["webcamHeight"] = res.height
         }

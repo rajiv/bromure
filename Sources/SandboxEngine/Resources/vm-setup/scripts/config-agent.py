@@ -106,7 +106,9 @@ def write_chrome_env(cfg):
             extra_flags.append(f"--proxy-server=http://{proxy_user}:{proxy_pass}@{proxy_host}:{proxy_port}")
         else:
             extra_flags.append(f"--proxy-server=http://{proxy_host}:{proxy_port}")
-    elif cfg.get("useProxy"):
+    else:
+        # Always route through internal squid proxy (required for dynamic
+        # WARP toggling — squid is restarted with/without proxychains).
         extra_flags.append("--proxy-server=http://127.0.0.1:3128")
     if cfg.get("disableGPU"):
         extra_flags.append("--disable-gpu")
@@ -237,20 +239,11 @@ def configure_services(cfg, ca_count):
     # PIDs we don't need to wait for before Chrome starts
     fire_and_forget = []
 
-    # WARP teardown (fire-and-forget — waits for on-boot internally)
-    if not cfg.get("enableWarp"):
-        pid = os.fork()
-        if pid == 0:
-            # Wait for on-boot.sh so warp-svc has started before we kill it
-            if not os.path.exists("/tmp/bromure/on-boot-done"):
-                subprocess.run("inotifywait -t 10 -e create --include on-boot-done /tmp/bromure/",
-                               shell=True, capture_output=True)
-            subprocess.run(
-                "LD_PRELOAD=/usr/lib/libresolv_stub.so /bin/warp-cli --accept-tos disconnect 2>/dev/null;"
-                "kill $(ps auxw | grep warp-svc | grep -v grep | awk '{print $1}') 2>/dev/null",
-                shell=True)
-            os._exit(0)
-        fire_and_forget.append(pid)
+    # WARP auto-connect: write a marker so the warp-agent enables WARP
+    # after it connects to the host.  The agent handles the full lifecycle
+    # (dbus, warp-svc, registration, connect, squid restart).
+    if cfg.get("warpAutoConnect"):
+        open("/tmp/bromure/warp-auto-connect", "w").close()
 
     # Webcam setup (background)
     if cfg.get("webcam"):
@@ -284,29 +277,40 @@ def configure_services(cfg, ca_count):
         bg_pids.append(pid)
 
     # DNS/proxy (synchronous — needed before Chrome)
+    #
+    # Squid always runs (unless a custom external proxy is configured) so
+    # that the WARP agent can toggle WARP at runtime by restarting squid
+    # with or without proxychains.
+    has_custom_proxy = bool(cfg.get("proxyHost"))
+
     if cfg.get("blockMalware"):
         run("sed -i 's/^server=1\\.1\\.1\\.1/server=1.1.1.2/' /etc/dnsmasq.d/pihole.conf")
         run("sed -i 's/^server=1\\.0\\.0\\.1/server=1.0.0.2/' /etc/dnsmasq.d/pihole.conf")
 
-    if cfg.get("adBlocking") or cfg.get("enableWarp") or cfg.get("blockMalware"):
+    # Start dnsmasq for DNS filtering (ad-blocking, malware blocking, or WARP)
+    if cfg.get("adBlocking") or cfg.get("blockMalware") or cfg.get("enableWarp"):
         run("dnsmasq -C /etc/dnsmasq.d/pihole.conf")
-        if cfg.get("adBlocking") or cfg.get("blockMalware"):
-            run("sed -i 's/^dns_nameservers.*/dns_nameservers 127.0.0.1/' /etc/squid/squid.conf")
-        else:
-            run("sed -i '/^dns_nameservers/d' /etc/squid/squid.conf")
-        if cfg.get("enableWarp"):
-            # Wait for on-boot.sh — WARP proxy must be running before squid starts through it
-            if not os.path.exists("/tmp/bromure/on-boot-done"):
-                subprocess.run("inotifywait -t 10 -e create --include on-boot-done /tmp/bromure/",
-                               shell=True, capture_output=True)
-            subprocess.Popen(
-                ["proxychains4", "-q", "-f", "/etc/proxychains/proxychains.conf",
-                 "squid", "-N", "-f", "/etc/squid/squid.conf"],
-                stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
-        else:
-            subprocess.Popen(
-                ["squid", "-N", "-f", "/etc/squid/squid.conf"],
-                stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
+
+    # Configure squid DNS: use dnsmasq (127.0.0.1) when ad-blocking or
+    # malware-blocking is on, otherwise use system defaults.
+    if cfg.get("adBlocking") or cfg.get("blockMalware"):
+        run("sed -i 's/^dns_nameservers.*/dns_nameservers 127.0.0.1/' /etc/squid/squid.conf")
+    else:
+        run("sed -i '/^dns_nameservers/d' /etc/squid/squid.conf")
+
+    # Start the direct SOCKS5 proxy on :40000 (transparent forwarding).
+    # When WARP connects, warp-agent stops this and starts warp-svc
+    # on the same port.  Squid always goes through proxychains → :40000.
+    if not has_custom_proxy:
+        subprocess.Popen(
+            ["/usr/local/bin/direct-socks.py"],
+            stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
+
+        # Start squid through proxychains (always, never restarted).
+        subprocess.Popen(
+            ["proxychains4", "-q", "-f", "/etc/proxychains/proxychains.conf",
+             "squid", "-N", "-f", "/etc/squid/squid.conf"],
+            stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
 
     # Profile preferences
     profile_dir = cfg.get("profileDir")

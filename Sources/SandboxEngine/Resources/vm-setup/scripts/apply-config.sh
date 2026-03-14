@@ -29,9 +29,7 @@
 
 ENVFILE="/tmp/bromure/chrome-env"
 
-# --- Wait for on-boot.sh to finish (WARP startup, etc.) ---
-
-[ -f /tmp/bromure/on-boot-done ] || inotifywait -t 10 -e create --include "on-boot-done" /tmp/bromure/ 2>/dev/null
+# --- Wait for on-boot.sh to finish (dbus startup, etc.) ---
 
 # --- Mount profile disk (persistent profiles only) ---
 
@@ -73,7 +71,9 @@ if [ -n "$PROXY_HOST" ] && [ -n "$PROXY_PORT" ]; then
     else
         EXTRA_FLAGS="$EXTRA_FLAGS --proxy-server=http://$PROXY_HOST:$PROXY_PORT"
     fi
-elif [ "$USE_PROXY" = "1" ]; then
+else
+    # Always route through internal squid proxy (required for dynamic
+    # WARP toggling — squid is restarted with/without proxychains).
     EXTRA_FLAGS="$EXTRA_FLAGS --proxy-server=http://127.0.0.1:3128"
 fi
 
@@ -166,15 +166,6 @@ fi
 [ "$AUDIO" = "1" ] && echo "AUDIO=1" >> "$ENVFILE"
 [ "$MICROPHONE" = "1" ] && echo "MICROPHONE=1" >> "$ENVFILE"
 
-# --- Background: WARP teardown (~200 MB freed) ---
-
-if [ "$ENABLE_WARP" != "1" ]; then
-    (
-        LD_PRELOAD=/usr/lib/libresolv_stub.so /bin/warp-cli --accept-tos disconnect 2>/dev/null || true
-        kill $(ps auxw | grep warp-svc | grep -v grep | awk '{print $1}') 2>/dev/null || true
-    ) &
-fi
-
 # --- Background: Webcam setup (modprobe + device wait) ---
 
 if [ "$WEBCAM" = "1" ]; then
@@ -210,20 +201,24 @@ if [ "$BLOCK_MALWARE" = "1" ]; then
     sed -i 's/^server=1\.0\.0\.1/server=1.0.0.2/' /etc/dnsmasq.d/pihole.conf
 fi
 
+# Start dnsmasq for DNS filtering (ad-blocking, malware blocking, or WARP)
 if [ "$AD_BLOCKING" = "1" ] || [ "$ENABLE_WARP" = "1" ] || [ "$BLOCK_MALWARE" = "1" ]; then
     dnsmasq -C /etc/dnsmasq.d/pihole.conf
+fi
 
-    if [ "$AD_BLOCKING" = "1" ] || [ "$BLOCK_MALWARE" = "1" ]; then
-        sed -i 's/^dns_nameservers.*/dns_nameservers 127.0.0.1/' /etc/squid/squid.conf
-    else
-        sed -i '/^dns_nameservers/d' /etc/squid/squid.conf
-    fi
+# Configure squid DNS: use dnsmasq when ad-blocking or malware-blocking is on
+if [ "$AD_BLOCKING" = "1" ] || [ "$BLOCK_MALWARE" = "1" ]; then
+    sed -i 's/^dns_nameservers.*/dns_nameservers 127.0.0.1/' /etc/squid/squid.conf
+else
+    sed -i '/^dns_nameservers/d' /etc/squid/squid.conf
+fi
 
-    if [ "$ENABLE_WARP" = "1" ]; then
-        proxychains4 -q -f /etc/proxychains/proxychains.conf squid -N -f /etc/squid/squid.conf &
-    else
-        squid -N -f /etc/squid/squid.conf &
-    fi
+# Start direct SOCKS5 proxy on :40000 + squid through proxychains.
+# When WARP connects, warp-agent swaps direct-socks for warp-svc on :40000.
+# Squid is never restarted.
+if [ -z "$PROXY_HOST" ] || [ -z "$PROXY_PORT" ]; then
+    /usr/local/bin/direct-socks.py &
+    proxychains4 -q -f /etc/proxychains/proxychains.conf squid -N -f /etc/squid/squid.conf &
 fi
 
 # --- Seed default Chromium preferences for persistent profiles ---

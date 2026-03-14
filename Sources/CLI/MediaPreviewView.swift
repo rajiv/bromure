@@ -10,6 +10,7 @@ struct MediaPreviewView: View {
     @Binding var speakerDeviceID: String?
     let enableWebcam: Bool
     let enableMicrophone: Bool
+    var webcamQuality: WebcamQuality = .high
     var webcamEffects: WebcamEffects = WebcamEffects()
 
     @StateObject private var preview = MediaPreviewModel()
@@ -98,15 +99,18 @@ struct MediaPreviewView: View {
             }
         }
         .onAppear {
-            if enableWebcam { preview.startCamera(deviceID: webcamDeviceID) }
+            if enableWebcam { preview.startCamera(deviceID: webcamDeviceID, quality: webcamQuality) }
             if enableMicrophone { preview.startMicrophone(deviceID: microphoneDeviceID) }
         }
         .onDisappear {
             preview.stop()
         }
         .onChange(of: enableWebcam) { _, enabled in
-            if enabled { preview.startCamera(deviceID: webcamDeviceID) }
+            if enabled { preview.startCamera(deviceID: webcamDeviceID, quality: webcamQuality) }
             else { preview.stopCamera() }
+        }
+        .onChange(of: webcamQuality) { _, newQuality in
+            if enableWebcam { preview.setQuality(newQuality) }
         }
         .onChange(of: enableMicrophone) { _, enabled in
             if enabled { preview.startMicrophone(deviceID: microphoneDeviceID) }
@@ -237,8 +241,12 @@ final class MediaPreviewModel: ObservableObject {
         captureSession.commitConfiguration()
     }
 
-    func startCamera(deviceID: String?) {
+    func startCamera(deviceID: String?, quality: WebcamQuality? = nil) {
         captureSession.beginConfiguration()
+        if let quality {
+            captureSession.sessionPreset = Self.preset(for: quality)
+        }
+
         // Remove existing input
         if let input = currentCameraInput {
             captureSession.removeInput(input)
@@ -263,6 +271,20 @@ final class MediaPreviewModel: ObservableObject {
 
         if !captureSession.isRunning {
             captureSession.startRunning()
+        }
+    }
+
+    func setQuality(_ quality: WebcamQuality) {
+        captureSession.beginConfiguration()
+        captureSession.sessionPreset = Self.preset(for: quality)
+        captureSession.commitConfiguration()
+    }
+
+    private static func preset(for quality: WebcamQuality) -> AVCaptureSession.Preset {
+        switch quality {
+        case .low: .vga640x480
+        case .medium: .hd1280x720
+        case .high: .high
         }
     }
 
