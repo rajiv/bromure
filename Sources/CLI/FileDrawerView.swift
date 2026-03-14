@@ -81,9 +81,6 @@ struct FileDrawerView: View {
         }
         .frame(width: 280)
         .background(.background)
-        .onDrop(of: [.fileURL], isTargeted: $model.isDragTargeted) { providers in
-            handleDrop(providers)
-        }
     }
 
     // MARK: - Header
@@ -112,14 +109,14 @@ struct FileDrawerView: View {
     private var emptyState: some View {
         VStack(spacing: 12) {
             Spacer()
-            Image(systemName: model.isDragTargeted ? "arrow.down.doc.fill" : "arrow.down.doc")
+            Image(systemName: "arrow.down.doc")
                 .font(.system(size: 32))
-                .foregroundStyle(model.isDragTargeted ? .blue : .secondary)
-            Text("Drop files here to upload to VM")
+                .foregroundStyle(.secondary)
+            Text("Downloads will appear here")
                 .font(.caption)
                 .foregroundStyle(.secondary)
                 .multilineTextAlignment(.center)
-            Text("Files downloaded in the VM appear here — drag or save to keep")
+            Text("Drag files out to save them to your Mac")
                 .font(.caption2)
                 .foregroundStyle(.tertiary)
                 .multilineTextAlignment(.center)
@@ -127,7 +124,6 @@ struct FileDrawerView: View {
             Spacer()
         }
         .frame(maxWidth: .infinity, maxHeight: .infinity)
-        .background(model.isDragTargeted ? Color.blue.opacity(0.05) : .clear)
     }
 
     // MARK: - File list
@@ -139,11 +135,6 @@ struct FileDrawerView: View {
             }
         }
         .listStyle(.plain)
-        .overlay(alignment: .bottom) {
-            if model.isDragTargeted {
-                dropOverlay
-            }
-        }
     }
 
     private func fileRow(_ file: TransferredFile) -> some View {
@@ -168,7 +159,7 @@ struct FileDrawerView: View {
                         .foregroundStyle(.secondary)
 
                     if file.isBlocked {
-                        Label("Blocked", systemImage: "xmark.shield.fill")
+                        Label(blockedReason(file.scanStatus), systemImage: "xmark.shield.fill")
                             .font(.caption2)
                             .foregroundStyle(.red)
                     } else {
@@ -251,31 +242,15 @@ struct FileDrawerView: View {
         }
     }
 
-    private var dropOverlay: some View {
-        RoundedRectangle(cornerRadius: 8)
-            .stroke(.blue, style: StrokeStyle(lineWidth: 2, dash: [6]))
-            .background(Color.blue.opacity(0.05))
-            .padding(8)
-    }
-
-    // MARK: - Drop handling
-
-    private func handleDrop(_ providers: [NSItemProvider]) -> Bool {
-        for provider in providers {
-            provider.loadItem(forTypeIdentifier: "public.file-url", options: nil) { data, _ in
-                guard let urlData = data as? Data,
-                      let url = URL(dataRepresentation: urlData, relativeTo: nil) else { return }
-                DispatchQueue.main.async {
-                    // Ignore files dragged back from the session temp directory
-                    guard !url.path.hasPrefix(model.sessionDir.path) else { return }
-                    model.uploadFile(url: url)
-                }
-            }
-        }
-        return true
-    }
-
     // MARK: - Formatting
+
+    private func blockedReason(_ status: ScanStatus) -> String {
+        switch status {
+        case .threat(let detail): return "Threat: \(detail)"
+        case .error(let reason): return "Blocked: \(reason)"
+        default: return "Blocked"
+        }
+    }
 
     private func formattedSize(_ bytes: Int) -> String {
         let formatter = ByteCountFormatter()
@@ -292,7 +267,6 @@ struct FileDrawerView: View {
 @Observable
 final class FileDrawerModel {
     var files: [TransferredFile] = []
-    var isDragTargeted = false
     var isConnected = false
 
     /// Called when a file is received from the guest (for auto-opening the drawer).
@@ -379,22 +353,6 @@ final class FileDrawerModel {
         isConnected = false
         // Delete the per-session temp directory and all unsaved files
         try? FileManager.default.removeItem(at: sessionDir)
-    }
-
-    /// Upload a file from the host to the guest VM.
-    func uploadFile(url: URL) {
-        guard let bridge else { return }
-
-        let size = (try? FileManager.default.attributesOfItem(atPath: url.path)[.size] as? Int) ?? 0
-        let file = TransferredFile(
-            filename: url.lastPathComponent,
-            size: size,
-            direction: .hostToGuest,
-            scanStatus: .skipped
-        )
-        files.insert(file, at: 0)
-
-        bridge.sendFile(url: url)
     }
 
     /// Handle a file received from the guest VM.

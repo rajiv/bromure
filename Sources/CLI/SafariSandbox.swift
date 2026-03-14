@@ -587,6 +587,10 @@ final class GUIAppDelegate: NSObject, NSApplicationDelegate, NSWindowDelegate {
     }
 
     @MainActor func openNewBrowser(with profile: Profile, initialURL: URL? = nil) {
+        // Re-fetch the profile from the manager to pick up any settings changes
+        // that occurred between the UI capture and now (e.g. settings panel save).
+        let profile = state.profileManager.profile(withID: profile.id) ?? profile
+
         guard state.pool != nil, state.poolReady else {
             if let url = initialURL { pendingURL = url }
             showMainWindow()
@@ -770,6 +774,7 @@ final class BrowserSession {
     private var webcamBridge: WebcamBridge?
     private var warpBridge: WarpBridge?
     private var warpButton: NSButton?
+    private var warpPulseTimer: Timer?
     private var effectsPanel: NSWindow?
     private var effectsAccessory: NSTitlebarAccessoryViewController?
     private var splitView: NSSplitView?
@@ -1009,31 +1014,60 @@ final class BrowserSession {
         guard let button = warpButton else { return }
         switch state {
         case .connected:
+            stopWarpPulse()
             button.image = NSImage(systemSymbolName: "powerplug.fill", accessibilityDescription: "VPN Connected")
             button.contentTintColor = .systemGreen
+            button.alphaValue = 1.0
             button.toolTip = "VPN: Connected — click to disconnect"
         case .connecting:
             button.image = NSImage(systemSymbolName: "powerplug.fill", accessibilityDescription: "VPN Connecting")
             button.contentTintColor = .systemOrange
+            startWarpPulse()
             button.toolTip = "VPN: Connecting\u{2026}"
         case .disconnected:
+            stopWarpPulse()
             button.image = NSImage(systemSymbolName: "powerplug", accessibilityDescription: "VPN Disconnected")
             button.contentTintColor = .secondaryLabelColor
+            button.alphaValue = 1.0
             button.toolTip = "VPN: Disconnected — click to connect"
         case .notInstalled:
+            stopWarpPulse()
             button.image = NSImage(systemSymbolName: "powerplug", accessibilityDescription: "VPN Not Available")
             button.contentTintColor = .systemRed
+            button.alphaValue = 1.0
             button.toolTip = "VPN: WARP not installed in this VM"
             button.isEnabled = false
         case .error(let msg):
+            stopWarpPulse()
             button.image = NSImage(systemSymbolName: "powerplug", accessibilityDescription: "VPN Error")
             button.contentTintColor = .systemOrange
+            button.alphaValue = 1.0
             button.toolTip = "VPN Error: \(msg)"
         case .unknown:
+            stopWarpPulse()
             button.image = NSImage(systemSymbolName: "powerplug", accessibilityDescription: "VPN Status")
             button.contentTintColor = .secondaryLabelColor
+            button.alphaValue = 1.0
             button.toolTip = "VPN: checking\u{2026}"
         }
+    }
+
+    private func startWarpPulse() {
+        guard warpPulseTimer == nil else { return }
+        warpPulseTimer = Timer.scheduledTimer(withTimeInterval: 0.6, repeats: true) { [weak self] _ in
+            guard let self, let button = self.warpButton else { return }
+            DispatchQueue.main.async {
+                NSAnimationContext.runAnimationGroup { ctx in
+                    ctx.duration = 0.5
+                    button.animator().alphaValue = button.alphaValue > 0.5 ? 0.3 : 1.0
+                }
+            }
+        }
+    }
+
+    private func stopWarpPulse() {
+        warpPulseTimer?.invalidate()
+        warpPulseTimer = nil
     }
 
     /// Called by the app delegate when the VPN button is clicked.
