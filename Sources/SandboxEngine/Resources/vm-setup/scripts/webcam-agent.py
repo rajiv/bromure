@@ -157,7 +157,9 @@ def main():
             sock = None
             try:
                 sock = socket.socket(socket.AF_VSOCK, socket.SOCK_STREAM)
+                sock.settimeout(10)
                 sock.connect((2, VSOCK_PORT))
+                sock.settimeout(None)  # back to blocking for streaming
 
                 # Read 12-byte header (resolution should match probe)
                 header = read_exact(sock, 12)
@@ -167,6 +169,9 @@ def main():
 
                 w, h, f = struct.unpack("<III", header)
                 log(f"streaming: {w}x{h} YUYV @ {f}fps")
+
+                if w != width or h != height:
+                    log(f"warning: stream {w}x{h} != device {width}x{height}, restart VM to fix")
 
                 stream_frames(sock, vfd, w, h)
 

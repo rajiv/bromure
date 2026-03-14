@@ -121,11 +121,28 @@ struct MediaPreviewView: View {
             let m = fs * 1.2
 
             ZStack {
+                if webcamEffects.faceSwapActive {
+                    // Face swap requires GPU processing — show indicator instead
+                    VStack(spacing: 2) {
+                        Image(systemName: "theatermasks.fill")
+                            .font(.title3)
+                        Text("Face Swap Active")
+                            .font(.caption2.bold())
+                    }
+                    .foregroundStyle(.white)
+                    .padding(6)
+                    .background(.black.opacity(0.5))
+                    .clipShape(RoundedRectangle(cornerRadius: 6))
+                    .padding(.leading, m)
+                    .padding(.top, m * 0.8)
+                    .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topLeading)
+                }
+
                 if !webcamEffects.displayName.isEmpty || !webcamEffects.displayTitle.isEmpty {
                     NameBadge(name: webcamEffects.displayName, title: webcamEffects.displayTitle,
-                              fontFamily: webcamEffects.fontFamily, fontSize: fs)
+                              fontSize: fs)
                         .padding(.trailing, m)
-                        .padding(.bottom, m * 0.8)
+                        .padding(.bottom, webcamEffects.faceSwapActive ? m * 0.8 + geo.size.height * 0.06 : m * 0.8)
                         .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .bottomTrailing)
                 }
 

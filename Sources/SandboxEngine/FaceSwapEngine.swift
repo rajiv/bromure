@@ -390,6 +390,9 @@ public final class FaceSwapEngine: @unchecked Sendable {
         let inverse = transform.inverted()
 
         let w = image.width, h = image.height
+        guard w > 0, h > 0, w <= Self.maxImageDimension, h <= Self.maxImageDimension else {
+            throw FaceSwapError.invalidSourceImage
+        }
         let bytesPerRow = w * 4
         var srcPixels = [UInt8](repeating: 0, count: bytesPerRow * h)
 
@@ -592,6 +595,7 @@ public final class FaceSwapEngine: @unchecked Sendable {
     ) -> [UInt8]? {
         guard let baseAddr = CVPixelBufferGetBaseAddress(pixelBuffer) else { return nil }
         let bytesPerRow = CVPixelBufferGetBytesPerRow(pixelBuffer)
+        let bufferSize = CVPixelBufferGetDataSize(pixelBuffer)
         let src = baseAddr.assumingMemoryBound(to: UInt8.self)
 
         let inverse = transform.inverted()
@@ -606,6 +610,8 @@ public final class FaceSwapEngine: @unchecked Sendable {
                 guard sx >= 0, sx < width, sy >= 0, sy < height else { continue }
 
                 let srcOff = sy * bytesPerRow + sx * 4
+                guard srcOff >= 0, srcOff + 3 < bufferSize else { continue }
+
                 let dstOff = (cy * cropSize + cx) * 4
                 crop[dstOff + 0] = src[srcOff + 0]  // B
                 crop[dstOff + 1] = src[srcOff + 1]  // G
@@ -842,8 +848,15 @@ public final class FaceSwapEngine: @unchecked Sendable {
         return nil
     }
 
+    /// Max emap size: 512×512 in float32 or float16 (+ margin). Rejects suspiciously large tensors.
+    private static let maxEmapBytes = 512 * 512 * MemoryLayout<Float>.size * 2
+
     /// Read floats from a byte range, handling float32 and float16 data types.
-    private static func extractFloats(data: Data, range: Range<Int>, dataType: Int) -> [Float] {
+    private static func extractFloats(data: Data, range: Range<Int>, dataType: Int) -> [Float]? {
+        guard range.count > 0, range.count <= maxEmapBytes else {
+            print("[FaceSwap] emap: rejected tensor data \(range.count) bytes (limit \(maxEmapBytes))")
+            return nil
+        }
         if dataType == 10 {
             // FLOAT16 — convert to float32
             let count = range.count / 2
@@ -932,14 +945,40 @@ public final class FaceSwapEngine: @unchecked Sendable {
 
     // MARK: - Helpers
 
+    // MARK: - Image decoding (security hardened)
+
+    /// Max accepted image data size (50 MB). Rejects suspiciously large blobs early
+    /// before passing them to ImageIO decoders.
+    private static let maxImageDataSize = 50 * 1024 * 1024
+
+    /// Max decoded pixel dimension. Prevents memory exhaustion from decompression bombs
+    /// (e.g. a tiny PNG that decompresses to 100000×100000 pixels).
+    private static let maxImageDimension = 4096
+
     /// Decode image data of any format (PNG, JPEG, HEIC, TIFF, …) into a CGImage.
     /// Downscales to max 1024px and applies EXIF orientation — we only need enough
     /// resolution to detect face landmarks and crop a 112×112 aligned face.
     private static func cgImageFromData(_ data: Data) -> CGImage? {
+        // Reject oversized blobs before touching ImageIO
+        guard data.count > 0, data.count <= maxImageDataSize else {
+            print("[FaceSwap] cgImageFromData: rejected (\(data.count) bytes, limit \(maxImageDataSize))")
+            return nil
+        }
+
         guard let source = CGImageSourceCreateWithData(data as CFData, nil),
               CGImageSourceGetCount(source) > 0 else {
             print("[FaceSwap] cgImageFromData: CGImageSourceCreate failed (\(data.count) bytes)")
             return nil
+        }
+
+        // Check declared dimensions before decoding to catch decompression bombs
+        if let props = CGImageSourceCopyPropertiesAtIndex(source, 0, nil) as? [CFString: Any],
+           let pw = props[kCGImagePropertyPixelWidth] as? Int,
+           let ph = props[kCGImagePropertyPixelHeight] as? Int {
+            if pw > maxImageDimension || ph > maxImageDimension || pw <= 0 || ph <= 0 {
+                print("[FaceSwap] cgImageFromData: rejected dimensions \(pw)×\(ph) (limit \(maxImageDimension))")
+                return nil
+            }
         }
 
         let opts: [CFString: Any] = [
@@ -951,7 +990,7 @@ public final class FaceSwapEngine: @unchecked Sendable {
             return thumb
         }
 
-        // Fallback: full-size decode
+        // Fallback: full-size decode (only reached if thumbnail creation fails)
         return CGImageSourceCreateImageAtIndex(source, 0, nil)
     }
 }

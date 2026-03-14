@@ -29,7 +29,8 @@ public final class WebcamBridge: NSObject, @unchecked Sendable {
     private let cameraID: String?
     private let effects: WebcamEffects
 
-    /// Query the native resolution of a camera without starting capture.
+    /// Query the capture resolution by briefly configuring a session with .high preset,
+    /// matching what startCapture will actually produce.
     public static func queryCameraResolution(cameraID: String?) -> (width: Int, height: Int) {
         let camera: AVCaptureDevice?
         if let cameraID, let specific = AVCaptureDevice(uniqueID: cameraID) {
@@ -38,17 +39,37 @@ public final class WebcamBridge: NSObject, @unchecked Sendable {
             camera = AVCaptureDevice.default(.builtInWideAngleCamera, for: .video, position: .unspecified)
         }
         guard let camera else { return (captureWidth, captureHeight) }
+
+        // Simulate the same session setup as startCapture to get the actual resolution
+        let session = AVCaptureSession()
+        session.sessionPreset = .high
+        guard let input = try? AVCaptureDeviceInput(device: camera),
+              session.canAddInput(input) else {
+            return (captureWidth, captureHeight)
+        }
+        session.addInput(input)
         let dims = CMVideoFormatDescriptionGetDimensions(camera.activeFormat.formatDescription)
+        session.removeInput(input)
         return (Int(dims.width), Int(dims.height))
     }
 
     /// - Parameter cameraID: AVCaptureDevice.uniqueID to use, or nil for default.
     /// - Parameter effects: Webcam overlay effects (city/time, name badge, logo).
+    /// Pre-built overlay renderer (includes FaceSwapEngine if face swap enabled).
+    /// Created eagerly so ONNX model loading + CoreML compilation finish before the guest connects.
+    private var overlayRenderer: OverlayRenderer?
+
     public init(socketDevice: VZVirtioSocketDevice, cameraID: String? = nil, effects: WebcamEffects = WebcamEffects()) {
         self.socketDevice = socketDevice
         self.cameraID = cameraID
         self.effects = effects
         super.init()
+
+        // Pre-initialize the renderer (and FaceSwapEngine) so it's ready when the guest connects.
+        // ONNX model loading + CoreML compilation can take several seconds.
+        if effects.hasAnyEffect {
+            self.overlayRenderer = OverlayRenderer(effects: effects)
+        }
 
         if wcDebug { print("[Webcam] init: setting up vsock listener on port \(Self.webcamPort)") }
 
@@ -101,7 +122,8 @@ public final class WebcamBridge: NSObject, @unchecked Sendable {
     private func startCapture(fd: Int32) {
         let session = AVCaptureSession()
         let hasFaceSwap = effects.faceSwapActive
-        session.sessionPreset = hasFaceSwap ? .cif352x288 : .vga640x480
+        // Use .high to match what queryCameraResolution() reports to the guest.
+        session.sessionPreset = .high
 
         let camera: AVCaptureDevice?
         if let cameraID, let specific = AVCaptureDevice(uniqueID: cameraID) {
@@ -137,8 +159,7 @@ public final class WebcamBridge: NSObject, @unchecked Sendable {
         output.alwaysDiscardsLateVideoFrames = true
 
         let queue = DispatchQueue(label: "io.bromure.webcam-capture", qos: .userInteractive)
-        let renderer = needsEffects ? OverlayRenderer(effects: effects) : nil
-        let delegate = CaptureDelegate(fd: fd, overlayRenderer: renderer) { [weak self] in
+        let delegate = CaptureDelegate(fd: fd, overlayRenderer: overlayRenderer) { [weak self] in
             DispatchQueue.main.async {
                 self?.handleDisconnect()
             }
@@ -152,22 +173,28 @@ public final class WebcamBridge: NSObject, @unchecked Sendable {
         }
         session.addOutput(output)
 
-        // Configure frame rate — cap at 12fps for face swap, native otherwise
-        var actualFPS = hasFaceSwap ? Self.faceSwapFPS : Self.captureFPS
-        do {
-            try camera.lockForConfiguration()
-            if hasFaceSwap {
-                let dur = CMTime(value: 1, timescale: CMTimeScale(Self.faceSwapFPS))
-                camera.activeVideoMinFrameDuration = dur
-                camera.activeVideoMaxFrameDuration = dur
-            } else if let range = camera.activeFormat.videoSupportedFrameRateRanges.first {
-                camera.activeVideoMinFrameDuration = range.minFrameDuration
-                camera.activeVideoMaxFrameDuration = range.minFrameDuration
+        // Configure frame rate
+        var actualFPS = Self.captureFPS
+        if let range = camera.activeFormat.videoSupportedFrameRateRanges.first {
+            // Only set frame duration if the camera supports a range (min != max)
+            let canAdjust = range.minFrameRate < range.maxFrameRate - 0.5
+            do {
+                try camera.lockForConfiguration()
+                if hasFaceSwap && canAdjust && Double(Self.faceSwapFPS) >= range.minFrameRate {
+                    let dur = CMTime(value: 1, timescale: CMTimeScale(Self.faceSwapFPS))
+                    camera.activeVideoMinFrameDuration = dur
+                    camera.activeVideoMaxFrameDuration = dur
+                    actualFPS = Self.faceSwapFPS
+                } else {
+                    camera.activeVideoMinFrameDuration = range.minFrameDuration
+                    camera.activeVideoMaxFrameDuration = range.minFrameDuration
+                    actualFPS = Int(range.maxFrameRate)
+                }
+                camera.unlockForConfiguration()
+            } catch {
+                print("[Webcam] failed to configure frame rate: \(error)")
                 actualFPS = Int(range.maxFrameRate)
             }
-            camera.unlockForConfiguration()
-        } catch {
-            print("[Webcam] failed to configure frame rate: \(error)")
         }
 
         // Header is sent from the first captured frame (actual resolution may differ from preset)
@@ -316,9 +343,9 @@ final class OverlayRenderer: @unchecked Sendable {
     }
 
     private func drawCityTimeBox(ctx: CGContext, width: Int, height: Int, fontSize: CGFloat, margin: CGFloat) {
-        let fontName = effects.fontFamily as CFString
+        let fontName = "Helvetica Neue" as CFString
         let cityFontSize = fontSize * 0.75
-        let timeFontSize = fontSize
+        let timeFontSize = fontSize * 0.85
 
         let cityFont = CTFontCreateWithName(fontName, cityFontSize, nil)
         let timeFont = CTFontCreateWithName(fontName, timeFontSize, nil)
@@ -379,23 +406,17 @@ final class OverlayRenderer: @unchecked Sendable {
         ctx.restoreGState()
 
         // Draw city text (centered in its row)
-        ctx.saveGState()
         let cityTextX = boxX + (finalWidth - cityBounds.width) / 2
-        ctx.textPosition = CGPoint(x: cityTextX, y: boxY + padV + cityFontSize * 0.15)
-        CTLineDraw(cityLine, ctx)
-        ctx.restoreGState()
+        drawLine(cityLine, at: CGPoint(x: cityTextX, y: boxY + padV), in: ctx)
 
         // Draw time text (centered in its row)
-        ctx.saveGState()
         let timeTextX = boxX + (finalWidth - timeBounds.width) / 2
-        ctx.textPosition = CGPoint(x: timeTextX, y: boxY + cityRowHeight + padV + timeFontSize * 0.15)
-        CTLineDraw(timeLine, ctx)
-        ctx.restoreGState()
+        drawLine(timeLine, at: CGPoint(x: timeTextX, y: boxY + cityRowHeight + padV), in: ctx)
     }
 
     /// CNN-style two-row badge: name white-on-red, title black-on-white.
     private func drawNameBadge(ctx: CGContext, name: String, title: String, width: Int, height: Int, fontSize: CGFloat, margin: CGFloat, bottomOffset: CGFloat = 0) {
-        let fontName = effects.fontFamily as CFString
+        let fontName = "Helvetica Neue" as CFString
         let nameFont = CTFontCreateWithName(fontName, fontSize, nil)
         let titleFontSize = fontSize * 0.7
         let titleFont = CTFontCreateWithName(fontName, titleFontSize, nil)
@@ -436,10 +457,7 @@ final class OverlayRenderer: @unchecked Sendable {
             ctx.restoreGState()
 
             // White name text
-            ctx.saveGState()
-            ctx.textPosition = CGPoint(x: badgeX + padH, y: badgeY + padV + nameBounds.height * 0.15)
-            CTLineDraw(nameLine!, ctx)
-            ctx.restoreGState()
+            drawLine(nameLine!, at: CGPoint(x: badgeX + padH, y: badgeY + padV), in: ctx)
         }
 
         // White background for title row
@@ -451,10 +469,7 @@ final class OverlayRenderer: @unchecked Sendable {
             ctx.restoreGState()
 
             // Black title text
-            ctx.saveGState()
-            ctx.textPosition = CGPoint(x: badgeX + padH, y: titleY + padV + titleBounds.height * 0.15)
-            CTLineDraw(titleLine!, ctx)
-            ctx.restoreGState()
+            drawLine(titleLine!, at: CGPoint(x: badgeX + padH, y: titleY + padV), in: ctx)
         }
     }
 
@@ -480,8 +495,19 @@ final class OverlayRenderer: @unchecked Sendable {
         let bounds = CTLineGetBoundsWithOptions(line, [])
 
         let textX = (CGFloat(width) - bounds.width) / 2
-        let textY = bannerY + (bannerHeight - bounds.height) / 2 + bounds.height * 0.15
-        ctx.textPosition = CGPoint(x: textX, y: textY)
+        let textY = bannerY + (bannerHeight - bounds.height) / 2
+        drawLine(line, at: CGPoint(x: textX, y: textY), in: ctx)
+        ctx.restoreGState()
+    }
+
+    /// Draw a CTLine right-side-up in a flipped (top-left origin) CGContext.
+    /// CTLineDraw assumes y-up, so we locally un-flip around the text position.
+    private func drawLine(_ line: CTLine, at point: CGPoint, in ctx: CGContext) {
+        let bounds = CTLineGetBoundsWithOptions(line, [])
+        ctx.saveGState()
+        ctx.translateBy(x: point.x, y: point.y + bounds.height)
+        ctx.scaleBy(x: 1, y: -1)
+        ctx.textPosition = CGPoint(x: 0, y: 0)
         CTLineDraw(line, ctx)
         ctx.restoreGState()
     }

@@ -17,23 +17,9 @@ struct WebcamEffectsView: View {
     @State private var isDownloadingModels = false
     @State private var downloadProgress: Double = 0
     @State private var downloadError: String?
+    @State private var imageError: String?
+    @State private var showImageError = false
     @State private var faceSwapEngine: FaceSwapEngine?
-
-    // Font families available for overlays
-    private static let fontFamilies = [
-        "Helvetica Neue",
-        "SF Pro",
-        "Avenir Next",
-        "Futura",
-        "Gill Sans",
-        "Menlo",
-        "Georgia",
-        "Palatino",
-        "Arial",
-        "Verdana",
-        "Trebuchet MS",
-        "Impact",
-    ]
 
     // Common city/timezone pairs
     private static let cities: [(name: String, tz: String)] = [
@@ -217,32 +203,6 @@ struct WebcamEffectsView: View {
                         }
                     }
 
-                    Divider()
-
-                    // Font settings
-                    VStack(alignment: .leading, spacing: 6) {
-                        Text("Font").font(.headline)
-                        HStack(spacing: 12) {
-                            Picker("Family", selection: $effects.fontFamily) {
-                                ForEach(Self.fontFamilies, id: \.self) { family in
-                                    Text(family)
-                                        .font(.custom(family, size: 13))
-                                        .tag(family)
-                                }
-                            }
-                            .frame(width: 180)
-
-                            HStack(spacing: 4) {
-                                Text("Size")
-                                Slider(value: $effects.fontSizePercent, in: 2.5...8, step: 0.5)
-                                    .frame(width: 100)
-                                Text(String(format: "%.0f%%", effects.fontSizePercent))
-                                    .monospacedDigit()
-                                    .frame(width: 30, alignment: .trailing)
-                                    .foregroundStyle(.secondary)
-                            }
-                        }
-                    }
                 }
                 .padding(20)
             }
@@ -291,10 +251,45 @@ struct WebcamEffectsView: View {
             if case .success(let urls) = result, let url = urls.first {
                 guard url.startAccessingSecurityScopedResource() else { return }
                 defer { url.stopAccessingSecurityScopedResource() }
-                if let nsImage = NSImage(contentsOf: url), let pngData = nsImage.pngRepresentation() {
-                    effects.faceSwapImageData = pngData
+
+                // Validate file size (50 MB limit)
+                let maxSize = 50 * 1024 * 1024
+                if let attrs = try? FileManager.default.attributesOfItem(atPath: url.path),
+                   let fileSize = attrs[.size] as? Int, fileSize > maxSize {
+                    imageError = "Image file is too large (\(fileSize / 1024 / 1024) MB). Maximum is 50 MB."
+                    showImageError = true
+                    return
                 }
+
+                guard let nsImage = NSImage(contentsOf: url) else {
+                    imageError = "Could not open this file. It may be corrupted or in an unsupported format."
+                    showImageError = true
+                    return
+                }
+
+                // Check dimensions (4096×4096 limit)
+                let rep = nsImage.representations.first
+                let pw = rep?.pixelsWide ?? Int(nsImage.size.width)
+                let ph = rep?.pixelsHigh ?? Int(nsImage.size.height)
+                if pw > 4096 || ph > 4096 {
+                    imageError = "Image is too large (\(pw)×\(ph) pixels). Maximum is 4096×4096."
+                    showImageError = true
+                    return
+                }
+
+                guard let pngData = nsImage.pngRepresentation() else {
+                    imageError = "Could not process this image. Try a different file."
+                    showImageError = true
+                    return
+                }
+
+                effects.faceSwapImageData = pngData
             }
+        }
+        .alert("Image Error", isPresented: $showImageError) {
+            Button("OK", role: .cancel) { }
+        } message: {
+            Text(imageError ?? "Unknown error")
         }
         .alert("Download Face Swap Models?", isPresented: $showModelDownloadAlert) {
             Button("Download") {
@@ -317,6 +312,8 @@ struct WebcamEffectsView: View {
                 return
             } catch {
                 print("[FaceSwap] engine init failed: \(error)")
+                imageError = "Face swap failed: \(error.localizedDescription)"
+                showImageError = true
             }
         }
         // Disable processing
@@ -409,8 +406,7 @@ struct WebcamEffectsView: View {
                 CityTimeBox(
                     cityName: effects.cityName,
                     timeZoneIdentifier: effects.timeZoneIdentifier,
-                    fontSize: fontSize,
-                    fontFamily: effects.fontFamily
+                    fontSize: fontSize
                 )
                 .padding(.leading, margin)
                 .padding(.top, margin * 0.8)
@@ -432,7 +428,7 @@ struct WebcamEffectsView: View {
             // Bottom-right: CNN-style name badge (name white-on-red, title black-on-white)
             if !effects.displayName.isEmpty || !effects.displayTitle.isEmpty {
                 NameBadge(name: effects.displayName, title: effects.displayTitle,
-                          fontFamily: effects.fontFamily, fontSize: fontSize)
+                          fontSize: fontSize)
                     .padding(.trailing, margin)
                     .padding(.bottom, effects.faceSwapActive ? margin * 0.8 + geo.size.height * 0.06 : margin * 0.8)
                     .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .bottomTrailing)
@@ -459,7 +455,7 @@ private struct CityTimeBox: View {
     let cityName: String
     let timeZoneIdentifier: String
     let fontSize: CGFloat
-    var fontFamily: String = "Helvetica Neue"
+    private let fontFamily = "Helvetica Neue"
 
     @State private var currentTime = ""
     @State private var timer: Timer?
@@ -477,7 +473,7 @@ private struct CityTimeBox: View {
 
             // Time row (white on dark)
             Text(currentTime)
-                .font(.custom(fontFamily, size: fontSize).weight(.bold).monospacedDigit())
+                .font(.custom(fontFamily, size: fontSize * 0.85).weight(.bold).monospacedDigit())
                 .foregroundStyle(.white)
                 .padding(.horizontal, fontSize * 0.5)
                 .padding(.vertical, fontSize * 0.15)
@@ -514,8 +510,8 @@ private struct CityTimeBox: View {
 struct NameBadge: View {
     let name: String
     let title: String
-    var fontFamily: String = "Helvetica Neue"
     var fontSize: CGFloat = 14
+    private let fontFamily = "Helvetica Neue"
 
     var body: some View {
         VStack(alignment: .leading, spacing: 0) {
@@ -550,38 +546,33 @@ struct FaceSwapBanner: View {
     let height: CGFloat
     let fontSize: CGFloat
 
-    @State private var scrollOffset: CGFloat = 0
-
     private let text = "DISCLAIMER \u{2014} User\u{2019}s real face has been anonymized by Bromure.io    \u{2022}    "
 
     var body: some View {
         VStack {
             Spacer()
-            GeometryReader { geo in
-                let fullText = text + text  // duplicate for seamless loop
-                ZStack {
-                    Color(red: 0.85, green: 0.05, blue: 0.05)
-                    Text(fullText)
-                        .font(.system(size: fontSize, weight: .bold))
-                        .foregroundStyle(.white)
-                        .fixedSize()
-                        .offset(x: scrollOffset)
+            TimelineView(.animation(minimumInterval: 1.0 / 30.0)) { timeline in
+                let t = timeline.date.timeIntervalSinceReferenceDate
+                Canvas { context, size in
+                    // Red background
+                    context.fill(Path(CGRect(origin: .zero, size: size)), with: .color(Color(red: 0.85, green: 0.05, blue: 0.05)))
+
+                    let fullText = text + text
+                    let resolved = context.resolve(Text(fullText).font(.system(size: fontSize, weight: .bold)).foregroundStyle(.white))
+                    let textWidth = resolved.measure(in: CGSize(width: .infinity, height: size.height)).width
+                    let singleWidth = textWidth / 2
+
+                    // Scroll: 60 points/sec
+                    let offset = CGFloat(t.truncatingRemainder(dividingBy: Double(singleWidth) / 60.0)) * 60.0
+                    let x = -offset.truncatingRemainder(dividingBy: singleWidth)
+                    let y = (size.height - fontSize) / 2
+
+                    context.draw(resolved, in: CGRect(x: x, y: y, width: textWidth, height: size.height))
                 }
                 .frame(height: height)
                 .clipped()
-                .onAppear { startScrolling(width: geo.size.width) }
             }
             .frame(height: height)
-        }
-    }
-
-    private func startScrolling(width: CGFloat) {
-        // Estimate text width for scrolling
-        let charWidth = fontSize * 0.6
-        let singleWidth = charWidth * CGFloat(text.count)
-        scrollOffset = width
-        withAnimation(.linear(duration: Double(singleWidth + width) / 60.0).repeatForever(autoreverses: false)) {
-            scrollOffset = -singleWidth
         }
     }
 }
