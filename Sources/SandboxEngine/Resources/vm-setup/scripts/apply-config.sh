@@ -29,6 +29,9 @@
 
 ENVFILE="/tmp/bromure/chrome-env"
 
+# Escape a value for safe single-quoting in chrome-env.
+sh_escape() { printf "'" ; printf '%s' "$1" | sed "s/'/'\\\\''/g" ; printf "'" ; }
+
 # --- Wait for on-boot.sh to finish (dbus startup, etc.) ---
 
 # --- Mount profile disk (persistent profiles only) ---
@@ -151,9 +154,9 @@ echo "}" >> "$SESSION_POLICY"
 # --- Write chrome-env ---
 
 : > "$ENVFILE"
-[ -n "$EXTRA_FLAGS" ] && echo "EXTRA_FLAGS=\"$EXTRA_FLAGS\"" >> "$ENVFILE"
+[ -n "$EXTRA_FLAGS" ] && printf 'EXTRA_FLAGS=%s\n' "$(sh_escape "$EXTRA_FLAGS")" >> "$ENVFILE"
 # Don't open the home page when restoring a previous session
-[ "$RESTORE_SESSION" != "1" ] && echo "CHROME_URL=${CHROME_URL:-about:blank}" >> "$ENVFILE"
+[ "$RESTORE_SESSION" != "1" ] && printf 'CHROME_URL=%s\n' "$(sh_escape "${CHROME_URL:-about:blank}")" >> "$ENVFILE"
 [ "$SWAP_CMD_CTRL" = "1" ] && echo "SWAP_CMD_CTRL=1" >> "$ENVFILE"
 [ "$FILE_TRANSFER" = "1" ] && echo "FILE_TRANSFER=1" >> "$ENVFILE"
 [ "$CLIPBOARD" = "1" ] && echo "CLIPBOARD=1" >> "$ENVFILE"

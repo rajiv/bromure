@@ -84,6 +84,11 @@ def write_custom_cas(cas):
     return len(cas)
 
 
+def sh_escape(s):
+    """Escape a string for safe use as a single-quoted shell value."""
+    return "'" + str(s).replace("'", "'\\''") + "'"
+
+
 def write_chrome_env(cfg):
     """Build and write the chrome-env file."""
     env_file = "/tmp/bromure/chrome-env"
@@ -155,9 +160,9 @@ def write_chrome_env(cfg):
         extra_flags.append(f"--disable-features={','.join(disable_features)}")
 
     if extra_flags:
-        lines.append(f'EXTRA_FLAGS="{" ".join(extra_flags)}"')
+        lines.append(f"EXTRA_FLAGS={sh_escape(' '.join(extra_flags))}")
     if not cfg.get("restoreSession"):
-        lines.append(f"CHROME_URL={cfg.get('chromeURL', 'about:blank')}")
+        lines.append(f"CHROME_URL={sh_escape(cfg.get('chromeURL', 'about:blank'))}")
     if cfg.get("swapCmdCtrl"):
         lines.append("SWAP_CMD_CTRL=1")
     if cfg.get("fileTransfer"):
@@ -167,12 +172,12 @@ def write_chrome_env(cfg):
     if cfg.get("linkSender"):
         lines.append("LINK_SENDER=1")
     if cfg.get("proxyHost"):
-        lines.append(f"PROXY_HOST={cfg['proxyHost']}")
-        lines.append(f"PROXY_PORT={cfg.get('proxyPort', 8080)}")
+        lines.append(f"PROXY_HOST={sh_escape(cfg['proxyHost'])}")
+        lines.append(f"PROXY_PORT={sh_escape(cfg.get('proxyPort', 8080))}")
         if cfg.get("proxyUsername"):
-            lines.append(f"PROXY_USERNAME={cfg['proxyUsername']}")
+            lines.append(f"PROXY_USERNAME={sh_escape(cfg['proxyUsername'])}")
         if cfg.get("proxyPassword"):
-            lines.append(f"PROXY_PASSWORD={cfg['proxyPassword']}")
+            lines.append(f"PROXY_PASSWORD={sh_escape(cfg['proxyPassword'])}")
     if cfg.get("webcam"):
         lines.append("WEBCAM=1")
         if cfg.get("webcamWidth"):
@@ -180,7 +185,7 @@ def write_chrome_env(cfg):
         if cfg.get("webcamHeight"):
             lines.append(f"WEBCAM_HEIGHT={cfg['webcamHeight']}")
     if profile_dir:
-        lines.append(f"PROFILE_DIR={profile_dir}")
+        lines.append(f"PROFILE_DIR={sh_escape(profile_dir)}")
     if cfg.get("audio"):
         lines.append("AUDIO=1")
         vol = cfg.get("audioVolume")
@@ -195,15 +200,15 @@ def write_chrome_env(cfg):
     chrome_lang = locale.replace("_", "-")
     # Strip region for base language (e.g. "en-US" -> "en")
     base_lang = locale.split("_")[0]
-    lines.append(f'CHROME_LANG="{chrome_lang}"')
-    lines.append(f'export LANG="{locale}.UTF-8"')
-    lines.append(f'export LC_ALL="{locale}.UTF-8"')
-    lines.append(f'export LANGUAGE="{base_lang}"')
+    lines.append(f"CHROME_LANG={sh_escape(chrome_lang)}")
+    lines.append(f"export LANG={sh_escape(f'{locale}.UTF-8')}")
+    lines.append(f"export LC_ALL={sh_escape(f'{locale}.UTF-8')}")
+    lines.append(f"export LANGUAGE={sh_escape(base_lang)}")
 
     # Test suite: forward TEST_* expectations to chrome-env
     for key, val in cfg.items():
         if key.startswith("TEST_"):
-            lines.append(f'{key}="{val}"')
+            lines.append(f"{key}={sh_escape(val)}")
 
     with open(env_file, "w") as f:
         f.write("\n".join(lines) + "\n")
