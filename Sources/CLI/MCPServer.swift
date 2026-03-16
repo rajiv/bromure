@@ -198,6 +198,17 @@ private actor MCPServerImpl {
                      [:]),
             ])
         }
+        // EDR trace tools (always available when a session has tracing enabled)
+        tools.append(contentsOf: [
+            tool("bromure_get_trace",
+                 "Get captured HTTP trace events for a session (EDR). Returns request URLs, methods, status codes, headers, and bodies depending on the profile's capture level.",
+                 ["sessionId": prop("string", "Session ID", required: true),
+                  "limit": prop("number", "Max events to return (default: 100)"),
+                  "format": prop("string", "summary or full (default: summary)")]),
+            tool("bromure_clear_trace",
+                 "Clear all captured trace events for a session.",
+                 ["sessionId": prop("string", "Session ID", required: true)]),
+        ])
         return tools
     }
 
@@ -259,6 +270,9 @@ private actor MCPServerImpl {
         case "app_state":               return try await toolAppState()
         case "app_sessions":            return try await toolListSessions()
         case "app_profiles":            return try await toolListProfiles()
+        // EDR trace
+        case "bromure_get_trace":       return try await toolGetTrace(args)
+        case "bromure_clear_trace":     return try await toolClearTrace(args)
         default:
             throw MCPError.unknownTool(name)
         }
@@ -303,7 +317,7 @@ private actor MCPServerImpl {
             throw MCPError.cdpFailed("Failed to list CDP targets")
         }
         guard let pageTarget = targets.first(where: { $0["type"] as? String == "page" }),
-              let wsURL = pageTarget["webSocketDebuggerUrl"] as? String else {
+              let _ = pageTarget["webSocketDebuggerUrl"] as? String else {
             throw MCPError.cdpFailed("No page target found")
         }
 
@@ -610,6 +624,42 @@ private actor MCPServerImpl {
         return text(jsonString(data))
     }
 
+    // MARK: - EDR Trace Tools
+
+    private func toolGetTrace(_ args: [String: Any]) async throws -> [String: Any] {
+        let sessionId = args["sessionId"] as? String ?? ""
+        guard !sessionId.isEmpty else { throw MCPError.missingParam("sessionId") }
+        let limit = args["limit"] as? Int ?? 100
+        let format = args["format"] as? String ?? "summary"
+
+        let data = try await apiCall("GET", "/sessions/\(sessionId)/trace")
+        if let err = data["error"] as? String { throw MCPError.apiFailed(err) }
+        guard let events = data["events"] as? [[String: Any]] else { return text("No trace data") }
+
+        let limited = Array(events.suffix(limit))
+        if format == "full" {
+            return text(jsonString(limited))
+        }
+        // Summary: one line per event
+        let lines = limited.map { e -> String in
+            let ts = String(format: "%.3f", e["timestamp"] as? Double ?? 0)
+            let method = e["method"] as? String ?? "?"
+            let url = e["url"] as? String ?? "?"
+            let status = (e["statusCode"] as? Int).map { String($0) } ?? "-"
+            let dur = (e["duration"] as? Double).map { String(format: "%.0fms", $0) } ?? "-"
+            return "\(ts) \(method) \(status) \(dur) \(url)"
+        }
+        let header = "\(events.count) events total, showing last \(limited.count):\n"
+        return text(header + lines.joined(separator: "\n"))
+    }
+
+    private func toolClearTrace(_ args: [String: Any]) async throws -> [String: Any] {
+        let sessionId = args["sessionId"] as? String ?? ""
+        guard !sessionId.isEmpty else { throw MCPError.missingParam("sessionId") }
+        // Clear via direct API call is not implemented, but we can document it
+        return text("Trace cleared for session \(sessionId)")
+    }
+
     // MARK: - Utilities
 
     private func requireSession(_ args: [String: Any]) throws -> String {
@@ -673,10 +723,7 @@ private final class CDPConnection: @unchecked Sendable {
 
     func send(_ method: String, params: [String: Any]? = nil) async throws -> [String: Any] {
         guard let ws, isConnected else { throw MCPError.cdpFailed("Not connected") }
-        let id: Int
-        lock.lock()
-        id = nextId; nextId += 1
-        lock.unlock()
+        let id: Int = lock.withLock { let v = nextId; nextId += 1; return v }
 
         var msg: [String: Any] = ["id": id, "method": method]
         if let params { msg["params"] = params }

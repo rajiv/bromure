@@ -329,7 +329,70 @@ These verify that toggling one setting correctly enables/disables dependent sett
 - [ ] `DELETE /sessions/:id` destroys session and VM
 - [ ] CDP proxy at `/cdp/:sessionId/*` correctly forwards to Chromium DevTools
 
-### 18.2 Allow Automation Flag
+### 18.2 Session Recording (EDR)
+
+#### Basic Capture
+- [ ] EDR disabled (default) — no trace events captured, no titlebar button
+- [ ] EDR Level 1 (basic) — captures timestamp, method, URL, hostname, status, duration
+- [ ] EDR Level 2 (headers) — additionally captures request/response headers and POST data
+- [ ] EDR Level 3 (full) — additionally captures response bodies (truncated at 1 MB)
+- [ ] Privacy warning shown at Level 2 (POST data may contain passwords)
+- [ ] Privacy warning shown at Level 3 (response bodies contain sensitive data)
+
+#### Hostname Tracking
+- [ ] Hostname column displays correctly for all URL types (https, http, with port, IP address)
+- [ ] Hostname filter dropdown shows all unique hostnames from the session
+- [ ] Filtering by hostname shows only requests to that host
+
+#### Page Tracking and Navigation Graph
+- [ ] Each request records the document URL (page) that initiated it
+- [ ] Redirects are tracked as separate events with `navType: "redirect"`
+- [ ] Navigation events (page loads) are recorded with transition type (link, typed, form_submit)
+- [ ] Navigation graph shows correct parent-child relationships (page → sub-resources)
+- [ ] Redirect chains are visible: `page.html → (302) → redirected.html`
+
+#### Form Field Snapshots
+- [ ] Level 2+: form field values captured at the time of POST/PUT requests
+- [ ] Password fields are captured (detects rot13 / transformation attacks)
+- [ ] Form fields tab shows name, type, and value for each field
+- [ ] Comparison between raw form values and POST data highlights transformations
+
+#### Filtering and Search
+- [ ] URL substring search filters events instantly
+- [ ] Body content search filters by request/response body content
+- [ ] Time range filter (start/end) correctly bounds results
+- [ ] Method and status filters are combinable
+- [ ] All filters can be reset at once
+
+#### Viewer UI
+- [ ] Trace viewer opens from titlebar button (waveform icon)
+- [ ] Timeline table shows: time, method, hostname, URL path, status, duration bar, MIME type, page
+- [ ] Waterfall duration bars are proportional and color-coded by status
+- [ ] Detail pane tabs: Request, Response, Form Fields, Navigation, Timing
+- [ ] Copy-to-clipboard buttons on request body, response body, and headers
+- [ ] Copy shows brief "Copied" feedback
+
+#### Data Lifecycle
+- [ ] Trace data stored in SQLite (temp file) during session
+- [ ] On session close with trace data — save prompt appears (Save/Discard/Cancel)
+- [ ] Export as JSON produces valid, re-openable trace file
+- [ ] Export as SQLite produces a valid database
+- [ ] File > Open Trace opens a saved JSON trace file
+- [ ] Discard deletes trace data immediately
+- [ ] Cancel prevents session from closing
+
+#### Automation
+- [ ] `GET /sessions/:id/trace` returns captured events via HTTP API
+- [ ] `get trace` AppleScript command returns JSON of events
+- [ ] `bromure_get_trace` MCP tool returns trace summary
+- [ ] Events include hostname, documentUrl, formFields when available
+
+#### Performance
+- [ ] Trace events arrive in real-time (live update in viewer)
+- [ ] Large traffic (100+ requests) doesn't block the app
+- [ ] SQLite queries with filters remain fast at 50K+ events
+
+### 18.3 Allow Automation Flag
 - [ ] New profiles default to `allowAutomation = false`
 - [ ] Default "Private Browsing" profile has `allowAutomation = true`
 - [ ] Profile with `allowAutomation = false` does NOT appear in `GET /profiles`

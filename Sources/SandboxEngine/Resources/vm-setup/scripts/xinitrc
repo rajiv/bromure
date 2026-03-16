@@ -21,10 +21,11 @@ eval $(dbus-launch --sh-syntax)
 #      inotifywait would fail silently and xinitrc would skip the wait entirely.
 #   2. TOCTOU: chrome-ready could be created between the [ -f ] check and
 #      inotifywait starting, causing inotifywait to miss the event.
+# Wait indefinitely for the host to write chrome-ready.
+# Pre-warmed VMs can sit idle for hours — this MUST NOT time out.
 mkdir -p /tmp/bromure
-for _attempt in $(seq 1 24); do
-    [ -f /tmp/bromure/chrome-ready ] && break
-    inotifywait -t 5 -e create --include "chrome-ready" /tmp/bromure/ 2>/dev/null || true
+while [ ! -f /tmp/bromure/chrome-ready ]; do
+    inotifywait -e create --include "chrome-ready" /tmp/bromure/ 2>/dev/null || sleep 1
 done
 EXTRA_FLAGS=
 CHROME_URL=
@@ -61,8 +62,8 @@ fi
 # file-agent.py and webcam-agent.py are started at boot via inittab
 [ "$SWAP_CMD_CTRL" = "1" ] && setxkbmap -option ctrl:swap_lwin_lctl,ctrl:swap_rctl
 [ "$MICROPHONE" = "1" ] && pactl load-module module-alsa-source device=hw:0,1 source_name=virtio_mic source_properties=device.description=Microphone 2>/dev/null &
-[ "$AUTOMATION" = "1" ] && /usr/local/bin/cdp-agent.py &
-[ "$DEBUG_SHELL" = "1" ] && /usr/local/bin/shell-agent.py &
+[ "$AUTOMATION" = "1" ] && /usr/local/bin/resilient-launch.sh /usr/local/bin/cdp-agent.py &
+[ "$DEBUG_SHELL" = "1" ] && /usr/local/bin/resilient-launch.sh /usr/local/bin/shell-agent.py &
 echo "xinitrc: EXTRA_FLAGS=$EXTRA_FLAGS CHROME_URL=$CHROME_URL SWAP_CMD_CTRL=$SWAP_CMD_CTRL" > /dev/hvc0
 export LIBGL_ALWAYS_SOFTWARE=1
 
@@ -80,5 +81,6 @@ fi
 LANG_FLAG=
 [ -n "$CHROME_LANG" ] && LANG_FLAG="--lang=$CHROME_LANG"
 chromium-browser --no-first-run --start-maximized --force-device-scale-factor=%%DISPLAY_SCALE%% --use-gl=angle --use-angle=gl --ignore-gpu-blocklist --enable-gpu-rasterization --enable-smooth-scrolling --enable-zero-copy --disable-vulkan $LANG_FLAG $EXTRA_FLAGS "$CHROME_URL"
+doas udhcpc -R -i eth0 2>/dev/null
 doas poweroff
 

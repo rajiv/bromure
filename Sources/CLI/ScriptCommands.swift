@@ -54,6 +54,7 @@ private func readSetting(_ s: ProfileSettings, key: String) -> String? {
     case "proxyUsername":   return s.proxyUsername
     case "proxyPassword":   return s.proxyPassword
     case "allowAutomation": return String(s.allowAutomation)
+    case "edrLevel":        return String(s.edrLevel.rawValue)
     case "locale":          return s.locale ?? "system"
     case "webcamDeviceID":  return s.webcamDeviceID ?? ""
     case "microphoneDeviceID": return s.microphoneDeviceID ?? ""
@@ -97,6 +98,7 @@ private func writeSetting(_ s: inout ProfileSettings, key: String, value: String
     case "proxyUsername":   s.proxyUsername = value
     case "proxyPassword":   s.proxyPassword = value
     case "allowAutomation": s.allowAutomation = b
+    case "edrLevel":        s.edrLevel = EDRLevel(rawValue: Int(value) ?? 0) ?? .disabled
     case "locale":          s.locale = (value == "system" || value.isEmpty) ? nil : value
     case "webcamDeviceID":  s.webcamDeviceID = value.isEmpty ? nil : value
     case "microphoneDeviceID": s.microphoneDeviceID = value.isEmpty ? nil : value
@@ -330,6 +332,25 @@ final class ToggleWarpCommand: NSScriptCommand {
             }
             session.toggleWarp()
             return nil
+        }
+    }
+}
+
+// MARK: - EDR Trace Command
+
+@objc(BromureGetTraceCommand)
+final class GetTraceCommand: NSScriptCommand {
+    override func performDefaultImplementation() -> Any? {
+        onMain {
+            guard let delegate = NSApp.delegate as? GUIAppDelegate else { return "[]" as Any }
+            let sessionID = directParameter as? String ?? ""
+            guard let session = delegate.sessions.first(where: { $0.id.uuidString == sessionID }),
+                  let bridge = session.edrBridge else {
+                return "[]" as Any
+            }
+            let data = bridge.exportAsJSON()
+            guard let json = String(data: data, encoding: .utf8) else { return "[]" as Any }
+            return json as Any
         }
     }
 }

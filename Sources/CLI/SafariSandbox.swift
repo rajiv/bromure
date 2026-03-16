@@ -459,6 +459,9 @@ final class GUIAppDelegate: NSObject, NSApplicationDelegate, NSWindowDelegate {
         fileMenu.addItem(withTitle: NSLocalizedString("New Browser", comment: ""),
                          action: #selector(newBrowserAction(_:)),
                          keyEquivalent: "n")
+        fileMenu.addItem(withTitle: NSLocalizedString("Open Trace\u{2026}", comment: ""),
+                         action: #selector(openTraceFileAction(_:)),
+                         keyEquivalent: "o")
         fileMenu.addItem(NSMenuItem.separator())
         fileMenu.addItem(withTitle: NSLocalizedString("Recreate Base Image\u{2026}", comment: ""),
                          action: #selector(recreateBaseImageAction(_:)),
@@ -522,6 +525,50 @@ final class GUIAppDelegate: NSObject, NSApplicationDelegate, NSWindowDelegate {
         guard let keyWindow = NSApp.keyWindow,
               let session = sessions.first(where: { $0.window === keyWindow }) else { return }
         session.toggleWarp()
+    }
+
+    @MainActor @objc func openTraceFileAction(_ sender: Any?) {
+        let panel = NSOpenPanel()
+        panel.allowedContentTypes = [.json]
+        panel.allowsMultipleSelection = false
+        panel.message = NSLocalizedString("Open a saved session recording", comment: "")
+        guard panel.runModal() == .OK, let url = panel.url else { return }
+        guard let data = try? Data(contentsOf: url),
+              let events = try? JSONDecoder().decode([EDREvent].self, from: data) else {
+            let alert = NSAlert()
+            alert.messageText = NSLocalizedString("Invalid Trace File", comment: "")
+            alert.informativeText = NSLocalizedString("The file could not be read as a Bromure session recording.", comment: "")
+            alert.alertStyle = .warning
+            alert.runModal()
+            return
+        }
+
+        let name = url.deletingPathExtension().lastPathComponent
+        let hostnames = Array(Set(events.compactMap(\.hostname))).sorted()
+        let traceView = EDRTraceView(events: events, sessionName: name, availableHostnames: hostnames)
+        let hostView = NSHostingView(rootView: traceView)
+        hostView.setFrameSize(NSSize(width: 1200, height: 700))
+
+        let win = NSWindow(
+            contentRect: NSRect(x: 0, y: 0, width: 1200, height: 700),
+            styleMask: [.titled, .closable, .resizable, .miniaturizable],
+            backing: .buffered,
+            defer: false
+        )
+        win.title = "Session Recording \u{2014} \(name)"
+        win.contentView = hostView
+        win.contentMinSize = NSSize(width: 800, height: 400)
+        win.animationBehavior = .none
+        win.center()
+        win.makeKeyAndOrderFront(nil)
+        win.isReleasedWhenClosed = false
+    }
+
+    @MainActor @objc func showEDRTraceAction(_ sender: Any?) {
+        guard let keyWindow = NSApp.keyWindow,
+              let session = sessions.first(where: { $0.window === keyWindow }),
+              session.edrBridge != nil else { return }
+        session.showTraceViewer()
     }
 
     @MainActor @objc func toggleWebcamEffectsAction(_ sender: Any?) {
@@ -768,6 +815,35 @@ final class GUIAppDelegate: NSObject, NSApplicationDelegate, NSWindowDelegate {
             return ShellProxyConnection(fd: conn.fileDescriptor, conn: conn)
         }
 
+        server.onGetTrace = { [weak self] sessionID in
+            guard let self else { return [] }
+            guard let session = self.sessions.first(where: { $0.id.uuidString == sessionID }),
+                  let bridge = session.edrBridge else { return [] }
+            return bridge.traceEvents.map { event -> [String: Any] in
+                var d: [String: Any] = [
+                    "id": event.id,
+                    "timestamp": event.timestamp,
+                    "method": event.method,
+                    "url": event.url,
+                ]
+                if let h = event.hostname { d["hostname"] = h }
+                if let sc = event.statusCode { d["statusCode"] = sc }
+                if let dur = event.duration { d["duration"] = dur }
+                if let mt = event.mimeType { d["mimeType"] = mt }
+                if let rh = event.requestHeaders { d["requestHeaders"] = rh }
+                if let rsp = event.responseHeaders { d["responseHeaders"] = rsp }
+                if let pd = event.postData { d["postData"] = pd }
+                if let rb = event.responseBody { d["responseBody"] = String(rb.prefix(10000)) }
+                if let err = event.errorText { d["error"] = err }
+                if let du = event.documentUrl { d["documentUrl"] = du }
+                if let nt = event.navType { d["navType"] = nt }
+                if let ff = event.formFields {
+                    d["formFields"] = ff.map { ["name": $0.name, "type": $0.type, "value": $0.value] }
+                }
+                return d
+            }
+        }
+
         server.onGetAppState = { [weak self] in
             guard let self else { return [:] }
             let phase: String
@@ -899,37 +975,24 @@ final class GUIAppDelegate: NSObject, NSApplicationDelegate, NSWindowDelegate {
         // Shorter warm-up delay for automation — sessions are created/destroyed rapidly
         state.pool?.scheduleWarmUp(delay: .seconds(3))
 
-        guard let cdp = session.cdpBridge, let server = automationServer else {
-            print("[Automation] Session created but no CDP bridge or server")
+        guard let server = automationServer else {
+            print("[Automation] Session created but no automation server")
             return nil
         }
 
-        // Wait for CDP to be ready (guest vsock pool connects)
-        if !cdp.isReady {
-            await withCheckedContinuation { (cont: CheckedContinuation<Void, Never>) in
-                if cdp.isReady {
-                    cont.resume()
-                    return
-                }
-                cdp.onReady = { cont.resume() }
-                // Timeout after 30s
-                DispatchQueue.main.asyncAfter(deadline: .now() + 30) {
-                    if !cdp.isReady {
-                        print("[Automation] CDP ready timeout — returning anyway")
-                        cdp.onReady = nil
-                        cont.resume()
-                    }
-                }
-            }
-        }
-
-        // Resolve the full browser WS endpoint via /json/version so the
-        // client can connect directly without an extra roundtrip.
+        // Return immediately — don't block on CDP readiness.
+        // The client (Puppeteer, MCP server) retries the CDP connection on its own.
+        // The vsock pool fills within a few seconds after Chrome starts.
         let baseURL = "ws://\(server.bindAddress):\(server.port)/cdp/\(session.id.uuidString)"
-        let fullWSURL: String = await withCheckedContinuation { cont in
-            DispatchQueue.global(qos: .userInitiated).async {
-                let resolved = Self.resolveBrowserWSEndpoint(cdp: cdp, baseURL: baseURL)
-                cont.resume(returning: resolved)
+
+        // Try to resolve the full WS endpoint if CDP is already ready (instant for warm VMs)
+        var fullWSURL = baseURL
+        if let cdp = session.cdpBridge, cdp.isReady {
+            fullWSURL = await withCheckedContinuation { cont in
+                DispatchQueue.global(qos: .userInitiated).async {
+                    let resolved = Self.resolveBrowserWSEndpoint(cdp: cdp, baseURL: baseURL)
+                    cont.resume(returning: resolved)
+                }
             }
         }
 
@@ -1016,8 +1079,13 @@ final class GUIAppDelegate: NSObject, NSApplicationDelegate, NSWindowDelegate {
     func applicationShouldTerminate(_ sender: NSApplication) -> NSApplication.TerminateReply {
         if isTerminating { return .terminateNow }
 
-        // If there are active sessions, confirm before quitting
-        if !sessions.isEmpty {
+        // Skip confirmation when quit is triggered by AppleScript or automation.
+        // NSAppleEventManager indicates a scripting-initiated quit.
+        let isScriptedQuit = NSAppleEventManager.shared().currentAppleEvent?.eventClass == UInt32(kCoreEventClass)
+            && NSAppleEventManager.shared().currentAppleEvent?.eventID == UInt32(kAEQuitApplication)
+
+        // If there are active sessions, confirm before quitting (unless scripted)
+        if !sessions.isEmpty && !isScriptedQuit {
             let alert = NSAlert()
             alert.messageText = NSLocalizedString("Quit Bromure?", comment: "")
             let count = sessions.count
@@ -1079,6 +1147,8 @@ final class BrowserSession {
     private var warpBridge: WarpBridge?
     private(set) var cdpBridge: CDPBridge?
     private(set) var shellBridge: ShellBridge?
+    private(set) var edrBridge: EDRBridge?
+    private var edrTraceWindow: NSWindow?
     private var warpButton: NSButton?
     private var warpPulseTimer: Timer?
     private var effectsPanel: NSWindow?
@@ -1323,6 +1393,25 @@ final class BrowserSession {
             self.shellBridge = bridge
         }
 
+        // Set up EDR bridge for HTTP trace capture.
+        if config.edrLevel != .disabled, let dev = linkSocketDevice {
+            let bridge = MainActor.assumeIsolated { EDRBridge(socketDevice: dev) }
+            self.edrBridge = bridge
+
+            // Add EDR titlebar button
+            let edrButton = NSButton(
+                image: NSImage(systemSymbolName: "waveform.path.ecg", accessibilityDescription: "Session Recording")!,
+                target: nil,
+                action: #selector(GUIAppDelegate.showEDRTraceAction(_:))
+            )
+            edrButton.bezelStyle = NSButton.BezelStyle.recessed
+            edrButton.toolTip = "Session Recording (EDR Trace)"
+            let edrAccessory = NSTitlebarAccessoryViewController()
+            edrAccessory.view = edrButton
+            edrAccessory.layoutAttribute = .trailing
+            window.addTitlebarAccessoryViewController(edrAccessory)
+        }
+
         let helper = SessionDelegateHelper(session: self)
         self.delegateHelper = helper
         warmVM.vm.delegate = helper
@@ -1394,6 +1483,104 @@ final class BrowserSession {
     func toggleWarp() {
         MainActor.assumeIsolated {
             warpBridge?.toggle()
+        }
+    }
+
+    /// Show the EDR trace viewer window.
+    func showTraceViewer() {
+        MainActor.assumeIsolated {
+            if let existing = edrTraceWindow, existing.isVisible {
+                existing.makeKeyAndOrderFront(nil)
+                return
+            }
+            guard let edrBridge else { return }
+            let name = profile?.name ?? "Session"
+            let events = edrBridge.traceEvents
+            let hostnames = edrBridge.store.distinctHostnames()
+
+            let traceView = EDRTraceView(
+                events: events,
+                sessionName: name,
+                availableHostnames: hostnames,
+                onExport: { [weak self] in self?.exportTrace(edrBridge.traceEvents) },
+                onExportDB: { [weak self] in self?.exportTraceDB() },
+                onClear: { [weak edrBridge] in edrBridge?.clearTrace() },
+                onShowFlowGraph: { [weak edrBridge, weak self] in
+                    guard let edrBridge else { return }
+                    showFlowGraphWindow(
+                        events: edrBridge.traceEvents,
+                        sessionName: self?.profile?.name ?? "Session"
+                    )
+                }
+            )
+
+            let hostView = NSHostingView(rootView: traceView)
+            hostView.setFrameSize(NSSize(width: 1200, height: 700))
+
+            let win = NSWindow(
+                contentRect: NSRect(x: 0, y: 0, width: 1200, height: 700),
+                styleMask: [.titled, .closable, .resizable, .miniaturizable],
+                backing: .buffered,
+                defer: false
+            )
+            win.title = "Session Recording \u{2014} \(name)"
+            win.contentView = hostView
+            win.contentMinSize = NSSize(width: 800, height: 400)
+            win.animationBehavior = .none
+            win.center()
+            win.makeKeyAndOrderFront(nil)
+            self.edrTraceWindow = win
+
+            // No live-update via onNewEvent — the trace viewer reads from
+            // the SQLite store on demand. Updating the SwiftUI view on every
+            // event causes use-after-free crashes when the window is closed
+            // while events are still arriving.
+            edrBridge.onNewEvent = nil
+        }
+    }
+
+    private func exportTraceDB() {
+        MainActor.assumeIsolated {
+            guard let edrBridge else { return }
+            let panel = NSSavePanel()
+            panel.allowedContentTypes = [.database]
+            panel.nameFieldStringValue = "trace-\(profile?.name ?? "session").sqlite"
+            panel.canCreateDirectories = true
+            guard panel.runModal() == .OK, let url = panel.url else { return }
+            try? edrBridge.store.exportDatabase(to: url)
+        }
+    }
+
+    private func exportTrace(_ events: [EDREvent]) {
+        let panel = NSSavePanel()
+        panel.allowedContentTypes = [.json]
+        panel.nameFieldStringValue = "trace-\(profile?.name ?? "session").json"
+        panel.canCreateDirectories = true
+        guard panel.runModal() == .OK, let url = panel.url else { return }
+        guard let data = try? JSONEncoder().encode(events) else { return }
+        try? data.write(to: url)
+    }
+
+    /// Prompt to save trace data before closing the session.
+    /// Returns true if the caller should proceed with closing.
+    fileprivate func promptSaveTraceIfNeeded() -> Bool {
+        MainActor.assumeIsolated {
+            guard let edrBridge, !edrBridge.traceEvents.isEmpty else { return true }
+            let alert = NSAlert()
+            alert.messageText = NSLocalizedString("Save session recording?", comment: "")
+            alert.informativeText = String(format: NSLocalizedString("This session captured %lld HTTP requests. Save the recording before closing?", comment: ""), edrBridge.traceEvents.count)
+            alert.alertStyle = .informational
+            alert.addButton(withTitle: NSLocalizedString("Save\u{2026}", comment: ""))
+            alert.addButton(withTitle: NSLocalizedString("Discard", comment: ""))
+            alert.addButton(withTitle: NSLocalizedString("Cancel", comment: ""))
+            let response = alert.runModal()
+            if response == .alertFirstButtonReturn {
+                exportTrace(edrBridge.traceEvents)
+                return true
+            } else if response == .alertSecondButtonReturn {
+                return true
+            }
+            return false // Cancel
         }
     }
 
@@ -1626,6 +1813,10 @@ final class BrowserSession {
             cdpBridge = nil
             shellBridge?.stop()
             shellBridge = nil
+            edrBridge?.stop()
+            edrBridge = nil
+            edrTraceWindow?.orderOut(nil)
+            edrTraceWindow = nil
             effectsPanel?.orderOut(nil)
             effectsPanel = nil
         }
@@ -1678,9 +1869,11 @@ private final class SessionDelegateHelper: NSObject, VZVirtualMachineDelegate, N
         alert.addButton(withTitle: NSLocalizedString("Close", comment: ""))
         alert.addButton(withTitle: NSLocalizedString("Cancel", comment: ""))
         alert.beginSheetModal(for: sender) { [weak session] response in
-            if response == .alertFirstButtonReturn {
-                session?.confirmed = true
-                session?.window.close()
+            guard response == .alertFirstButtonReturn, let session else { return }
+            // If EDR trace has data, offer to save before closing
+            if session.promptSaveTraceIfNeeded() {
+                session.confirmed = true
+                session.window.close()
             }
         }
         return false

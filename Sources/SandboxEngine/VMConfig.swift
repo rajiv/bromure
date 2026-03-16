@@ -158,6 +158,10 @@ public struct VMConfig {
     /// Set via the BROMURE_TEST_SUITE environment variable on the host.
     public var testSuite: Bool
 
+    /// EDR trace verbosity level. Controls how much HTTP traffic data the
+    /// guest agent captures and sends to the host over vsock.
+    public var edrLevel: EDRLevel
+
     public init(
         cpuCount: Int? = nil,
         memorySize: UInt64 = 4 * 1024 * 1024 * 1024,
@@ -196,6 +200,7 @@ public struct VMConfig {
         blockDownloads: Bool = false,
         enableAutomation: Bool = false,
         testSuite: Bool = false,
+        edrLevel: EDRLevel = .disabled,
         keyboardLayout: String? = nil,
         naturalScrolling: Bool? = nil,
         locale: String? = nil
@@ -238,6 +243,7 @@ public struct VMConfig {
         self.blockDownloads = blockDownloads
         self.enableAutomation = enableAutomation
         self.testSuite = testSuite
+        self.edrLevel = edrLevel
         self.keyboardLayout = keyboardLayout ?? VMConfig.detectKeyboardLayout()
         self.naturalScrolling = naturalScrolling ?? VMConfig.detectNaturalScrolling()
         self.locale = locale ?? VMConfig.detectLocale()

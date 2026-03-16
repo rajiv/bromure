@@ -128,6 +128,13 @@ def write_chrome_env(cfg):
     if cfg.get("fileTransfer"):
         extra_flags.append("--silent-debugger-extension-api")
         extensions.append("/opt/bromure/extensions/file-picker")
+    # EDR tracer extension: loaded when edrLevel > 0
+    edr_level = cfg.get("edrLevel", 0)
+    if edr_level > 0:
+        extensions.append("/opt/bromure/extensions/edr-tracer")
+        # Level 3 (full) needs debugger API without the infobar
+        if edr_level >= 3 and not cfg.get("fileTransfer"):
+            extra_flags.append("--silent-debugger-extension-api")
     # WebRTC block extension: loaded only when both webcam and microphone are off
     if not cfg.get("webcam") and not cfg.get("microphone"):
         extensions.append("/opt/bromure/extensions/webrtc-block")
@@ -202,6 +209,8 @@ def write_chrome_env(cfg):
         lines.append("AUTOMATION=1")
     if cfg.get("debugShell"):
         lines.append("DEBUG_SHELL=1")
+    if cfg.get("edrLevel", 0) > 0:
+        lines.append(f"EDR_LEVEL={cfg['edrLevel']}")
 
     # Locale: forward host OS locale to Chromium
     locale = cfg.get("locale", "en_US")
@@ -353,12 +362,14 @@ def configure_services(cfg, ca_count):
     # never exists so all connections go direct.
     if not has_custom_proxy:
         subprocess.Popen(
-            ["/usr/local/bin/routing-socks.py"],
+            ["/usr/local/bin/resilient-launch.sh",
+             "/usr/local/bin/routing-socks.py"],
             stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
 
-        # Start squid through proxychains (always, never restarted).
+        # Start squid through proxychains (auto-restarted on crash).
         subprocess.Popen(
-            ["proxychains4", "-q", "-f", "/etc/proxychains/proxychains.conf",
+            ["/usr/local/bin/resilient-launch.sh",
+             "proxychains4", "-q", "-f", "/etc/proxychains/proxychains.conf",
              "squid", "-N", "-f", "/etc/squid/squid.conf"],
             stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
 

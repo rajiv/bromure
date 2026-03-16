@@ -648,6 +648,46 @@ struct ProfileSettingsView: View {
                 description: "Adds a right-click menu option to send a web page link to another Bromure profile.",
                 isOn: $draft.settings.enableLinkSender
             )
+
+            settingsDivider
+
+            // EDR Tracer
+            VStack(alignment: .leading, spacing: 6) {
+                Text("Session Recording").font(.headline)
+                Text("Record all HTTP requests made during this browsing session. Useful for analyzing what a suspicious link does behind the scenes. When the session ends, you can save or discard the recording.")
+                    .settingDescription()
+                Picker("Capture Level", selection: $draft.settings.edrLevel) {
+                    Text("Disabled").tag(EDRLevel.disabled)
+                    Text("Basic \u{2014} URLs only").tag(EDRLevel.basic)
+                    Text("Headers \u{2014} URLs + headers + POST data").tag(EDRLevel.headers)
+                    Text("Full \u{2014} URLs + headers + response bodies").tag(EDRLevel.full)
+                }
+                .labelsHidden()
+
+                if draft.settings.edrLevel == .headers {
+                    Label {
+                        Text("This level captures POST data which may include passwords, tokens, and form submissions in clear text.")
+                            .font(.callout)
+                    } icon: {
+                        Image(systemName: "exclamationmark.triangle.fill")
+                            .foregroundStyle(.yellow)
+                    }
+                    .padding(10)
+                    .background(.orange.opacity(0.1), in: RoundedRectangle(cornerRadius: 8))
+                }
+
+                if draft.settings.edrLevel == .full {
+                    Label {
+                        Text("Full capture records all request and response bodies including passwords, authentication tokens, personal data, and any sensitive content transmitted over the network. Use only for security analysis of untrusted links.")
+                            .font(.callout)
+                    } icon: {
+                        Image(systemName: "exclamationmark.triangle.fill")
+                            .foregroundStyle(.red)
+                    }
+                    .padding(10)
+                    .background(.red.opacity(0.1), in: RoundedRectangle(cornerRadius: 8))
+                }
+            }
         }
     }
 

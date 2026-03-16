@@ -86,6 +86,14 @@ public struct CustomRootCA: Codable, Equatable, Identifiable {
     }
 }
 
+/// EDR (Endpoint Detection & Response) trace verbosity level.
+public enum EDRLevel: Int, Codable, CaseIterable, Sendable {
+    case disabled = 0
+    case basic = 1     // timestamp, method, URL, status, duration
+    case headers = 2   // basic + request/response headers + post data
+    case full = 3      // headers + response body
+}
+
 /// Webcam capture quality — maps to AVCaptureSession presets.
 public enum WebcamQuality: String, Codable, CaseIterable, Sendable {
     case low = "low"
@@ -210,6 +218,9 @@ public struct ProfileSettings: Codable, Equatable {
     // Automation
     public var allowAutomation: Bool = false
 
+    // EDR
+    public var edrLevel: EDRLevel = .disabled
+
     // Advanced
     public var persistent: Bool = false
     public var encryptOnDisk: Bool = false
@@ -256,6 +267,7 @@ public struct ProfileSettings: Codable, Equatable {
         rootCAs = try c.decodeIfPresent([CustomRootCA].self, forKey: .rootCAs) ?? defaults.rootCAs
         locale = try c.decodeIfPresent(String.self, forKey: .locale)
         allowAutomation = try c.decodeIfPresent(Bool.self, forKey: .allowAutomation) ?? defaults.allowAutomation
+        edrLevel = try c.decodeIfPresent(EDRLevel.self, forKey: .edrLevel) ?? defaults.edrLevel
         persistent = try c.decodeIfPresent(Bool.self, forKey: .persistent) ?? defaults.persistent
         encryptOnDisk = try c.decodeIfPresent(Bool.self, forKey: .encryptOnDisk) ?? defaults.encryptOnDisk
     }
@@ -322,6 +334,7 @@ public struct ProfileSettings: Codable, Equatable {
             blockDownloads: !canDownload,
             enableAutomation: defaults.bool(forKey: "automation.enabled"),
             testSuite: isTestSuite,
+            edrLevel: edrLevel,
             locale: locale
         )
     }

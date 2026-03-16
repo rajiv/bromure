@@ -81,7 +81,7 @@ async function waitForPool(timeoutMs = 60000) {
 }
 
 /** Connect Puppeteer to a session. Resolves the full WS endpoint with retries. */
-async function connectSession(sessionId, retries = 5) {
+async function connectSession(sessionId, retries = 10) {
   let lastErr;
   for (let i = 0; i < retries; i++) {
     try {
@@ -94,7 +94,9 @@ async function connectSession(sessionId, retries = 5) {
       if (!wsUrl.includes("/devtools/browser/")) {
         const baseHttp = wsUrl.replace("ws://", "http://");
         const vRes = await fetch(`${baseHttp}/json/version`);
-        const vJson = await vRes.json();
+        const vText = await vRes.text();
+        if (!vText) throw new Error("Empty /json/version response");
+        const vJson = JSON.parse(vText);
         if (vJson.webSocketDebuggerUrl) {
           const path = new URL(vJson.webSocketDebuggerUrl).pathname;
           wsUrl = wsUrl + path;
@@ -128,12 +130,17 @@ async function getChromeFlags(browser) {
   return flags;
 }
 
-/** Get CDP /json/list targets for a session. */
+/** Get CDP /json/list targets for a session. Retries on empty/error responses. */
 async function getTargets(sessionId) {
-  const res = await fetch(
-    `${API}/cdp/${sessionId}/json/list`
-  );
-  return res.json();
+  for (let i = 0; i < 5; i++) {
+    try {
+      const res = await fetch(`${API}/cdp/${sessionId}/json/list`);
+      const text = await res.text();
+      if (text) return JSON.parse(text);
+    } catch {}
+    await sleep(1000);
+  }
+  throw new Error("getTargets failed after 5 retries");
 }
 
 // ---------------------------------------------------------------------------
@@ -194,6 +201,7 @@ async function test(name, fn) {
     results.push({ name, status: "FAIL", ms, error: e.message });
     console.log(`  \x1b[31mFAIL\x1b[0m  ${name} (${ms}ms)`);
     console.log(`        ${e.message}`);
+    if (e.stack) console.log(`        ${e.stack.split("\n").slice(1, 4).join("\n        ")}`);
   }
 }
 
@@ -237,21 +245,51 @@ async function withSession(profileName, profileSettings, checkFn) {
   let sessionId;
   let browser;
   try {
-    // Wait for pool, then open session. POST /sessions may take up to 60s
-    // if the pool needs to warm a VM on demand (no pre-warmed VM available).
+    // Wait for pool, then open session.
     await waitForPool();
     const sess = await api("POST", "/sessions", { profile: profileName });
-    assert(!sess.error, `Session creation failed: ${sess.error}`);
+    if (sess.error) throw new Error(`Session creation failed: ${sess.error}`);
+    if (!sess.id) throw new Error(`No session ID: ${JSON.stringify(sess).slice(0, 100)}`);
     sessionId = sess.id;
 
     // Wait for page to settle and CDP pool to fill
     await sleep(5000);
 
     // Connect Puppeteer (with retries for CDP pool availability)
-    browser = await connectSession(sessionId);
+    try {
+      browser = await connectSession(sessionId);
+    } catch (e) {
+      throw new Error(`CDP connect failed for ${sessionId}: ${e.message}`);
+    }
+
+    // Wait for shell bridge readiness if debug shell is available.
+    // The shell agent vsock pool may need a moment to fill after boot.
+    if (hasDebugShell) {
+      for (let i = 0; i < 10; i++) {
+        try {
+          await vmExec(sessionId, "true");
+          break;
+        } catch {
+          if (i === 9) throw new Error("Shell bridge not ready after 10 retries");
+          await sleep(1000);
+        }
+      }
+    }
 
     // Run checks
     await checkFn({ sessionId, browser, profileId, profileName });
+
+    // Check for daemon crashes inside the VM
+    if (hasDebugShell && sessionId) {
+      try {
+        const errLog = await vmExec(sessionId, "cat /tmp/bromure/resilient-launch.*.log 2>/dev/null");
+        const crashes = (errLog.stdout || "").split("\n").filter((l) => l.includes("CRASHED"));
+        if (crashes.length > 0) {
+          console.log(`  \x1b[33m⚠ VM daemon crashes detected:\x1b[0m`);
+          for (const c of crashes) console.log(`    ${c}`);
+        }
+      } catch {}
+    }
   } finally {
     // Cleanup — wait briefly after Puppeteer disconnect to avoid TCP interference
     if (browser) try { browser.disconnect(); } catch {}
@@ -262,9 +300,8 @@ async function withSession(profileName, profileSettings, checkFn) {
   }
 }
 
-const hasDebugShell =
-  process.env.BROMURE_DEBUG_CLAUDE === "1" ||
-  process.env.BROMURE_DEBUG_CLAUDE === "true";
+// Whether the app has debug shell enabled — detected at runtime in main()
+let hasDebugShell = false;
 
 // ---------------------------------------------------------------------------
 // Tests
@@ -315,6 +352,19 @@ async function main() {
   // Check API health
   const health = await api("GET", "/health");
   assert(health.status === "ok", `API unhealthy: ${JSON.stringify(health)}`);
+
+  // Detect if the app has debug shell enabled (BROMURE_DEBUG_CLAUDE in app env)
+  try {
+    const appState = await api("GET", "/app/state");
+    hasDebugShell = appState.debugEnabled === true;
+  } catch {
+    hasDebugShell = false;
+  }
+  if (hasDebugShell) {
+    console.log("Debug shell: enabled\n");
+  } else {
+    console.log("Debug shell: disabled (start app with BROMURE_DEBUG_CLAUDE=1 for VM tests)\n");
+  }
 
   // ======================================================================
   // 1. Profile Management
@@ -1050,6 +1100,133 @@ print('n/a')
     await api("DELETE", `/sessions/${sess.id}`);
     await sleep(500);
     osascript('delete profile "E2E_Allowed"');
+  });
+
+  // ======================================================================
+  // 16. EDR Session Recording
+  // ======================================================================
+  console.log("\n--- 16. EDR Session Recording ---");
+
+  await test("16.1 EDR disabled — no trace events", async () => {
+    await withSession("E2E_EDR_Off", {},
+      async ({ sessionId, browser }) => {
+        // edrLevel defaults to 0 (disabled) — no trace data should exist
+        const page = await getPage(browser);
+        await page.goto("https://example.com", { waitUntil: "load", timeout: 15000 });
+        await sleep(2000);
+        const trace = await api("GET", `/sessions/${sessionId}/trace`);
+        assert(
+          !trace.events || trace.events.length === 0,
+          `Expected no trace events, got ${trace.events?.length}`
+        );
+      }
+    );
+  });
+
+  await test("16.2 EDR Level 1 — captures URLs and status codes", async () => {
+    await withSession("E2E_EDR_Basic", { edrLevel: "1" },
+      async ({ sessionId, browser }) => {
+        // Navigate to generate traffic after extension has initialized
+        await sleep(3000);
+        const page = await getPage(browser);
+        await page.goto("https://httpbin.org/get", { waitUntil: "load", timeout: 15000 });
+        await sleep(5000);
+        const trace = await api("GET", `/sessions/${sessionId}/trace`);
+        assert(trace.events && trace.events.length > 0, `No trace events captured at Level 1 (count: ${trace.count})`);
+        // Verify basic fields present
+        const ev = trace.events.find((e) => e.url && e.url.includes("httpbin"));
+        assert(ev, "No httpbin request in trace");
+        assert(ev.method, "Missing method");
+        assert(ev.timestamp, "Missing timestamp");
+      }
+    );
+  });
+
+  if (hasDebugShell) {
+    await test("16.3 EDR extension loaded in chrome-env", async () => {
+      await withSession("E2E_EDR_Env", { edrLevel: "2" },
+        async ({ sessionId }) => {
+          const r = await vmExec(sessionId, "cat /tmp/bromure/chrome-env");
+          assertIncludes(r.stdout, "edr-tracer");
+          assertIncludes(r.stdout, "EDR_LEVEL=2");
+        }
+      );
+    });
+  }
+
+  await test("16.4 Trace accessible via automation API", async () => {
+    await withSession("E2E_EDR_API", { edrLevel: "1" },
+      async ({ sessionId, browser }) => {
+        await sleep(3000);
+        const page = await getPage(browser);
+        await page.goto("https://httpbin.org/get", { waitUntil: "load", timeout: 15000 });
+        await sleep(5000);
+        const trace = await api("GET", `/sessions/${sessionId}/trace`);
+        assert(typeof trace.count === "number", "Missing count field");
+        assert(Array.isArray(trace.events), "events is not an array");
+      }
+    );
+  });
+
+  await test("16.5 Trace events include hostname", async () => {
+    await withSession("E2E_EDR_Host", { edrLevel: "1" },
+      async ({ sessionId, browser }) => {
+        await sleep(3000);
+        const page = await getPage(browser);
+        await page.goto("https://httpbin.org/get", { waitUntil: "load", timeout: 15000 });
+        await sleep(5000);
+        const trace = await api("GET", `/sessions/${sessionId}/trace`);
+        const ev = trace.events?.find((e) => e.hostname === "httpbin.org");
+        assert(ev, `No event with hostname httpbin.org. Hostnames: ${trace.events?.map(e => e.hostname).filter(Boolean).join(", ")}`);
+      }
+    );
+  });
+
+  if (hasDebugShell) {
+    await test("16.6 Form field capture at Level 2", async () => {
+      await withSession("E2E_EDR_Forms", { edrLevel: "2" },
+        async ({ sessionId, browser }) => {
+          await sleep(3000);
+          const page = await getPage(browser);
+          // Navigate to a page with a login form
+          await page.goto("https://httpbin.org/forms/post", { waitUntil: "load", timeout: 15000 });
+          await sleep(2000);
+          // Fill in the form
+          await page.evaluate(() => {
+            const inputs = document.querySelectorAll("input");
+            inputs.forEach((inp, i) => { inp.value = "test-value-" + i; inp.dispatchEvent(new Event("input", {bubbles: true})); });
+          });
+          await sleep(1000);
+          // Submit the form
+          await page.evaluate(() => {
+            const form = document.querySelector("form");
+            if (form) form.submit();
+          });
+          await sleep(5000);
+          // Check trace for form fields
+          const trace = await api("GET", `/sessions/${sessionId}/trace`);
+          const postEvents = trace.events?.filter((e) => e.method === "POST");
+          assert(postEvents && postEvents.length > 0, "No POST events captured");
+        }
+      );
+    });
+  }
+
+  await test("16.7 Redirect tracking", async () => {
+    await withSession("E2E_EDR_Redir", { edrLevel: "1" },
+      async ({ sessionId, browser }) => {
+        await sleep(3000);
+        const page = await getPage(browser);
+        // httpbin.org/redirect/2 does 2 redirects before landing
+        await page.goto("https://httpbin.org/redirect/2", { waitUntil: "load", timeout: 15000 });
+        await sleep(5000);
+        const trace = await api("GET", `/sessions/${sessionId}/trace`);
+        assert(trace.events && trace.events.length > 0, "No trace events for redirect test");
+        // Should have redirect events or multiple requests to httpbin
+        const httpbinEvents = trace.events.filter((e) => e.url && e.url.includes("httpbin"));
+        assert(httpbinEvents.length >= 2, `Expected >=2 httpbin events for redirect chain, got ${httpbinEvents.length}`);
+      }
+    );
   });
 
   // ======================================================================

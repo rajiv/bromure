@@ -82,5 +82,11 @@
             <direct-parameter type="text" description="Session ID (UUID)"/>
         </command>
 
+        <command name="get trace" code="BrmrGtTr" description="Get EDR trace events for a session as a JSON array.">
+            <cocoa class="BromureGetTraceCommand"/>
+            <direct-parameter type="text" description="Session ID (UUID)"/>
+            <result type="text" description="JSON array of trace events"/>
+        </command>
+
     </suite>
 </dictionary>

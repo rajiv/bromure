@@ -43,6 +43,9 @@ final class AutomationServer {
     /// Callback to get app state (debug only).
     var onGetAppState: (() -> [String: Any])?
 
+    /// Callback to get EDR trace events for a session.
+    var onGetTrace: ((_ sessionID: String) -> [[String: Any]])?
+
     init(port: UInt16 = 9222, bindAddress: String = "127.0.0.1") {
         self.port = port
         self.bindAddress = bindAddress
@@ -110,6 +113,10 @@ final class AutomationServer {
             }
         }
         guard clientFD >= 0 else { return }
+
+        // Ensure clean connection shutdown — linger so data flushes before close
+        var linger = Darwin.linger(l_onoff: 1, l_linger: 2)
+        setsockopt(clientFD, SOL_SOCKET, SO_LINGER, &linger, socklen_t(MemoryLayout<Darwin.linger>.size))
 
         DispatchQueue.global(qos: .userInitiated).async { [weak self] in
             self?.handleRequest(fd: clientFD)
@@ -200,6 +207,13 @@ final class AutomationServer {
             } else {
                 sendResponse(fd: fd, status: 500, body: ["error": "Failed to create session"])
             }
+
+        // EDR trace: get captured events for a session (must be before generic GET /sessions/:id)
+        case ("GET", _) where path.hasSuffix("/trace") && path.hasPrefix("/sessions/"):
+            let middle = path.dropFirst("/sessions/".count).dropLast("/trace".count)
+            let sessionID = String(middle)
+            let events = DispatchQueue.main.sync { self.onGetTrace?(sessionID) ?? [] }
+            sendResponse(fd: fd, status: 200, body: ["events": events, "count": events.count])
 
         case ("GET", _) where path.hasPrefix("/sessions/"):
             let sessionID = String(path.dropFirst("/sessions/".count))

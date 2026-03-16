@@ -5,6 +5,7 @@
 # (e.g. WARP in proxy mode) so they're ready by the time a session is claimed.
 
 mkdir -p /tmp/bromure
+chmod 777 /tmp/bromure
 chmod 666 /dev/hvc0 2>/dev/null
 
 # Sync system clock from PL031 RTC (hwclock service times out on virtual RTC tick)

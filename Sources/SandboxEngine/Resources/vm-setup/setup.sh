@@ -213,6 +213,7 @@ chroot /mnt addgroup chrome audio
 retry chroot /mnt apk add doas
 install_config configs/doas-chrome.conf /mnt/etc/doas.d/chrome.conf
 
+
 # ---------------------------------------------------------------------------
 # Services
 # ---------------------------------------------------------------------------
@@ -232,9 +233,9 @@ chroot /mnt rc-update add spice-vdagentd default
 sed -i 's|^tty1::.*|tty1::respawn:/bin/login -f chrome|' /mnt/etc/inittab
 echo 'hvc0::respawn:/bin/login -f root' >> /mnt/etc/inittab
 echo '::once:/usr/local/bin/config-agent.py' >> /mnt/etc/inittab
-echo '::once:su -s /bin/sh chrome -c /usr/local/bin/file-agent.py' >> /mnt/etc/inittab
-echo '::once:/usr/local/bin/webcam-agent.py' >> /mnt/etc/inittab
-echo '::once:/usr/local/bin/warp-agent.py' >> /mnt/etc/inittab
+echo '::once:/usr/local/bin/resilient-launch.sh su -s /bin/sh chrome -c /usr/local/bin/file-agent.py' >> /mnt/etc/inittab
+echo '::once:/usr/local/bin/resilient-launch.sh /usr/local/bin/webcam-agent.py' >> /mnt/etc/inittab
+echo '::once:/usr/local/bin/resilient-launch.sh /usr/local/bin/warp-agent.py' >> /mnt/etc/inittab
 
 install_config scripts/debug.sh        /mnt/root/debug.sh          755
 install_config scripts/root-profile.sh /mnt/root/.profile
@@ -317,6 +318,8 @@ install_config scripts/routing-socks.py     /mnt/usr/local/bin/routing-socks.py 
 install_config scripts/config-agent.py      /mnt/usr/local/bin/config-agent.py      755
 install_config scripts/cdp-agent.py         /mnt/usr/local/bin/cdp-agent.py         755
 install_config scripts/shell-agent.py       /mnt/usr/local/bin/shell-agent.py       755
+install_config scripts/edr-agent.py        /mnt/usr/local/bin/edr-agent.py        755
+install_config scripts/resilient-launch.sh /mnt/usr/local/bin/resilient-launch.sh 755
 install_config scripts/download-guard.sh    /mnt/usr/local/bin/download-guard.sh    755
 install_config scripts/test-runner.sh      /mnt/usr/local/bin/test-runner.sh       755
 
@@ -360,12 +363,21 @@ for f in manifest.json block.js; do
         cp "$SCRIPT_DIR/extensions/webrtc-block/$f" /mnt/opt/bromure/extensions/webrtc-block/
 done
 
-# Native messaging hosts (link sender + file picker)
+# EDR tracer extension
+mkdir -p /mnt/opt/bromure/extensions/edr-tracer
+for f in manifest.json background.js form-capture.js; do
+    [ -f "$SCRIPT_DIR/extensions/edr-tracer/$f" ] && \
+        cp "$SCRIPT_DIR/extensions/edr-tracer/$f" /mnt/opt/bromure/extensions/edr-tracer/
+done
+
+# Native messaging hosts (link sender + file picker + EDR tracer)
 mkdir -p /mnt/etc/chromium/native-messaging-hosts
 install_config configs/com.bromure.link_sender.json \
     /mnt/etc/chromium/native-messaging-hosts/com.bromure.link_sender.json
 install_config configs/com.bromure.file_picker.json \
     /mnt/etc/chromium/native-messaging-hosts/com.bromure.file_picker.json
+install_config configs/com.bromure.edr_tracer.json \
+    /mnt/etc/chromium/native-messaging-hosts/com.bromure.edr_tracer.json
 
 # Download Tranco top domains list (research-grade popularity ranking)
 echo "SANDBOX_STEP_START:Downloading popular domains list"

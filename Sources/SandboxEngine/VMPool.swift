@@ -304,6 +304,7 @@ public final class VMPool {
         if ProcessInfo.processInfo.environment["BROMURE_DEBUG_CLAUDE"] != nil {
             cfg["debugShell"] = true
         }
+        if config.edrLevel != .disabled { cfg["edrLevel"] = config.edrLevel.rawValue }
         if !config.rootCAs.isEmpty { cfg["rootCAs"] = config.rootCAs }
         cfg["locale"] = config.locale
 
@@ -381,13 +382,9 @@ public final class VMPool {
                 self.configListenerDelegate = delegate
                 self.configListenerCleanup = cleanup
 
-                // Timeout after 30s — always call safeResume (it handles double-resume).
-                // Don't gate on configListenerDelegate; a different session's cleanup
-                // may have nil'd it, causing this continuation to leak.
-                DispatchQueue.main.asyncAfter(deadline: .now() + 30) {
-                    cleanup()
-                    safeResume()
-                }
+                // No timeout — the config-agent retries indefinitely and will
+                // always connect eventually. A timeout here would silently
+                // leave the VM without config (black screen, no Chrome).
             }
         } catch {
             print("[VMPool] ERROR: failed to serialize config JSON: \(error)")
