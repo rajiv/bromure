@@ -1,7 +1,6 @@
 #!/bin/sh
-export XCURSOR_SIZE=%%CURSOR_SIZE%%
+# Cursor size and display scale are set after chrome-env is loaded (runtime, not build-time)
 export XCURSOR_THEME=Adwaita
-echo "Xcursor.size: %%CURSOR_SIZE%%" | xrdb -merge
 
 /usr/local/bin/resize-watcher.sh &
 openbox &
@@ -38,7 +37,14 @@ AUDIO=
 AUDIO_VOLUME=
 PROFILE_DIR=
 CHROME_LANG=
+DISPLAY_SCALE=
 [ -f /tmp/bromure/chrome-env ] && . /tmp/bromure/chrome-env
+
+# Set cursor size and display scale from runtime config (not build-time template)
+DISPLAY_SCALE="${DISPLAY_SCALE:-2}"
+CURSOR_SIZE=$((DISPLAY_SCALE * 24))
+export XCURSOR_SIZE="$CURSOR_SIZE"
+echo "Xcursor.size: $CURSOR_SIZE" | xrdb -merge
 
 # Wait for persistent profile directory to be fully mounted before starting Chrome.
 if [ -n "$PROFILE_DIR" ]; then
@@ -80,7 +86,7 @@ fi
 
 LANG_FLAG=
 [ -n "$CHROME_LANG" ] && LANG_FLAG="--lang=$CHROME_LANG"
-chromium-browser --no-first-run --start-maximized --force-device-scale-factor=%%DISPLAY_SCALE%% --disable-vulkan $LANG_FLAG $EXTRA_FLAGS "$CHROME_URL"
+chromium-browser --no-first-run --start-maximized --force-device-scale-factor="$DISPLAY_SCALE" --disable-vulkan $LANG_FLAG $EXTRA_FLAGS "$CHROME_URL"
 doas udhcpc -R -i eth0 2>/dev/null
 doas poweroff
 

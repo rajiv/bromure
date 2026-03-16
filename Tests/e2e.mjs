@@ -324,8 +324,52 @@ async function main() {
     process.exit(1);
   }
 
-  // Ensure automation is enabled
-  osascript('set app setting "automation.enabled" to value "true"');
+  // ======================================================================
+  // 0. Automation Server Dynamic Toggle
+  // ======================================================================
+  console.log("--- 0. Automation Server Dynamic Toggle ---");
+
+  // Start with automation disabled via defaults
+  execSync("defaults write io.bromure.app automation.enabled -bool false", { timeout: 5000 });
+  osascript('set app setting "automation.enabled" to value "false"');
+  await sleep(1500);
+
+  await test("0.1 Automation server stops when disabled", async () => {
+    // The API should be unreachable
+    try {
+      const res = await fetch(`${API}/health`, { signal: AbortSignal.timeout(3000) });
+      // If we got a response, the server is still running — fail
+      throw new Error(`Server still responding (status ${res.status})`);
+    } catch (e) {
+      if (e.message.includes("still responding")) throw e;
+      // Connection refused or timeout = server is stopped = good
+    }
+  });
+
+  await test("0.2 Automation server starts when enabled via AppleScript", async () => {
+    osascript('set app setting "automation.enabled" to value "true"');
+    await sleep(2000);
+    const health = await api("GET", "/health");
+    assert(health.status === "ok", `API not healthy after enable: ${JSON.stringify(health)}`);
+  });
+
+  await test("0.3 Automation server stops again when disabled", async () => {
+    osascript('set app setting "automation.enabled" to value "false"');
+    await sleep(1500);
+    try {
+      const res = await fetch(`${API}/health`, { signal: AbortSignal.timeout(3000) });
+      throw new Error(`Server still responding (status ${res.status})`);
+    } catch (e) {
+      if (e.message.includes("still responding")) throw e;
+    }
+  });
+
+  await test("0.4 Automation server starts for remaining tests", async () => {
+    osascript('set app setting "automation.enabled" to value "true"');
+    await sleep(2000);
+    const health = await api("GET", "/health");
+    assert(health.status === "ok", `API not healthy: ${JSON.stringify(health)}`);
+  });
 
   // Clean up stale sessions from previous runs
   const existing = await api("GET", "/sessions");
@@ -348,10 +392,6 @@ async function main() {
   }
 
   await waitForPool();
-
-  // Check API health
-  const health = await api("GET", "/health");
-  assert(health.status === "ok", `API unhealthy: ${JSON.stringify(health)}`);
 
   // Detect if the app has debug shell enabled (BROMURE_DEBUG_CLAUDE in app env)
   try {
@@ -1349,6 +1389,41 @@ print('n/a')
 
         // Resume
         osascript(`toggle trace "${sessionId}"`);
+      }
+    );
+  });
+
+  // ======================================================================
+  // 12. Heavy Page Regression (M4 SME crash)
+  // ======================================================================
+  console.log("\n--- 12. Heavy Page Regression ---");
+
+  await test("12.1 CNN.com loads without renderer crash", async () => {
+    await withSession(
+      "E2E_CNN",
+      { homePage: "about:blank", allowAutomation: "true" },
+      async ({ browser, sessionId }) => {
+        const page = await getPage(browser);
+
+        // Navigate to CNN — a heavy page that triggers SIGILL on M4 without arm64.nosme
+        let crashed = false;
+        browser.on("targetdestroyed", (target) => {
+          if (target.type() === "page") crashed = true;
+        });
+
+        await page.goto("https://www.cnn.com", {
+          waitUntil: "domcontentloaded",
+          timeout: 30000,
+        });
+
+        // Wait for the page to settle — crashes typically happen within a few seconds
+        await sleep(5000);
+
+        assert(!crashed, "Renderer crashed (SIGILL) — check arm64.nosme kernel parameter");
+
+        // Verify the page is still alive by evaluating JS
+        const title = await page.title();
+        assert(title.length > 0, `Page title is empty — page may have crashed`);
       }
     );
   });

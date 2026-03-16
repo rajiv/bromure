@@ -407,3 +407,65 @@
 "Resume" = "Fortsetzen";
 "Start" = "Start";
 "req" = "Anf.";
+
+/* ProfileSettingsView — Performance (additional) */
+"Zero-Copy Rasterization" = "Zero-Copy-Rasterung";
+"Reduces memory copies during page rendering. Improves performance on most systems." = "Reduziert Speicherkopien beim Seitenrendering. Verbessert die Leistung auf den meisten Systemen.";
+"Smooth Scrolling" = "Sanftes Scrollen";
+"Animates scrolling for a smoother feel. Disable for instant, jump-style scrolling." = "Animiert das Scrollen f\U00FCr ein fl\U00FCssigeres Gef\U00FChl. Deaktivieren f\U00FCr sofortiges, sprunghaftes Scrollen.";
+
+/* ProfileSettingsView — Privacy & Safety (additional) */
+"Block Screen Capture" = "Bildschirmaufnahme blockieren";
+"Hides this browser window from screenshots, screen recordings, and screen sharing apps like Zoom." = "Verbirgt dieses Browserfenster vor Screenshots, Bildschirmaufnahmen und Bildschirmfreigabe-Apps wie Zoom.";
+
+/* ProfileSettingsView — VPN & Ads (additional) */
+"Connect on Startup" = "Beim Start verbinden";
+"Automatically connect the VPN when the browser session starts. You can always toggle it from the window\U2019s VPN button." = "VPN automatisch verbinden, wenn die Browsersitzung startet. Sie k\U00F6nnen es jederzeit \U00FCber die VPN-Schaltfl\U00E4che des Fensters umschalten.";
+
+/* ProfileSettingsView — Enterprise (additional) */
+"HTTP Proxy" = "HTTP-Proxy";
+"Route all browser traffic through a corporate proxy server. When a proxy is configured, VPN and ad blocking are automatically disabled." = "Leitet den gesamten Browser-Datenverkehr \U00FCber einen Unternehmens-Proxyserver. Bei konfiguriertem Proxy werden VPN und Werbeblocker automatisch deaktiviert.";
+"Hostname" = "Hostname";
+"Port" = "Port";
+"Username" = "Benutzername";
+"Password" = "Passwort";
+
+/* ProfileSettingsView — Advanced (additional) */
+"Start Recording Automatically" = "Aufzeichnung automatisch starten";
+"Begin capturing requests as soon as the session opens. When off, recording starts only when you click the record button in the titlebar." = "Beginnt mit der Erfassung von Anfragen, sobald die Sitzung ge\U00F6ffnet wird. Wenn deaktiviert, startet die Aufzeichnung erst beim Klick auf die Aufnahmetaste in der Titelleiste.";
+
+/* SettingsView — Hardware (additional) */
+"Kernel Boot Options" = "Kernel-Startoptionen";
+"Additional Linux kernel command-line parameters appended to the virtual machine boot command. The default disables SME to work around a crash on Apple M4 processors." = "Zus\U00E4tzliche Linux-Kernel-Kommandozeilenparameter, die dem Startbefehl der virtuellen Maschine angeh\U00E4ngt werden. Die Standardeinstellung deaktiviert SME, um einen Absturz auf Apple-M4-Prozessoren zu umgehen.";
+"Incorrect kernel options will prevent the browser from booting." = "Fehlerhafte Kernel-Optionen verhindern den Start des Browsers.";
+"Only change this if you know what you are doing. Removing arm64.nosme may cause crashes on M4 Macs. Invalid options may prevent the browser from booting." = "\U00C4ndern Sie dies nur, wenn Sie wissen, was Sie tun. Das Entfernen von arm64.nosme kann auf M4-Macs Abst\U00FCrze verursachen. Ung\U00FCltige Optionen k\U00F6nnen den Browserstart verhindern.";
+"Reset to Default" = "Auf Standard zur\U00FCcksetzen";
+
+/* SettingsView — Automation (additional) */
+"Automation" = "Automatisierung";
+"Enable Automation" = "Automatisierung aktivieren";
+"Start an HTTP server that lets external tools (Puppeteer, Playwright, Claude Code, Codex) create browser sessions and control them via CDP." = "Startet einen HTTP-Server, \U00FCber den externe Tools (Puppeteer, Playwright, Claude Code, Codex) Browsersitzungen erstellen und per CDP steuern k\U00F6nnen.";
+"API Port" = "API-Port";
+"The port for the automation API server. Tools connect here to list profiles, create sessions, and get CDP endpoints." = "Der Port f\U00FCr den Automatisierungs-API-Server. Tools verbinden sich hier, um Profile aufzulisten, Sitzungen zu erstellen und CDP-Endpunkte abzurufen.";
+"Bind Address" = "Bind-Adresse";
+"Use 127.0.0.1 to only allow connections from this Mac. Use 0.0.0.0 to allow connections from other machines on the network." = "Verwenden Sie 127.0.0.1, um nur Verbindungen von diesem Mac zuzulassen. Verwenden Sie 0.0.0.0, um Verbindungen von anderen Ger\U00E4ten im Netzwerk zuzulassen.";
+"127.0.0.1 (localhost only)" = "127.0.0.1 (nur localhost)";
+"0.0.0.0 (all interfaces)" = "0.0.0.0 (alle Schnittstellen)";
+"Usage" = "Verwendung";
+"Once enabled, external tools can connect to the API:" = "Nach der Aktivierung k\U00F6nnen sich externe Tools mit der API verbinden:";
+"List profiles:" = "Profile auflisten:";
+"Create session:" = "Sitzung erstellen:";
+"List sessions:" = "Sitzungen auflisten:";
+"Close session:" = "Sitzung schlie\U00DFen:";
+/* SettingsView — API Reference */
+"API Reference" = "API-Referenz";
+"HTTP endpoints available when automation is enabled:" = "HTTP-Endpunkte, die bei aktivierter Automatisierung verf\U00FCgbar sind:";
+"Health check" = "Zustandspr\U00FCfung";
+"List available profiles" = "Verf\U00FCgbare Profile auflisten";
+"List active sessions" = "Aktive Sitzungen auflisten";
+"Create a new browser session" = "Neue Browsersitzung erstellen";
+"Get session info" = "Sitzungsinfo abrufen";
+"Close a session" = "Sitzung schlie\U00DFen";
+"Get session trace events" = "Trace-Ereignisse einer Sitzung abrufen";
+"Chrome DevTools Protocol WebSocket proxy" = "Chrome DevTools Protocol WebSocket-Proxy";
+"Copy to clipboard" = "In die Zwischenablage kopieren";

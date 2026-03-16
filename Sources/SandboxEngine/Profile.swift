@@ -343,6 +343,7 @@ public struct ProfileSettings: Codable, Equatable {
             enableAutomation: defaults.bool(forKey: "automation.enabled"),
             testSuite: isTestSuite,
             traceLevel: traceLevel,
+            extraKernelOptions: defaults.string(forKey: "vm.extraKernelOptions") ?? VMConfig.defaultExtraKernelOptions,
             locale: locale
         )
     }

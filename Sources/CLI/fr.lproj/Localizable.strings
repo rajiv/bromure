@@ -407,3 +407,65 @@
 "Resume" = "Reprendre";
 "Start" = "D\U00E9but";
 "req" = "req";
+
+/* ProfileSettingsView — Performance (additional) */
+"Zero-Copy Rasterization" = "Rast\U00E9risation z\U00E9ro-copie";
+"Reduces memory copies during page rendering. Improves performance on most systems." = "R\U00E9duit les copies m\U00E9moire lors du rendu des pages. Am\U00E9liore les performances sur la plupart des syst\U00E8mes.";
+"Smooth Scrolling" = "D\U00E9filement fluide";
+"Animates scrolling for a smoother feel. Disable for instant, jump-style scrolling." = "Anime le d\U00E9filement pour un rendu plus fluide. D\U00E9sactivez pour un d\U00E9filement instantan\U00E9, par sauts.";
+
+/* ProfileSettingsView — Privacy & Safety (additional) */
+"Block Screen Capture" = "Bloquer la capture d\U2019\U00E9cran";
+"Hides this browser window from screenshots, screen recordings, and screen sharing apps like Zoom." = "Masque cette fen\U00EAtre de navigateur des captures d\U2019\U00E9cran, des enregistrements d\U2019\U00E9cran et des applications de partage d\U2019\U00E9cran comme Zoom.";
+
+/* ProfileSettingsView — VPN & Ads (additional) */
+"Connect on Startup" = "Connexion au d\U00E9marrage";
+"Automatically connect the VPN when the browser session starts. You can always toggle it from the window\U2019s VPN button." = "Connecte automatiquement le VPN au d\U00E9marrage de la session de navigation. Vous pouvez toujours le basculer depuis le bouton VPN de la fen\U00EAtre.";
+
+/* ProfileSettingsView — Enterprise (additional) */
+"HTTP Proxy" = "Proxy HTTP";
+"Route all browser traffic through a corporate proxy server. When a proxy is configured, VPN and ad blocking are automatically disabled." = "Achemine tout le trafic du navigateur via un serveur proxy d\U2019entreprise. Lorsqu\U2019un proxy est configur\U00E9, le VPN et le blocage des publicit\U00E9s sont automatiquement d\U00E9sactiv\U00E9s.";
+"Hostname" = "Nom d\U2019h\U00F4te";
+"Port" = "Port";
+"Username" = "Nom d\U2019utilisateur";
+"Password" = "Mot de passe";
+
+/* ProfileSettingsView — Advanced (additional) */
+"Start Recording Automatically" = "D\U00E9marrer l\U2019enregistrement automatiquement";
+"Begin capturing requests as soon as the session opens. When off, recording starts only when you click the record button in the titlebar." = "Commence la capture des requ\U00EAtes d\U00E8s l\U2019ouverture de la session. Lorsque cette option est d\U00E9sactiv\U00E9e, l\U2019enregistrement ne d\U00E9marre que lorsque vous cliquez sur le bouton d\U2019enregistrement dans la barre de titre.";
+
+/* SettingsView — Hardware (additional) */
+"Kernel Boot Options" = "Options de d\U00E9marrage du noyau";
+"Additional Linux kernel command-line parameters appended to the virtual machine boot command. The default disables SME to work around a crash on Apple M4 processors." = "Param\U00E8tres suppl\U00E9mentaires de ligne de commande du noyau Linux ajout\U00E9s \U00E0 la commande de d\U00E9marrage de la machine virtuelle. La valeur par d\U00E9faut d\U00E9sactive SME pour contourner un plantage sur les processeurs Apple M4.";
+"Incorrect kernel options will prevent the browser from booting." = "Des options de noyau incorrectes emp\U00EAcheront le navigateur de d\U00E9marrer.";
+"Only change this if you know what you are doing. Removing arm64.nosme may cause crashes on M4 Macs. Invalid options may prevent the browser from booting." = "Ne modifiez ce r\U00E9glage que si vous savez ce que vous faites. La suppression de arm64.nosme peut provoquer des plantages sur les Mac M4. Des options invalides peuvent emp\U00EAcher le navigateur de d\U00E9marrer.";
+"Reset to Default" = "R\U00E9tablir par d\U00E9faut";
+
+/* SettingsView — Automation (additional) */
+"Automation" = "Automatisation";
+"Enable Automation" = "Activer l\U2019automatisation";
+"Start an HTTP server that lets external tools (Puppeteer, Playwright, Claude Code, Codex) create browser sessions and control them via CDP." = "D\U00E9marre un serveur HTTP permettant aux outils externes (Puppeteer, Playwright, Claude Code, Codex) de cr\U00E9er des sessions de navigation et de les contr\U00F4ler via CDP.";
+"API Port" = "Port de l\U2019API";
+"The port for the automation API server. Tools connect here to list profiles, create sessions, and get CDP endpoints." = "Le port du serveur d\U2019API d\U2019automatisation. Les outils se connectent ici pour lister les profils, cr\U00E9er des sessions et obtenir les points de terminaison CDP.";
+"Bind Address" = "Adresse d\U2019\U00E9coute";
+"Use 127.0.0.1 to only allow connections from this Mac. Use 0.0.0.0 to allow connections from other machines on the network." = "Utilisez 127.0.0.1 pour n\U2019autoriser que les connexions depuis ce Mac. Utilisez 0.0.0.0 pour autoriser les connexions depuis d\U2019autres machines du r\U00E9seau.";
+"127.0.0.1 (localhost only)" = "127.0.0.1 (localhost uniquement)";
+"0.0.0.0 (all interfaces)" = "0.0.0.0 (toutes les interfaces)";
+"Usage" = "Utilisation";
+"Once enabled, external tools can connect to the API:" = "Une fois activ\U00E9, les outils externes peuvent se connecter \U00E0 l\U2019API :";
+"List profiles:" = "Lister les profils :";
+"Create session:" = "Cr\U00E9er une session :";
+"List sessions:" = "Lister les sessions :";
+"Close session:" = "Fermer une session :";
+/* SettingsView — API Reference */
+"API Reference" = "R\U00E9f\U00E9rence API";
+"HTTP endpoints available when automation is enabled:" = "Points de terminaison HTTP disponibles lorsque l\U2019automatisation est activ\U00E9e :";
+"Health check" = "V\U00E9rification de sant\U00E9";
+"List available profiles" = "Lister les profils disponibles";
+"List active sessions" = "Lister les sessions actives";
+"Create a new browser session" = "Cr\U00E9er une nouvelle session de navigation";
+"Get session info" = "Obtenir les infos d\U2019une session";
+"Close a session" = "Fermer une session";
+"Get session trace events" = "Obtenir les \U00E9v\U00E9nements de trace d\U2019une session";
+"Chrome DevTools Protocol WebSocket proxy" = "Proxy WebSocket Chrome DevTools Protocol";
+"Copy to clipboard" = "Copier dans le presse-papiers";

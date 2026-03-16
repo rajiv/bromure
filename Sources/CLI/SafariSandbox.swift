@@ -141,6 +141,20 @@ final class GUIAppDelegate: NSObject, NSApplicationDelegate, NSWindowDelegate {
         // Start automation server if enabled
         startAutomationServerIfNeeded()
 
+        // Observe automation toggle for dynamic start/stop
+        NotificationCenter.default.addObserver(
+            forName: UserDefaults.didChangeNotification,
+            object: nil, queue: .main
+        ) { [weak self] _ in
+            guard let self else { return }
+            let enabled = UserDefaults.standard.bool(forKey: "automation.enabled")
+            if enabled && self.automationServer == nil {
+                self.startAutomationServerIfNeeded()
+            } else if !enabled && self.automationServer != nil {
+                self.stopAutomationServer()
+            }
+        }
+
         showMainWindow()
     }
 
@@ -906,6 +920,12 @@ final class GUIAppDelegate: NSObject, NSApplicationDelegate, NSWindowDelegate {
 
         server.start()
         self.automationServer = server
+    }
+
+    @MainActor func stopAutomationServer() {
+        automationServer?.stop()
+        automationServer = nil
+        print("[AutomationServer] stopped")
     }
 
     @MainActor

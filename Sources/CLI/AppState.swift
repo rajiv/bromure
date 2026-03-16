@@ -123,6 +123,7 @@ final class AppState: @unchecked Sendable {
         let keyboard = defaults.string(forKey: "vm.keyboardLayout")
         let scrolling = defaults.object(forKey: "vm.naturalScrolling") as? Bool
         let scale = defaults.object(forKey: "vm.displayScale") as? Int
+        let kernelOpts = defaults.string(forKey: "vm.extraKernelOptions") ?? VMConfig.defaultExtraKernelOptions
 
         initTask = Task {
             do {
@@ -130,7 +131,8 @@ final class AppState: @unchecked Sendable {
                     diskSizeGB: 4,
                     keyboardLayout: keyboard,
                     naturalScrolling: scrolling,
-                    displayScale: scale
+                    displayScale: scale,
+                    extraKernelOptions: kernelOpts
                 ) { [weak self] event in
                     Task { @MainActor in
                         self?.handleProgress(event)
@@ -169,26 +171,7 @@ final class AppState: @unchecked Sendable {
         case .install(let fraction):
             phase = .initializing(status: "Installing...", progress: fraction)
         case .consoleOutput(let text):
-            // Strip ANSI escape codes (color, cursor movement, etc.)
-            let cleaned = text.replacingOccurrences(
-                of: "\u{1b}\\[[0-9;]*[a-zA-Z]|\u{1b}\\([a-zA-Z]",
-                with: "",
-                options: .regularExpression
-            )
-            // Handle \r (carriage return): overwrite the current line
-            for char in cleaned {
-                if char == "\r" {
-                    // Remove back to the last newline
-                    if let lastNewline = consoleLog.lastIndex(of: "\n") {
-                        consoleLog = String(consoleLog[...lastNewline])
-                    } else {
-                        consoleLog = ""
-                    }
-                } else {
-                    consoleLog.append(char)
-                }
-            }
-            // Keep only the last 8KB to avoid unbounded growth
+            consoleLog.append(text)
             if consoleLog.count > 8192 {
                 consoleLog = String(consoleLog.suffix(4096))
             }

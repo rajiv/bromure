@@ -406,4 +406,66 @@
 "Freeze" = "凍結";
 "Resume" = "繼續";
 "Start" = "開始";
-"req" = "個";
+"req" = "\u500B";
+
+/* ProfileSettingsView — Performance (additional) */
+"Zero-Copy Rasterization" = "\u96F6\u62F7\u8C9D\u5149\u67F5\u5316";
+"Reduces memory copies during page rendering. Improves performance on most systems." = "\u6E1B\u5C11\u9801\u9762\u7E6A\u88FD\u6642\u7684\u8A18\u61B6\u9AD4\u62F7\u8C9D\u3002\u5728\u5927\u591A\u6578\u7CFB\u7D71\u4E0A\u63D0\u9AD8\u6548\u80FD\u3002";
+"Smooth Scrolling" = "\u5E73\u6ED1\u6372\u52D5";
+"Animates scrolling for a smoother feel. Disable for instant, jump-style scrolling." = "\u52D5\u756B\u6372\u52D5\u4EE5\u7372\u5F97\u66F4\u6D41\u66A2\u7684\u9AD4\u9A57\u3002\u505C\u7528\u5F8C\u4F7F\u7528\u5373\u6642\u8DF3\u8E8D\u5F0F\u6372\u52D5\u3002";
+
+/* ProfileSettingsView — Privacy & Safety (additional) */
+"Block Screen Capture" = "\u963B\u6B62\u87A2\u5E55\u64F7\u53D6";
+"Hides this browser window from screenshots, screen recordings, and screen sharing apps like Zoom." = "\u5C07\u6B64\u700F\u89BD\u5668\u8996\u7A97\u5F9E\u87A2\u5E55\u622A\u5716\u3001\u87A2\u5E55\u9304\u88FD\u548C Zoom \u7B49\u87A2\u5E55\u5171\u4EAB\u61C9\u7528\u7A0B\u5F0F\u4E2D\u96B1\u85CF\u3002";
+
+/* ProfileSettingsView — VPN & Ads (additional) */
+"Connect on Startup" = "\u555F\u52D5\u6642\u9023\u7DDA";
+"Automatically connect the VPN when the browser session starts. You can always toggle it from the window\U2019s VPN button." = "\u700F\u89BD\u5668\u5DE5\u4F5C\u968E\u6BB5\u555F\u52D5\u6642\u81EA\u52D5\u9023\u63A5 VPN\u3002\u60A8\u53EF\u4EE5\u96A8\u6642\u900F\u904E\u8996\u7A97\u7684 VPN \u6309\u9215\u5207\u63DB\u3002";
+
+/* ProfileSettingsView — Enterprise (additional) */
+"HTTP Proxy" = "HTTP \u4EE3\u7406";
+"Route all browser traffic through a corporate proxy server. When a proxy is configured, VPN and ad blocking are automatically disabled." = "\u900F\u904E\u4F01\u696D\u4EE3\u7406\u4F3A\u670D\u5668\u8DEF\u7531\u6240\u6709\u700F\u89BD\u5668\u6D41\u91CF\u3002\u8A2D\u5B9A\u4EE3\u7406\u5F8C\uFF0CVPN \u548C\u5EE3\u544A\u651D\u622A\u6703\u81EA\u52D5\u505C\u7528\u3002";
+"Hostname" = "\u4E3B\u6A5F\u540D\u7A31";
+"Port" = "\u9023\u63A5\u57E0";
+"Username" = "\u4F7F\u7528\u8005\u540D\u7A31";
+"Password" = "\u5BC6\u78BC";
+
+/* ProfileSettingsView — Advanced (additional) */
+"Start Recording Automatically" = "\u81EA\u52D5\u958B\u59CB\u9304\u88FD";
+"Begin capturing requests as soon as the session opens. When off, recording starts only when you click the record button in the titlebar." = "\u5DE5\u4F5C\u968E\u6BB5\u958B\u555F\u5F8C\u7ACB\u5373\u958B\u59CB\u64F7\u53D6\u8ACB\u6C42\u3002\u95DC\u9589\u6642\uFF0C\u50C5\u5728\u9EDE\u64CA\u6A19\u984C\u5217\u4E2D\u7684\u9304\u88FD\u6309\u9215\u6642\u624D\u958B\u59CB\u9304\u88FD\u3002";
+
+/* SettingsView — Hardware (additional) */
+"Kernel Boot Options" = "\u6838\u5FC3\u555F\u52D5\u9078\u9805";
+"Additional Linux kernel command-line parameters appended to the virtual machine boot command. The default disables SME to work around a crash on Apple M4 processors." = "\u9644\u52A0\u5230\u865B\u64EC\u6A5F\u555F\u52D5\u547D\u4EE4\u7684 Linux \u6838\u5FC3\u547D\u4EE4\u5217\u53C3\u6578\u3002\u9810\u8A2D\u505C\u7528 SME \u4EE5\u89E3\u6C7A Apple M4 \u8655\u7406\u5668\u4E0A\u7684\u7576\u6A5F\u554F\u984C\u3002";
+"Incorrect kernel options will prevent the browser from booting." = "\u932F\u8AA4\u7684\u6838\u5FC3\u9078\u9805\u5C07\u5C0E\u81F4\u700F\u89BD\u5668\u7121\u6CD5\u555F\u52D5\u3002";
+"Only change this if you know what you are doing. Removing arm64.nosme may cause crashes on M4 Macs. Invalid options may prevent the browser from booting." = "\u50C5\u5728\u77AD\u89E3\u64CD\u4F5C\u5F8C\u679C\u6642\u4FEE\u6539\u3002\u522A\u9664 arm64.nosme \u53EF\u80FD\u5C0E\u81F4 M4 Mac \u7576\u6A5F\u3002\u7121\u6548\u9078\u9805\u53EF\u80FD\u5C0E\u81F4\u700F\u89BD\u5668\u7121\u6CD5\u555F\u52D5\u3002";
+"Reset to Default" = "\u6062\u5FA9\u9810\u8A2D\u503C";
+
+/* SettingsView — Automation (additional) */
+"Automation" = "\u81EA\u52D5\u5316";
+"Enable Automation" = "\u555F\u7528\u81EA\u52D5\u5316";
+"Start an HTTP server that lets external tools (Puppeteer, Playwright, Claude Code, Codex) create browser sessions and control them via CDP." = "啟動 HTTP 伺服器，讓外部工具（Puppeteer、Playwright、Claude Code、Codex）建立瀏覽器工作階段並透過 CDP 控制。";
+"API Port" = "API \u9023\u63A5\u57E0";
+"The port for the automation API server. Tools connect here to list profiles, create sessions, and get CDP endpoints." = "\u81EA\u52D5\u5316 API \u4F3A\u670D\u5668\u7684\u9023\u63A5\u57E0\u3002\u5DE5\u5177\u9023\u63A5\u6B64\u8655\u4EE5\u5217\u51FA\u8A2D\u5B9A\u6A94\u3001\u5EFA\u7ACB\u5DE5\u4F5C\u968E\u6BB5\u548C\u53D6\u5F97 CDP \u7AEF\u9EDE\u3002";
+"Bind Address" = "\u7D81\u5B9A\u4F4D\u5740";
+"Use 127.0.0.1 to only allow connections from this Mac. Use 0.0.0.0 to allow connections from other machines on the network." = "\u4F7F\u7528 127.0.0.1 \u50C5\u5141\u8A31\u4F86\u81EA\u6B64 Mac \u7684\u9023\u7DDA\u3002\u4F7F\u7528 0.0.0.0 \u5141\u8A31\u4F86\u81EA\u7DB2\u8DEF\u4E0A\u5176\u4ED6\u96FB\u8166\u7684\u9023\u7DDA\u3002";
+"127.0.0.1 (localhost only)" = "127.0.0.1\uFF08\u50C5\u672C\u6A5F\uFF09";
+"0.0.0.0 (all interfaces)" = "0.0.0.0\uFF08\u6240\u6709\u4ECB\u9762\uFF09";
+"Usage" = "\u7528\u6CD5";
+"Once enabled, external tools can connect to the API:" = "\u555F\u7528\u5F8C\uFF0C\u5916\u90E8\u5DE5\u5177\u53EF\u4EE5\u9023\u63A5\u5230 API\uFF1A";
+"List profiles:" = "\u5217\u51FA\u8A2D\u5B9A\u6A94\uFF1A";
+"Create session:" = "\u5EFA\u7ACB\u5DE5\u4F5C\u968E\u6BB5\uFF1A";
+"List sessions:" = "\u5217\u51FA\u5DE5\u4F5C\u968E\u6BB5\uFF1A";
+"Close session:" = "\u95DC\u9589\u5DE5\u4F5C\u968E\u6BB5\uFF1A";
+/* SettingsView — API Reference */
+"API Reference" = "API 參考";
+"HTTP endpoints available when automation is enabled:" = "啟用自動化後可用的 HTTP 端點：";
+"Health check" = "健康檢查";
+"List available profiles" = "列出可用的設定檔";
+"List active sessions" = "列出使用中的工作階段";
+"Create a new browser session" = "建立新的瀏覽器工作階段";
+"Get session info" = "取得工作階段資訊";
+"Close a session" = "關閉工作階段";
+"Get session trace events" = "取得工作階段追蹤事件";
+"Chrome DevTools Protocol WebSocket proxy" = "Chrome DevTools Protocol WebSocket 代理";
+"Copy to clipboard" = "複製到剪貼簿";

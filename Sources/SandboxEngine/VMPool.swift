@@ -311,6 +311,10 @@ public final class VMPool {
         if !config.rootCAs.isEmpty { cfg["rootCAs"] = config.rootCAs }
         cfg["locale"] = config.locale
 
+        // Display scale: read from UserDefaults so changing 1x/2x doesn't require image rebuild
+        let displayScale = UserDefaults.standard.object(forKey: "vm.displayScale") as? Int ?? VMConfig.detectDisplayScale()
+        cfg["displayScale"] = displayScale
+
         // App version for user-agent suffix
         if let version = Bundle.main.infoDictionary?["CFBundleVersion"] as? String {
             cfg["appVersion"] = version

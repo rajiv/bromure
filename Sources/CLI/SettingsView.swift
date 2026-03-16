@@ -47,6 +47,7 @@ struct SettingsView: View {
     @AppStorage("vm.dnsServers") private var dnsServers = ""
     @AppStorage("vm.networkMode") private var networkMode = "nat"
     @AppStorage("vm.bridgedInterface") private var bridgedInterface = ""
+    @AppStorage("vm.extraKernelOptions") private var extraKernelOptions = VMConfig.defaultExtraKernelOptions
     @AppStorage("automation.enabled") private var automationEnabled = false
     @AppStorage("automation.port") private var automationPort = 9222
     @AppStorage("automation.bindAddress") private var automationBindAddress = "127.0.0.1"
@@ -135,6 +136,7 @@ struct SettingsView: View {
         }
         .onChange(of: memoryGB) { _, _ in state?.restartPool() }
         .onChange(of: cpuCount) { _, _ in state?.restartPool() }
+        .onChange(of: extraKernelOptions) { _, _ in state?.restartPool() }
         .confirmationDialog(
             "Delete the base image?",
             isPresented: $showResetConfirm,
@@ -231,11 +233,52 @@ struct SettingsView: View {
                 .frame(width: 200)
             }
 
+            settingsDivider
+
+            kernelOptionsView
+
             Spacer()
 
             Text("Changes take effect when the next browser session starts.")
                 .font(.caption)
                 .foregroundStyle(.tertiary)
+        }
+    }
+
+    private var kernelOptionsView: some View {
+        VStack(alignment: .leading, spacing: 6) {
+            Text("Kernel Boot Options").font(.headline)
+            Text("Additional Linux kernel command-line parameters appended to the virtual machine boot command. The default disables SME to work around a crash on Apple M4 processors.")
+                .settingDescription()
+            TextField("", text: $extraKernelOptions)
+                .textFieldStyle(.roundedBorder)
+                .font(.system(.body, design: .monospaced))
+                .frame(maxWidth: .infinity)
+
+            if extraKernelOptions != VMConfig.defaultExtraKernelOptions {
+                HStack(spacing: 8) {
+                    Image(systemName: "exclamationmark.triangle.fill")
+                        .font(.title3)
+                        .foregroundStyle(.red)
+                    VStack(alignment: .leading, spacing: 2) {
+                        Text("Incorrect kernel options will prevent the browser from booting.")
+                            .font(.callout.bold())
+                        Text("Only change this if you know what you are doing. Removing arm64.nosme may cause crashes on M4 Macs. Invalid options may prevent the browser from booting.")
+                            .font(.callout)
+                            .foregroundStyle(.secondary)
+                            .fixedSize(horizontal: false, vertical: true)
+                    }
+                }
+                .padding(12)
+                .frame(maxWidth: .infinity, alignment: .leading)
+                .background(.red.opacity(0.08), in: RoundedRectangle(cornerRadius: 8))
+                .overlay(RoundedRectangle(cornerRadius: 8).stroke(.red.opacity(0.3), lineWidth: 1))
+
+                Button("Reset to Default") {
+                    extraKernelOptions = VMConfig.defaultExtraKernelOptions
+                }
+                .controlSize(.small)
+            }
         }
     }
 
@@ -298,7 +341,7 @@ struct SettingsView: View {
 
             VStack(alignment: .leading, spacing: 6) {
                 Text("Scale Factor").font(.headline)
-                Text("Match your Mac\u{2019}s display. Use 2x for Retina screens (most modern Macs). Changing this requires rebuilding the base image.")
+                Text("Match your Mac\u{2019}s display. Use 2x for Retina screens (most modern Macs).")
                     .settingDescription()
                 Picker("", selection: $displayScale) {
                     Text("1x (Standard)").tag(1)
@@ -307,11 +350,8 @@ struct SettingsView: View {
                 .labelsHidden()
                 .frame(width: 200)
                 .onChange(of: displayScale) { _, newValue in
-                    let current = state?.currentDisplayScale ?? 2
-                    if newValue != current {
-                        pendingDisplayScale = newValue
-                        showRebuildConfirm = true
-                    }
+                    UserDefaults.standard.set(newValue, forKey: "vm.displayScale")
+                    state?.restartPool()
                 }
             }
 
@@ -432,7 +472,7 @@ struct SettingsView: View {
 
             settingToggle(
                 "Enable Automation",
-                description: "Start an HTTP server that lets external tools (Puppeteer, Playwright, Claude Code, Codex) create browser sessions and control them via CDP. Requires restart.",
+                description: "Start an HTTP server that lets external tools (Puppeteer, Playwright, Claude Code, Codex) create browser sessions and control them via CDP.",
                 isOn: $automationEnabled
             )
 
@@ -512,6 +552,10 @@ struct SettingsView: View {
 
                 settingsDivider
 
+                apiReferenceView
+
+                settingsDivider
+
                 VStack(alignment: .leading, spacing: 8) {
                     Text("MCP Server").font(.headline)
                     Text("Bromure includes a built-in MCP server for Claude Code, Openclaws, and other MCP-compatible AI tools. Add this to your MCP configuration:")
@@ -520,7 +564,20 @@ struct SettingsView: View {
                     let bromurePath = Bundle.main.executablePath ?? "/Applications/Bromure.app/Contents/MacOS/bromure"
 
                     VStack(alignment: .leading, spacing: 4) {
-                        Text(".mcp.json").font(.callout.bold())
+                        HStack {
+                            Text(".mcp.json").font(.callout.bold())
+                            Spacer()
+                            copyButton(text: """
+                            {
+                              "mcpServers": {
+                                "bromure": {
+                                  "command": "\(bromurePath)",
+                                  "args": ["mcp"]
+                                }
+                              }
+                            }
+                            """, id: "mcp")
+                        }
                         Text("""
                         {
                           "mcpServers": {
@@ -542,12 +599,84 @@ struct SettingsView: View {
                         .settingDescription()
                 }
             }
+        }
+    }
 
-            Spacer()
+    @State private var copiedID: String?
 
-            Text("Changes require restarting Bromure.")
+    private func copyButton(text: String, id: String) -> some View {
+        Button {
+            NSPasteboard.general.clearContents()
+            NSPasteboard.general.setString(text, forType: .string)
+            copiedID = id
+            DispatchQueue.main.asyncAfter(deadline: .now() + 1.5) { copiedID = nil }
+        } label: {
+            Image(systemName: copiedID == id ? "checkmark" : "doc.on.doc")
                 .font(.caption)
-                .foregroundStyle(.tertiary)
+                .foregroundStyle(.secondary)
+        }
+        .buttonStyle(.plain)
+        .help("Copy to clipboard")
+    }
+
+    private func apiRow(_ method: String, _ path: String, _ description: LocalizedStringKey, example: String? = nil) -> some View {
+        VStack(alignment: .leading, spacing: 2) {
+            HStack(spacing: 6) {
+                Text(method)
+                    .font(.system(.caption2, design: .monospaced).bold())
+                    .foregroundStyle(.white)
+                    .padding(.horizontal, 5)
+                    .padding(.vertical, 1)
+                    .background(method == "GET" ? Color.green : method == "POST" ? Color.blue : method == "DELETE" ? Color.red : Color.purple, in: RoundedRectangle(cornerRadius: 3))
+                Text(path)
+                    .font(.system(.callout, design: .monospaced))
+                Spacer()
+                if let cmd = example {
+                    copyButton(text: cmd, id: path)
+                }
+            }
+            Text(description)
+                .font(.caption)
+                .foregroundStyle(.secondary)
+        }
+        .padding(.vertical, 2)
+    }
+
+    private var apiReferenceView: some View {
+        VStack(alignment: .leading, spacing: 8) {
+            Text("API Reference").font(.headline)
+            Text("HTTP endpoints available when automation is enabled:")
+                .settingDescription()
+
+            let base = "http://\(automationBindAddress):\(automationPort)"
+
+            VStack(alignment: .leading, spacing: 6) {
+                apiRow("GET", "/health", "Health check",
+                       example: "curl \(base)/health")
+                Divider()
+                apiRow("GET", "/profiles", "List available profiles",
+                       example: "curl \(base)/profiles")
+                Divider()
+                apiRow("GET", "/sessions", "List active sessions",
+                       example: "curl \(base)/sessions")
+                Divider()
+                apiRow("POST", "/sessions", "Create a new browser session",
+                       example: "curl -X POST \(base)/sessions -d '{\"profile\":\"Work\"}'")
+                Divider()
+                apiRow("GET", "/sessions/:id", "Get session info",
+                       example: "curl \(base)/sessions/<id>")
+                Divider()
+                apiRow("DELETE", "/sessions/:id", "Close a session",
+                       example: "curl -X DELETE \(base)/sessions/<id>")
+                Divider()
+                apiRow("GET", "/sessions/:id/trace", "Get session trace events",
+                       example: "curl \(base)/sessions/<id>/trace")
+                Divider()
+                apiRow("WS", "/cdp/:id/...", "Chrome DevTools Protocol WebSocket proxy")
+            }
+            .padding(12)
+            .frame(maxWidth: .infinity, alignment: .leading)
+            .background(.quaternary.opacity(0.5), in: RoundedRectangle(cornerRadius: 8))
         }
     }
 

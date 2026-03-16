@@ -168,6 +168,10 @@ public struct VMConfig {
     /// guest agent captures and sends to the host over vsock.
     public var traceLevel: TraceLevel
 
+    /// Additional Linux kernel boot options appended to the command line.
+    /// Default includes module loading and M4 CPU workarounds.
+    public var extraKernelOptions: String
+
     public init(
         cpuCount: Int? = nil,
         memorySize: UInt64 = 4 * 1024 * 1024 * 1024,
@@ -209,6 +213,7 @@ public struct VMConfig {
         enableAutomation: Bool = false,
         testSuite: Bool = false,
         traceLevel: TraceLevel = .disabled,
+        extraKernelOptions: String = "arm64.nosme",
         keyboardLayout: String? = nil,
         naturalScrolling: Bool? = nil,
         locale: String? = nil
@@ -254,6 +259,7 @@ public struct VMConfig {
         self.enableAutomation = enableAutomation
         self.testSuite = testSuite
         self.traceLevel = traceLevel
+        self.extraKernelOptions = extraKernelOptions
         self.keyboardLayout = keyboardLayout ?? VMConfig.detectKeyboardLayout()
         self.naturalScrolling = naturalScrolling ?? VMConfig.detectNaturalScrolling()
         self.locale = locale ?? VMConfig.detectLocale()
@@ -351,6 +357,9 @@ public struct VMConfig {
         let region = defaultRegions[lang] ?? lang.uppercased()
         return "\(lang)_\(region)"
     }
+
+    /// Default extra kernel boot options.
+    public static let defaultExtraKernelOptions = "arm64.nosme"
 
     /// Default storage directory: ~/Library/Application Support/Bromure
     public static var defaultStorageDirectory: URL {

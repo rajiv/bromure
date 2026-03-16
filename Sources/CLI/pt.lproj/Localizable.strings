@@ -407,3 +407,65 @@
 "Resume" = "Retomar";
 "Start" = "In\U00EDcio";
 "req" = "sol.";
+
+/* ProfileSettingsView — Performance (additional) */
+"Zero-Copy Rasterization" = "Rasteriza\U00E7\U00E3o sem c\U00F3pia";
+"Reduces memory copies during page rendering. Improves performance on most systems." = "Reduz c\U00F3pias de mem\U00F3ria durante a renderiza\U00E7\U00E3o de p\U00E1ginas. Melhora o desempenho na maioria dos sistemas.";
+"Smooth Scrolling" = "Rolagem suave";
+"Animates scrolling for a smoother feel. Disable for instant, jump-style scrolling." = "Anima a rolagem para uma sensa\U00E7\U00E3o mais fluida. Desative para rolagem instant\U00E2nea por saltos.";
+
+/* ProfileSettingsView — Privacy & Safety (additional) */
+"Block Screen Capture" = "Bloquear captura de tela";
+"Hides this browser window from screenshots, screen recordings, and screen sharing apps like Zoom." = "Oculta esta janela do navegador de capturas de tela, grava\U00E7\U00F5es de tela e aplicativos de compartilhamento de tela como o Zoom.";
+
+/* ProfileSettingsView — VPN & Ads (additional) */
+"Connect on Startup" = "Conectar ao iniciar";
+"Automatically connect the VPN when the browser session starts. You can always toggle it from the window\U2019s VPN button." = "Conecta automaticamente a VPN quando a sess\U00E3o do navegador inicia. Voc\U00EA pode sempre alter\U00E1-la pelo bot\U00E3o VPN da janela.";
+
+/* ProfileSettingsView — Enterprise (additional) */
+"HTTP Proxy" = "Proxy HTTP";
+"Route all browser traffic through a corporate proxy server. When a proxy is configured, VPN and ad blocking are automatically disabled." = "Roteia todo o tr\U00E1fego do navegador atrav\U00E9s de um servidor proxy corporativo. Quando um proxy est\U00E1 configurado, VPN e bloqueio de an\U00FAncios s\U00E3o automaticamente desativados.";
+"Hostname" = "Nome do host";
+"Port" = "Porta";
+"Username" = "Usu\U00E1rio";
+"Password" = "Senha";
+
+/* ProfileSettingsView — Advanced (additional) */
+"Start Recording Automatically" = "Iniciar grava\U00E7\U00E3o automaticamente";
+"Begin capturing requests as soon as the session opens. When off, recording starts only when you click the record button in the titlebar." = "Come\U00E7a a capturar solicita\U00E7\U00F5es assim que a sess\U00E3o abre. Quando desativado, a grava\U00E7\U00E3o come\U00E7a apenas ao clicar no bot\U00E3o de grava\U00E7\U00E3o na barra de t\U00EDtulo.";
+
+/* SettingsView — Hardware (additional) */
+"Kernel Boot Options" = "Op\U00E7\U00F5es de inicializa\U00E7\U00E3o do kernel";
+"Additional Linux kernel command-line parameters appended to the virtual machine boot command. The default disables SME to work around a crash on Apple M4 processors." = "Par\U00E2metros adicionais de linha de comando do kernel Linux adicionados ao comando de inicializa\U00E7\U00E3o da m\U00E1quina virtual. O padr\U00E3o desativa SME para contornar uma falha em processadores Apple M4.";
+"Incorrect kernel options will prevent the browser from booting." = "Op\U00E7\U00F5es de kernel incorretas impedir\U00E3o o navegador de inicializar.";
+"Only change this if you know what you are doing. Removing arm64.nosme may cause crashes on M4 Macs. Invalid options may prevent the browser from booting." = "Altere somente se souber o que est\U00E1 fazendo. Remover arm64.nosme pode causar falhas em Macs M4. Op\U00E7\U00F5es inv\U00E1lidas podem impedir a inicializa\U00E7\U00E3o do navegador.";
+"Reset to Default" = "Restaurar padr\U00E3o";
+
+/* SettingsView — Automation (additional) */
+"Automation" = "Automa\U00E7\U00E3o";
+"Enable Automation" = "Ativar automa\U00E7\U00E3o";
+"Start an HTTP server that lets external tools (Puppeteer, Playwright, Claude Code, Codex) create browser sessions and control them via CDP." = "Inicia um servidor HTTP que permite que ferramentas externas (Puppeteer, Playwright, Claude Code, Codex) criem sess\U00F5es de navegador e as controlem via CDP.";
+"API Port" = "Porta da API";
+"The port for the automation API server. Tools connect here to list profiles, create sessions, and get CDP endpoints." = "A porta do servidor de API de automa\U00E7\U00E3o. As ferramentas se conectam aqui para listar perfis, criar sess\U00F5es e obter endpoints CDP.";
+"Bind Address" = "Endere\U00E7o de escuta";
+"Use 127.0.0.1 to only allow connections from this Mac. Use 0.0.0.0 to allow connections from other machines on the network." = "Use 127.0.0.1 para permitir apenas conex\U00F5es deste Mac. Use 0.0.0.0 para permitir conex\U00F5es de outras m\U00E1quinas na rede.";
+"127.0.0.1 (localhost only)" = "127.0.0.1 (somente localhost)";
+"0.0.0.0 (all interfaces)" = "0.0.0.0 (todas as interfaces)";
+"Usage" = "Uso";
+"Once enabled, external tools can connect to the API:" = "Ap\U00F3s ativado, ferramentas externas podem se conectar \U00E0 API:";
+"List profiles:" = "Listar perfis:";
+"Create session:" = "Criar sess\U00E3o:";
+"List sessions:" = "Listar sess\U00F5es:";
+"Close session:" = "Fechar sess\U00E3o:";
+/* SettingsView — API Reference */
+"API Reference" = "Refer\U00EAncia da API";
+"HTTP endpoints available when automation is enabled:" = "Endpoints HTTP dispon\U00EDveis quando a automa\U00E7\U00E3o est\U00E1 ativada:";
+"Health check" = "Verifica\U00E7\U00E3o de sa\U00FAde";
+"List available profiles" = "Listar perfis dispon\U00EDveis";
+"List active sessions" = "Listar sess\U00F5es ativas";
+"Create a new browser session" = "Criar uma nova sess\U00E3o de navegador";
+"Get session info" = "Obter informa\U00E7\U00F5es da sess\U00E3o";
+"Close a session" = "Fechar uma sess\U00E3o";
+"Get session trace events" = "Obter eventos de rastreamento da sess\U00E3o";
+"Chrome DevTools Protocol WebSocket proxy" = "Proxy WebSocket do Chrome DevTools Protocol";
+"Copy to clipboard" = "Copiar para a \U00E1rea de transfer\U00EAncia";

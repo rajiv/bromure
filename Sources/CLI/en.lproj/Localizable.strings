@@ -407,3 +407,65 @@
 "Resume" = "Resume";
 "Start" = "Start";
 "req" = "req";
+
+/* ProfileSettingsView — Performance (additional) */
+"Zero-Copy Rasterization" = "Zero-Copy Rasterization";
+"Reduces memory copies during page rendering. Improves performance on most systems." = "Reduces memory copies during page rendering. Improves performance on most systems.";
+"Smooth Scrolling" = "Smooth Scrolling";
+"Animates scrolling for a smoother feel. Disable for instant, jump-style scrolling." = "Animates scrolling for a smoother feel. Disable for instant, jump-style scrolling.";
+
+/* ProfileSettingsView — Privacy & Safety (additional) */
+"Block Screen Capture" = "Block Screen Capture";
+"Hides this browser window from screenshots, screen recordings, and screen sharing apps like Zoom." = "Hides this browser window from screenshots, screen recordings, and screen sharing apps like Zoom.";
+
+/* ProfileSettingsView — VPN & Ads (additional) */
+"Connect on Startup" = "Connect on Startup";
+"Automatically connect the VPN when the browser session starts. You can always toggle it from the window\U2019s VPN button." = "Automatically connect the VPN when the browser session starts. You can always toggle it from the window\U2019s VPN button.";
+
+/* ProfileSettingsView — Enterprise (additional) */
+"HTTP Proxy" = "HTTP Proxy";
+"Route all browser traffic through a corporate proxy server. When a proxy is configured, VPN and ad blocking are automatically disabled." = "Route all browser traffic through a corporate proxy server. When a proxy is configured, VPN and ad blocking are automatically disabled.";
+"Hostname" = "Hostname";
+"Port" = "Port";
+"Username" = "Username";
+"Password" = "Password";
+
+/* ProfileSettingsView — Advanced (additional) */
+"Start Recording Automatically" = "Start Recording Automatically";
+"Begin capturing requests as soon as the session opens. When off, recording starts only when you click the record button in the titlebar." = "Begin capturing requests as soon as the session opens. When off, recording starts only when you click the record button in the titlebar.";
+
+/* SettingsView — Hardware (additional) */
+"Kernel Boot Options" = "Kernel Boot Options";
+"Additional Linux kernel command-line parameters appended to the virtual machine boot command. The default disables SME to work around a crash on Apple M4 processors." = "Additional Linux kernel command-line parameters appended to the virtual machine boot command. The default disables SME to work around a crash on Apple M4 processors.";
+"Incorrect kernel options will prevent the browser from booting." = "Incorrect kernel options will prevent the browser from booting.";
+"Only change this if you know what you are doing. Removing arm64.nosme may cause crashes on M4 Macs. Invalid options may prevent the browser from booting." = "Only change this if you know what you are doing. Removing arm64.nosme may cause crashes on M4 Macs. Invalid options may prevent the browser from booting.";
+"Reset to Default" = "Reset to Default";
+
+/* SettingsView — Automation (additional) */
+"Automation" = "Automation";
+"Enable Automation" = "Enable Automation";
+"Start an HTTP server that lets external tools (Puppeteer, Playwright, Claude Code, Codex) create browser sessions and control them via CDP." = "Start an HTTP server that lets external tools (Puppeteer, Playwright, Claude Code, Codex) create browser sessions and control them via CDP.";
+"API Port" = "API Port";
+"The port for the automation API server. Tools connect here to list profiles, create sessions, and get CDP endpoints." = "The port for the automation API server. Tools connect here to list profiles, create sessions, and get CDP endpoints.";
+"Bind Address" = "Bind Address";
+"Use 127.0.0.1 to only allow connections from this Mac. Use 0.0.0.0 to allow connections from other machines on the network." = "Use 127.0.0.1 to only allow connections from this Mac. Use 0.0.0.0 to allow connections from other machines on the network.";
+"127.0.0.1 (localhost only)" = "127.0.0.1 (localhost only)";
+"0.0.0.0 (all interfaces)" = "0.0.0.0 (all interfaces)";
+"Usage" = "Usage";
+"Once enabled, external tools can connect to the API:" = "Once enabled, external tools can connect to the API:";
+"List profiles:" = "List profiles:";
+"Create session:" = "Create session:";
+"List sessions:" = "List sessions:";
+"Close session:" = "Close session:";
+/* SettingsView — API Reference */
+"API Reference" = "API Reference";
+"HTTP endpoints available when automation is enabled:" = "HTTP endpoints available when automation is enabled:";
+"Health check" = "Health check";
+"List available profiles" = "List available profiles";
+"List active sessions" = "List active sessions";
+"Create a new browser session" = "Create a new browser session";
+"Get session info" = "Get session info";
+"Close a session" = "Close a session";
+"Get session trace events" = "Get session trace events";
+"Chrome DevTools Protocol WebSocket proxy" = "Chrome DevTools Protocol WebSocket proxy";
+"Copy to clipboard" = "Copy to clipboard";

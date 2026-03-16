@@ -9,12 +9,12 @@
 
 set -euo pipefail
 
-PROFILE="Private Browsing"
+PROFILE="Work"
 OUTPUT_DIR="Resources"
 mkdir -p "$OUTPUT_DIR"
 
 CATEGORIES=(general performance media fileTransfer privacy network vpnAds enterprise advanced)
-LOCALES=(en fr de es pt ja zh_TW zh_CN)
+LOCALES=(en fr de es pt ja zh-Hant-TW zh-Hans-CN)
 LOCALE_NAMES=(en fr de es pt ja zh-TW zh-CN)
 
 capture_settings_window() {
@@ -57,7 +57,7 @@ for locale_idx in "${!LOCALES[@]}"; do
 
     echo "--- Locale: $locale ---"
 
-    osascript -e 'tell application "Bromure" to quit' 2>/dev/null || true
+    pkill -x bromure 2>/dev/null || true
     sleep 3
     open -a "$(pwd)/.build/arm64-apple-macosx/release/Bromure.app" --args -AppleLanguages "($locale)"
 
@@ -98,7 +98,7 @@ for locale_idx in "${!LOCALES[@]}"; do
 done
 
 # Restore English
-osascript -e 'tell application "Bromure" to quit' 2>/dev/null || true
+pkill -x bromure 2>/dev/null || true
 sleep 2
 open -a "$(pwd)/.build/arm64-apple-macosx/release/Bromure.app"
 

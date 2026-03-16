@@ -48,6 +48,7 @@ public final class LinuxImageManager {
         naturalScrolling: Bool? = nil,
         locale: String? = nil,
         displayScale: Int? = nil,
+        extraKernelOptions: String = VMConfig.defaultExtraKernelOptions,
         progress: @escaping (ProgressEvent) -> Void
     ) async throws {
         let fm = FileManager.default
@@ -85,6 +86,7 @@ public final class LinuxImageManager {
             naturalScrolling: naturalScrolling,
             locale: locale,
             displayScale: displayScale,
+            extraKernelOptions: extraKernelOptions,
             progress: progress
         )
         progress(.stepDone("Installing Alpine Linux with Chromium"))
@@ -154,10 +156,7 @@ public final class LinuxImageManager {
         // console=hvc0 also outputs to serial for logging.
         let bootLoader = VZLinuxBootLoader(kernelURL: linuxKernelURL)
         bootLoader.initialRamdiskURL = linuxInitrdURL
-        // Alpine init reads modules= to know what to modprobe at boot.
-        // We need virtio_blk (for /dev/vda) and ext4 (for root filesystem).
-        // dm-crypt is needed for LUKS-encrypted profile disks.
-        bootLoader.commandLine = "console=tty1 console=hvc0 root=/dev/vda rootfstype=ext4 modules=virtio_blk,virtiofs,loop,dm-crypt rw arm64.nosme"
+        bootLoader.commandLine = "console=tty1 console=hvc0 root=/dev/vda rootfstype=ext4 modules=virtio_blk,virtiofs,loop,dm-crypt rw \(config.extraKernelOptions)"
         vzConfig.bootLoader = bootLoader
 
         vzConfig.cpuCount = config.cpuCount
@@ -416,6 +415,7 @@ public final class LinuxImageManager {
         naturalScrolling: Bool? = nil,
         locale: String? = nil,
         displayScale: Int? = nil,
+        extraKernelOptions: String = VMConfig.defaultExtraKernelOptions,
         progress: @escaping (ProgressEvent) -> Void
     ) async throws {
         // Create transfer disk for extracting initramfs
@@ -432,7 +432,7 @@ public final class LinuxImageManager {
 
         let bootLoader = VZLinuxBootLoader(kernelURL: netbootKernel)
         bootLoader.initialRamdiskURL = netbootInitrd
-        bootLoader.commandLine = "console=hvc0 ip=dhcp alpine_repo=https://dl-cdn.alpinelinux.org/alpine/v\(Self.alpineVersion)/main modloop=\(Self.netbootBase)/modloop-virt modules=loop,squashfs,virtio-net,virtio-blk arm64.nosme"
+        bootLoader.commandLine = "console=hvc0 ip=dhcp alpine_repo=https://dl-cdn.alpinelinux.org/alpine/v\(Self.alpineVersion)/main modloop=\(Self.netbootBase)/modloop-virt modules=loop,squashfs,virtio-net,virtio-blk \(extraKernelOptions)"
         vzConfig.bootLoader = bootLoader
 
         vzConfig.platform = VZGenericPlatformConfiguration()
