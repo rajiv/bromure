@@ -2,258 +2,258 @@
 
 /* MainView — Header */
 "Bromure" = "Bromure";
-"Secure, ephemeral browsing in a disposable VM" = "\u5728\u4e00\u6b21\u6027\u865a\u62df\u673a\u4e2d\u5b89\u5168\u3001\u65e0\u75d5\u5730\u6d4f\u89c8";
+"Secure, ephemeral browsing in a disposable VM" = "\U5728\U4e00\U6b21\U6027\U865a\U62df\U673a\U4e2d\U5b89\U5168\U3001\U65e0\U75d5\U5730\U6d4f\U89c8";
 
 /* MainView — Setup */
-"First-Time Setup" = "\u521d\u59cb\u8bbe\u7f6e";
-"Downloads Alpine Linux (~50 MB) and installs\nChromium. This only needs to happen once." = "\u4e0b\u8f7d Alpine Linux\uff08\u7ea6 50 MB\uff09\u5e76\u5b89\u88c5\nChromium\u3002\u6b64\u64cd\u4f5c\u53ea\u9700\u6267\u884c\u4e00\u6b21\u3002";
-"Get Started" = "\u5f00\u59cb\u4f7f\u7528";
+"First-Time Setup" = "\U521d\U59cb\U8bbe\U7f6e";
+"Downloads Alpine Linux (~50 MB) and installs\nChromium. This only needs to happen once." = "\U4e0b\U8f7d Alpine Linux\Uff08\U7ea6 50 MB\Uff09\U5e76\U5b89\U88c5\nChromium\U3002\U6b64\U64cd\U4f5c\U53ea\U9700\U6267\U884c\U4e00\U6b21\U3002";
+"Get Started" = "\U5f00\U59cb\U4f7f\U7528";
 
 /* MainView — Warming up */
-"Starting browser engine..." = "\u6b63\u5728\u542f\u52a8\u6d4f\u89c8\u5668\u5f15\u64ce\u2026";
-"First launch is slower, subsequent ones will be faster." = "\u9996\u6b21\u542f\u52a8\u8f83\u6162\uff0c\u540e\u7eed\u542f\u52a8\u5c06\u4f1a\u66f4\u5feb\u3002";
+"Starting browser engine..." = "\U6b63\U5728\U542f\U52a8\U6d4f\U89c8\U5668\U5f15\U64ce\U2026";
+"First launch is slower, subsequent ones will be faster." = "\U9996\U6b21\U542f\U52a8\U8f83\U6162\Uff0c\U540e\U7eed\U542f\U52a8\U5c06\U4f1a\U66f4\U5feb\U3002";
 
 /* MainView — Initializing */
-"Console Output" = "\u63a7\u5236\u53f0\u8f93\u51fa";
+"Console Output" = "\U63a7\U5236\U53f0\U8f93\U51fa";
 
 /* MainView — Ready */
-"Encrypted" = "\u5df2\u52a0\u5bc6";
-"Edit profile settings" = "\u7f16\u8f91\u914d\u7f6e\u6587\u4ef6\u8bbe\u7f6e";
-"Add a new profile" = "\u6dfb\u52a0\u65b0\u914d\u7f6e\u6587\u4ef6";
-"Delete selected profile" = "\u5220\u9664\u6240\u9009\u914d\u7f6e\u6587\u4ef6";
-"Starting..." = "\u6b63\u5728\u542f\u52a8\u2026";
-"Open Browser" = "\u6253\u5f00\u6d4f\u89c8\u5668";
-"Ready" = "\u5c31\u7eea";
-"Warming up..." = "\u6b63\u5728\u9884\u70ed\u2026";
-"%lld open" = "%lld \u4e2a\u5df2\u6253\u5f00";
+"Encrypted" = "\U5df2\U52a0\U5bc6";
+"Edit profile settings" = "\U7f16\U8f91\U914d\U7f6e\U6587\U4ef6\U8bbe\U7f6e";
+"Add a new profile" = "\U6dfb\U52a0\U65b0\U914d\U7f6e\U6587\U4ef6";
+"Delete selected profile" = "\U5220\U9664\U6240\U9009\U914d\U7f6e\U6587\U4ef6";
+"Starting..." = "\U6b63\U5728\U542f\U52a8\U2026";
+"Open Browser" = "\U6253\U5f00\U6d4f\U89c8\U5668";
+"Ready" = "\U5c31\U7eea";
+"Warming up..." = "\U6b63\U5728\U9884\U70ed\U2026";
+"%lld open" = "%lld \U4e2a\U5df2\U6253\U5f00";
 
 /* MainView — New Profile sheet */
-"New Profile" = "\u65b0\u5efa\u914d\u7f6e\u6587\u4ef6";
-"Profile Name" = "\u914d\u7f6e\u6587\u4ef6\u540d\u79f0";
-"Color" = "\u989c\u8272";
-"None" = "\u65e0";
-"Cancel" = "\u53d6\u6d88";
-"Create" = "\u521b\u5efa";
+"New Profile" = "\U65b0\U5efa\U914d\U7f6e\U6587\U4ef6";
+"Profile Name" = "\U914d\U7f6e\U6587\U4ef6\U540d\U79f0";
+"Color" = "\U989c\U8272";
+"None" = "\U65e0";
+"Cancel" = "\U53d6\U6d88";
+"Create" = "\U521b\U5efa";
 
 /* MainView — Delete confirmation */
-"Delete" = "\u5220\u9664";
-"This will permanently delete the profile and all its saved browsing data." = "\u8fd9\u5c06\u6c38\u4e45\u5220\u9664\u8be5\u914d\u7f6e\u6587\u4ef6\u53ca\u5176\u6240\u6709\u5df2\u4fdd\u5b58\u7684\u6d4f\u89c8\u6570\u636e\u3002";
-"This will delete the profile." = "\u8fd9\u5c06\u5220\u9664\u8be5\u914d\u7f6e\u6587\u4ef6\u3002";
+"Delete" = "\U5220\U9664";
+"This will permanently delete the profile and all its saved browsing data." = "\U8fd9\U5c06\U6c38\U4e45\U5220\U9664\U8be5\U914d\U7f6e\U6587\U4ef6\U53ca\U5176\U6240\U6709\U5df2\U4fdd\U5b58\U7684\U6d4f\U89c8\U6570\U636e\U3002";
+"This will delete the profile." = "\U8fd9\U5c06\U5220\U9664\U8be5\U914d\U7f6e\U6587\U4ef6\U3002";
 
 /* MainView — Error */
-"Something went wrong" = "\u51fa\u4e86\u70b9\u95ee\u9898";
-"Try Again" = "\u91cd\u8bd5";
+"Something went wrong" = "\U51fa\U4e86\U70b9\U95ee\U9898";
+"Try Again" = "\U91cd\U8bd5";
 
 /* ProfileSettingsView — Categories */
-"General" = "\u901a\u7528";
-"Performance" = "\u6027\u80fd";
-"Media" = "\u5a92\u4f53";
-"Privacy & Safety" = "\u9690\u79c1\u4e0e\u5b89\u5168";
-"Network Isolation" = "\u7f51\u7edc\u9694\u79bb";
-"VPN & Ads" = "VPN \u4e0e\u5e7f\u544a";
-"Enterprise" = "\u4f01\u4e1a";
-"Advanced" = "\u9ad8\u7ea7";
+"General" = "\U901a\U7528";
+"Performance" = "\U6027\U80fd";
+"Media" = "\U5a92\U4f53";
+"Privacy & Safety" = "\U9690\U79c1\U4e0e\U5b89\U5168";
+"Network Isolation" = "\U7f51\U7edc\U9694\U79bb";
+"VPN & Ads" = "VPN \U4e0e\U5e7f\U544a";
+"Enterprise" = "\U4f01\U4e1a";
+"Advanced" = "\U9ad8\U7ea7";
 
 /* ProfileSettingsView — Buttons */
-"Save" = "\u5b58\u50a8";
+"Save" = "\U5b58\U50a8";
 
 /* ProfileSettingsView — General */
-"Basic profile settings" = "\u57fa\u672c\u914d\u7f6e\u6587\u4ef6\u8bbe\u7f6e";
-"Name" = "\u540d\u79f0";
-"Comments" = "\u5907\u6ce8";
-"A short note about this profile. Shown when you hover over it in the profile list." = "\u5173\u4e8e\u6b64\u914d\u7f6e\u6587\u4ef6\u7684\u7b80\u77ed\u8bf4\u660e\u3002\u5c06\u9f20\u6807\u60ac\u505c\u5728\u914d\u7f6e\u6587\u4ef6\u5217\u8868\u4e2d\u7684\u6761\u76ee\u4e0a\u65f6\u4f1a\u663e\u793a\u3002";
-"e.g. Work browsing, banking only, etc." = "\u4f8b\u5982\uff1a\u5de5\u4f5c\u6d4f\u89c8\u3001\u4ec5\u7528\u4e8e\u94f6\u884c\u4e1a\u52a1\u7b49";
-"Window Color" = "\u7a97\u53e3\u989c\u8272";
-"A colored border around the browser window helps you tell profiles apart at a glance." = "\u6d4f\u89c8\u5668\u7a97\u53e3\u56db\u5468\u7684\u5f69\u8272\u8fb9\u6846\u53ef\u5e2e\u52a9\u4f60\u5feb\u901f\u533a\u5206\u4e0d\u540c\u7684\u914d\u7f6e\u6587\u4ef6\u3002";
-"Home Page" = "\u4e3b\u9875";
-"The website that opens when you launch this profile." = "\u542f\u52a8\u6b64\u914d\u7f6e\u6587\u4ef6\u65f6\u6253\u5f00\u7684\u7f51\u7ad9\u3002";
+"Basic profile settings" = "\U57fa\U672c\U914d\U7f6e\U6587\U4ef6\U8bbe\U7f6e";
+"Name" = "\U540d\U79f0";
+"Comments" = "\U5907\U6ce8";
+"A short note about this profile. Shown when you hover over it in the profile list." = "\U5173\U4e8e\U6b64\U914d\U7f6e\U6587\U4ef6\U7684\U7b80\U77ed\U8bf4\U660e\U3002\U5c06\U9f20\U6807\U60ac\U505c\U5728\U914d\U7f6e\U6587\U4ef6\U5217\U8868\U4e2d\U7684\U6761\U76ee\U4e0a\U65f6\U4f1a\U663e\U793a\U3002";
+"e.g. Work browsing, banking only, etc." = "\U4f8b\U5982\Uff1a\U5de5\U4f5c\U6d4f\U89c8\U3001\U4ec5\U7528\U4e8e\U94f6\U884c\U4e1a\U52a1\U7b49";
+"Window Color" = "\U7a97\U53e3\U989c\U8272";
+"A colored border around the browser window helps you tell profiles apart at a glance." = "\U6d4f\U89c8\U5668\U7a97\U53e3\U56db\U5468\U7684\U5f69\U8272\U8fb9\U6846\U53ef\U5e2e\U52a9\U4f60\U5feb\U901f\U533a\U5206\U4e0d\U540c\U7684\U914d\U7f6e\U6587\U4ef6\U3002";
+"Home Page" = "\U4e3b\U9875";
+"The website that opens when you launch this profile." = "\U542f\U52a8\U6b64\U914d\U7f6e\U6587\U4ef6\U65f6\U6253\U5f00\U7684\U7f51\U7ad9\U3002";
 "Language" = "语言";
 "The language used by the browser. \U201CSame as System\U201D follows your Mac\U2019s language. Choosing a specific language reduces browser fingerprinting." = "浏览器使用的语言。\U201C与系统相同\U201D会跟随您 Mac 的语言。选择特定语言可减少浏览器指纹识别。";
-"Retain Browsing Data" = "\u4fdd\u7559\u6d4f\u89c8\u6570\u636e";
-"Keep your bookmarks, history, cookies, and passwords between sessions. When turned off, everything is erased each time you close the browser." = "\u5728\u591a\u6b21\u4f1a\u8bdd\u4e4b\u95f4\u4fdd\u7559\u4e66\u7b7e\u3001\u5386\u53f2\u8bb0\u5f55\u3001Cookie \u548c\u5bc6\u7801\u3002\u5173\u95ed\u540e\uff0c\u6bcf\u6b21\u5173\u95ed\u6d4f\u89c8\u5668\u65f6\u6240\u6709\u6570\u636e\u90fd\u4f1a\u88ab\u6e05\u9664\u3002";
+"Retain Browsing Data" = "\U4fdd\U7559\U6d4f\U89c8\U6570\U636e";
+"Keep your bookmarks, history, cookies, and passwords between sessions. When turned off, everything is erased each time you close the browser." = "\U5728\U591a\U6b21\U4f1a\U8bdd\U4e4b\U95f4\U4fdd\U7559\U4e66\U7b7e\U3001\U5386\U53f2\U8bb0\U5f55\U3001Cookie \U548c\U5bc6\U7801\U3002\U5173\U95ed\U540e\Uff0c\U6bcf\U6b21\U5173\U95ed\U6d4f\U89c8\U5668\U65f6\U6240\U6709\U6570\U636e\U90fd\U4f1a\U88ab\U6e05\U9664\U3002";
 
 /* ProfileSettingsView — Performance */
-"Control how the browser uses your Mac\U2019s hardware" = "\u63a7\u5236\u6d4f\u89c8\u5668\u5982\u4f55\u4f7f\u7528 Mac \u7684\u786c\u4ef6";
-"GPU Acceleration" = "GPU \u52a0\u901f";
-"Uses your Mac\U2019s graphics chip to make web pages render faster. Turn this off if you notice visual glitches or display problems." = "\u4f7f\u7528 Mac \u7684\u56fe\u5f62\u82af\u7247\u52a0\u5feb\u7f51\u9875\u6e32\u67d3\u901f\u5ea6\u3002\u5982\u679c\u4f60\u6ce8\u610f\u5230\u753b\u9762\u5f02\u5e38\u6216\u663e\u793a\u95ee\u9898\uff0c\u8bf7\u5173\u95ed\u6b64\u9009\u9879\u3002";
+"Control how the browser uses your Mac\U2019s hardware" = "\U63a7\U5236\U6d4f\U89c8\U5668\U5982\U4f55\U4f7f\U7528 Mac \U7684\U786c\U4ef6";
+"GPU Acceleration" = "GPU \U52a0\U901f";
+"Uses your Mac\U2019s graphics chip to make web pages render faster. Turn this off if you notice visual glitches or display problems." = "\U4f7f\U7528 Mac \U7684\U56fe\U5f62\U82af\U7247\U52a0\U5feb\U7f51\U9875\U6e32\U67d3\U901f\U5ea6\U3002\U5982\U679c\U4f60\U6ce8\U610f\U5230\U753b\U9762\U5f02\U5e38\U6216\U663e\U793a\U95ee\U9898\Uff0c\U8bf7\U5173\U95ed\U6b64\U9009\U9879\U3002";
 "WebGL" = "WebGL";
-"Lets websites display 3D graphics and interactive content. Required by some games, maps, and data visualizations." = "\u5141\u8bb8\u7f51\u7ad9\u663e\u793a 3D \u56fe\u5f62\u548c\u4ea4\u4e92\u5f0f\u5185\u5bb9\u3002\u67d0\u4e9b\u6e38\u620f\u3001\u5730\u56fe\u548c\u6570\u636e\u53ef\u89c6\u5316\u9700\u8981\u6b64\u529f\u80fd\u3002";
+"Lets websites display 3D graphics and interactive content. Required by some games, maps, and data visualizations." = "\U5141\U8bb8\U7f51\U7ad9\U663e\U793a 3D \U56fe\U5f62\U548c\U4ea4\U4e92\U5f0f\U5185\U5bb9\U3002\U67d0\U4e9b\U6e38\U620f\U3001\U5730\U56fe\U548c\U6570\U636e\U53ef\U89c6\U5316\U9700\U8981\U6b64\U529f\U80fd\U3002";
 
 /* ProfileSettingsView — Media */
-"Audio and device sharing" = "\u97f3\u9891\u548c\u8bbe\u5907\u5171\u4eab";
-"Audio" = "\u97f3\u9891";
-"Play sounds, music, and video audio from websites." = "\u64ad\u653e\u7f51\u7ad9\u4e2d\u7684\u58f0\u97f3\u3001\u97f3\u4e50\u548c\u89c6\u9891\u97f3\u9891\u3002";
-"Volume" = "\u97f3\u91cf";
-"Share Webcam" = "\u5171\u4eab\u6444\u50cf\u5934";
-"Let websites in this browser access your Mac\U2019s camera for video calls and meetings." = "\u5141\u8bb8\u6b64\u6d4f\u89c8\u5668\u4e2d\u7684\u7f51\u7ad9\u8bbf\u95ee Mac \u7684\u6444\u50cf\u5934\uff0c\u7528\u4e8e\u89c6\u9891\u901a\u8bdd\u548c\u4f1a\u8bae\u3002";
-"Share Microphone" = "\u5171\u4eab\u9ea6\u514b\u98ce";
-"Let websites in this browser access your Mac\U2019s microphone for calls and voice input." = "\u5141\u8bb8\u6b64\u6d4f\u89c8\u5668\u4e2d\u7684\u7f51\u7ad9\u8bbf\u95ee Mac \u7684\u9ea6\u514b\u98ce\uff0c\u7528\u4e8e\u901a\u8bdd\u548c\u8bed\u97f3\u8f93\u5165\u3002";
-"Device Selection" = "\u8bbe\u5907\u9009\u62e9";
-"Choose which camera, microphone, and speaker to use with this profile." = "\u9009\u62e9\u8981\u4e0e\u6b64\u914d\u7f6e\u6587\u4ef6\u642d\u914d\u4f7f\u7528\u7684\u6444\u50cf\u5934\u3001\u9ea6\u514b\u98ce\u548c\u626c\u58f0\u5668\u3002";
-"Speaker" = "\u626c\u58f0\u5668";
-"Choose which speaker to use for audio output." = "\u9009\u62e9\u7528\u4e8e\u97f3\u9891\u8f93\u51fa\u7684\u626c\u58f0\u5668\u3002";
-"Default" = "\u9ed8\u8ba4";
+"Audio and device sharing" = "\U97f3\U9891\U548c\U8bbe\U5907\U5171\U4eab";
+"Audio" = "\U97f3\U9891";
+"Play sounds, music, and video audio from websites." = "\U64ad\U653e\U7f51\U7ad9\U4e2d\U7684\U58f0\U97f3\U3001\U97f3\U4e50\U548c\U89c6\U9891\U97f3\U9891\U3002";
+"Volume" = "\U97f3\U91cf";
+"Share Webcam" = "\U5171\U4eab\U6444\U50cf\U5934";
+"Let websites in this browser access your Mac\U2019s camera for video calls and meetings." = "\U5141\U8bb8\U6b64\U6d4f\U89c8\U5668\U4e2d\U7684\U7f51\U7ad9\U8bbf\U95ee Mac \U7684\U6444\U50cf\U5934\Uff0c\U7528\U4e8e\U89c6\U9891\U901a\U8bdd\U548c\U4f1a\U8bae\U3002";
+"Share Microphone" = "\U5171\U4eab\U9ea6\U514b\U98ce";
+"Let websites in this browser access your Mac\U2019s microphone for calls and voice input." = "\U5141\U8bb8\U6b64\U6d4f\U89c8\U5668\U4e2d\U7684\U7f51\U7ad9\U8bbf\U95ee Mac \U7684\U9ea6\U514b\U98ce\Uff0c\U7528\U4e8e\U901a\U8bdd\U548c\U8bed\U97f3\U8f93\U5165\U3002";
+"Device Selection" = "\U8bbe\U5907\U9009\U62e9";
+"Choose which camera, microphone, and speaker to use with this profile." = "\U9009\U62e9\U8981\U4e0e\U6b64\U914d\U7f6e\U6587\U4ef6\U642d\U914d\U4f7f\U7528\U7684\U6444\U50cf\U5934\U3001\U9ea6\U514b\U98ce\U548c\U626c\U58f0\U5668\U3002";
+"Speaker" = "\U626c\U58f0\U5668";
+"Choose which speaker to use for audio output." = "\U9009\U62e9\U7528\U4e8e\U97f3\U9891\U8f93\U51fa\U7684\U626c\U58f0\U5668\U3002";
+"Default" = "\U9ed8\U8ba4";
 
 /* ProfileSettingsView — Privacy & Safety */
-"Control what this browser can access and share" = "\u63a7\u5236\u6b64\u6d4f\u89c8\u5668\u53ef\u4ee5\u8bbf\u95ee\u548c\u5171\u4eab\u7684\u5185\u5bb9";
-"Shared Clipboard" = "\u5171\u4eab\u526a\u8d34\u677f";
-"Copy and paste text and images between your Mac and this browser. When turned off, the browser\U2019s clipboard is completely isolated." = "\u5728 Mac \u548c\u6b64\u6d4f\u89c8\u5668\u4e4b\u95f4\u590d\u5236\u548c\u7c98\u8d34\u6587\u672c\u53ca\u56fe\u7247\u3002\u5173\u95ed\u540e\uff0c\u6d4f\u89c8\u5668\u7684\u526a\u8d34\u677f\u5c06\u5b8c\u5168\u9694\u79bb\u3002";
-"File Upload" = "\u6587\u4ef6\u4e0a\u4f20";
-"Allow sending files from your Mac to websites in this browser." = "\u5141\u8bb8\u5c06 Mac \u4e2d\u7684\u6587\u4ef6\u53d1\u9001\u5230\u6b64\u6d4f\u89c8\u5668\u4e2d\u7684\u7f51\u7ad9\u3002";
-"File Download" = "\u6587\u4ef6\u4e0b\u8f7d";
-"Allow saving files from websites to your Mac." = "\u5141\u8bb8\u5c06\u7f51\u7ad9\u4e2d\u7684\u6587\u4ef6\u4fdd\u5b58\u5230 Mac\u3002";
-"Scan Downloads with VirusTotal" = "\u4f7f\u7528 VirusTotal \u626b\u63cf\u4e0b\u8f7d\u6587\u4ef6";
-"Automatically check downloaded files for viruses and malware before they reach your Mac." = "\u5728\u4e0b\u8f7d\u6587\u4ef6\u5230\u8fbe Mac \u4e4b\u524d\uff0c\u81ea\u52a8\u68c0\u67e5\u662f\u5426\u5b58\u5728\u75c5\u6bd2\u548c\u6076\u610f\u8f6f\u4ef6\u3002";
-"VirusTotal API Key" = "VirusTotal API \u5bc6\u94a5";
-"Block Threats" = "\u62e6\u622a\u5a01\u80c1";
-"Automatically block files that VirusTotal identifies as malicious. Blocked files cannot be saved or dragged to your Mac." = "\u81ea\u52a8\u62e6\u622a VirusTotal \u8bc6\u522b\u4e3a\u6076\u610f\u7684\u6587\u4ef6\u3002\u88ab\u62e6\u622a\u7684\u6587\u4ef6\u65e0\u6cd5\u4fdd\u5b58\u6216\u62d6\u62fd\u5230 Mac\u3002";
-"Block Unscannable Files" = "\u62e6\u622a\u65e0\u6cd5\u626b\u63cf\u7684\u6587\u4ef6";
-"Block files that could not be scanned by VirusTotal (too large, rate-limited, or unknown). When turned off, unscannable files can still be saved manually." = "\u62e6\u622a VirusTotal \u65e0\u6cd5\u626b\u63cf\u7684\u6587\u4ef6\uff08\u6587\u4ef6\u8fc7\u5927\u3001\u8bf7\u6c42\u9891\u7387\u53d7\u9650\u6216\u672a\u77e5\u6587\u4ef6\uff09\u3002\u5173\u95ed\u540e\uff0c\u65e0\u6cd5\u626b\u63cf\u7684\u6587\u4ef6\u4ecd\u53ef\u624b\u52a8\u4fdd\u5b58\u3002";
-"Block Malware Sites" = "\u62e6\u622a\u6076\u610f\u7f51\u7ad9";
-"Blocks access to websites known to distribute viruses or steal information, using Cloudflare\U2019s security DNS." = "\u4f7f\u7528 Cloudflare \u7684\u5b89\u5168 DNS \u62e6\u622a\u5df2\u77e5\u4f20\u64ad\u75c5\u6bd2\u6216\u7a83\u53d6\u4fe1\u606f\u7684\u7f51\u7ad9\u3002";
-"Phishing Warning" = "\u9493\u9c7c\u8b66\u544a";
-"Shows a warning when you\U2019re about to enter a password on a website that looks suspicious or fake." = "\u5f53\u4f60\u5373\u5c06\u5728\u770b\u8d77\u6765\u53ef\u7591\u6216\u4eff\u5192\u7684\u7f51\u7ad9\u4e0a\u8f93\u5165\u5bc6\u7801\u65f6\u663e\u793a\u8b66\u544a\u3002";
+"Control what this browser can access and share" = "\U63a7\U5236\U6b64\U6d4f\U89c8\U5668\U53ef\U4ee5\U8bbf\U95ee\U548c\U5171\U4eab\U7684\U5185\U5bb9";
+"Shared Clipboard" = "\U5171\U4eab\U526a\U8d34\U677f";
+"Copy and paste text and images between your Mac and this browser. When turned off, the browser\U2019s clipboard is completely isolated." = "\U5728 Mac \U548c\U6b64\U6d4f\U89c8\U5668\U4e4b\U95f4\U590d\U5236\U548c\U7c98\U8d34\U6587\U672c\U53ca\U56fe\U7247\U3002\U5173\U95ed\U540e\Uff0c\U6d4f\U89c8\U5668\U7684\U526a\U8d34\U677f\U5c06\U5b8c\U5168\U9694\U79bb\U3002";
+"File Upload" = "\U6587\U4ef6\U4e0a\U4f20";
+"Allow sending files from your Mac to websites in this browser." = "\U5141\U8bb8\U5c06 Mac \U4e2d\U7684\U6587\U4ef6\U53d1\U9001\U5230\U6b64\U6d4f\U89c8\U5668\U4e2d\U7684\U7f51\U7ad9\U3002";
+"File Download" = "\U6587\U4ef6\U4e0b\U8f7d";
+"Allow saving files from websites to your Mac." = "\U5141\U8bb8\U5c06\U7f51\U7ad9\U4e2d\U7684\U6587\U4ef6\U4fdd\U5b58\U5230 Mac\U3002";
+"Scan Downloads with VirusTotal" = "\U4f7f\U7528 VirusTotal \U626b\U63cf\U4e0b\U8f7d\U6587\U4ef6";
+"Automatically check downloaded files for viruses and malware before they reach your Mac." = "\U5728\U4e0b\U8f7d\U6587\U4ef6\U5230\U8fbe Mac \U4e4b\U524d\Uff0c\U81ea\U52a8\U68c0\U67e5\U662f\U5426\U5b58\U5728\U75c5\U6bd2\U548c\U6076\U610f\U8f6f\U4ef6\U3002";
+"VirusTotal API Key" = "VirusTotal API \U5bc6\U94a5";
+"Block Threats" = "\U62e6\U622a\U5a01\U80c1";
+"Automatically block files that VirusTotal identifies as malicious. Blocked files cannot be saved or dragged to your Mac." = "\U81ea\U52a8\U62e6\U622a VirusTotal \U8bc6\U522b\U4e3a\U6076\U610f\U7684\U6587\U4ef6\U3002\U88ab\U62e6\U622a\U7684\U6587\U4ef6\U65e0\U6cd5\U4fdd\U5b58\U6216\U62d6\U62fd\U5230 Mac\U3002";
+"Block Unscannable Files" = "\U62e6\U622a\U65e0\U6cd5\U626b\U63cf\U7684\U6587\U4ef6";
+"Block files that could not be scanned by VirusTotal (too large, rate-limited, or unknown). When turned off, unscannable files can still be saved manually." = "\U62e6\U622a VirusTotal \U65e0\U6cd5\U626b\U63cf\U7684\U6587\U4ef6\Uff08\U6587\U4ef6\U8fc7\U5927\U3001\U8bf7\U6c42\U9891\U7387\U53d7\U9650\U6216\U672a\U77e5\U6587\U4ef6\Uff09\U3002\U5173\U95ed\U540e\Uff0c\U65e0\U6cd5\U626b\U63cf\U7684\U6587\U4ef6\U4ecd\U53ef\U624b\U52a8\U4fdd\U5b58\U3002";
+"Block Malware Sites" = "\U62e6\U622a\U6076\U610f\U7f51\U7ad9";
+"Blocks access to websites known to distribute viruses or steal information, using Cloudflare\U2019s security DNS." = "\U4f7f\U7528 Cloudflare \U7684\U5b89\U5168 DNS \U62e6\U622a\U5df2\U77e5\U4f20\U64ad\U75c5\U6bd2\U6216\U7a83\U53d6\U4fe1\U606f\U7684\U7f51\U7ad9\U3002";
+"Phishing Warning" = "\U9493\U9c7c\U8b66\U544a";
+"Shows a warning when you\U2019re about to enter a password on a website that looks suspicious or fake." = "\U5f53\U4f60\U5373\U5c06\U5728\U770b\U8d77\U6765\U53ef\U7591\U6216\U4eff\U5192\U7684\U7f51\U7ad9\U4e0a\U8f93\U5165\U5bc6\U7801\U65f6\U663e\U793a\U8b66\U544a\U3002";
 "Beta" = "Beta";
-"Send Link to Other Session" = "\u5c06\u94fe\u63a5\u53d1\u9001\u5230\u5176\u4ed6\u4f1a\u8bdd";
-"Adds a right-click menu option to send a web page link to another Bromure profile." = "\u5728\u53f3\u952e\u83dc\u5355\u4e2d\u6dfb\u52a0\u5c06\u7f51\u9875\u94fe\u63a5\u53d1\u9001\u5230\u5176\u4ed6 Bromure \u914d\u7f6e\u6587\u4ef6\u7684\u9009\u9879\u3002";
+"Send Link to Other Session" = "\U5c06\U94fe\U63a5\U53d1\U9001\U5230\U5176\U4ed6\U4f1a\U8bdd";
+"Adds a right-click menu option to send a web page link to another Bromure profile." = "\U5728\U53f3\U952e\U83dc\U5355\U4e2d\U6dfb\U52a0\U5c06\U7f51\U9875\U94fe\U63a5\U53d1\U9001\U5230\U5176\U4ed6 Bromure \U914d\U7f6e\U6587\U4ef6\U7684\U9009\U9879\U3002";
 
 /* ProfileSettingsView — Network Isolation */
-"Restrict which networks and ports this browser can reach" = "\u9650\u5236\u6b64\u6d4f\u89c8\u5668\u53ef\u8bbf\u95ee\u7684\u7f51\u7edc\u548c\u7aef\u53e3";
-"Isolate from Local Network" = "\u4e0e\u672c\u5730\u7f51\u7edc\u9694\u79bb";
-"Prevents this browser from reaching devices on your home or office network, like printers, NAS drives, or internal servers. Internet access is not affected." = "\u963b\u6b62\u6b64\u6d4f\u89c8\u5668\u8bbf\u95ee\u4f60\u5bb6\u5ead\u6216\u529e\u516c\u7f51\u7edc\u4e0a\u7684\u8bbe\u5907\uff0c\u5982\u6253\u5370\u673a\u3001NAS \u5b58\u50a8\u6216\u5185\u90e8\u670d\u52a1\u5668\u3002\u4e92\u8054\u7f51\u8bbf\u95ee\u4e0d\u53d7\u5f71\u54cd\u3002";
-"Restrict Outgoing Ports" = "\u9650\u5236\u51fa\u7ad9\u7aef\u53e3";
-"Only allow the browser to connect on specific network ports. Useful for locking down which services the browser can reach." = "\u4ec5\u5141\u8bb8\u6d4f\u89c8\u5668\u901a\u8fc7\u7279\u5b9a\u7f51\u7edc\u7aef\u53e3\u8fde\u63a5\u3002\u53ef\u7528\u4e8e\u9650\u5236\u6d4f\u89c8\u5668\u53ef\u8bbf\u95ee\u7684\u670d\u52a1\u3002";
-"Allowed ports (e.g. 80, 443, 8000-9000)" = "\u5141\u8bb8\u7684\u7aef\u53e3\uff08\u4f8b\u5982 80, 443, 8000-9000\uff09";
-"DNS (port 53) is always allowed. Separate ports with commas. Use a dash for ranges." = "DNS\uff08\u7aef\u53e3 53\uff09\u59cb\u7ec8\u5141\u8bb8\u3002\u7528\u9017\u53f7\u5206\u9694\u7aef\u53e3\uff0c\u7528\u77ed\u6a2a\u7ebf\u8868\u793a\u8303\u56f4\u3002";
+"Restrict which networks and ports this browser can reach" = "\U9650\U5236\U6b64\U6d4f\U89c8\U5668\U53ef\U8bbf\U95ee\U7684\U7f51\U7edc\U548c\U7aef\U53e3";
+"Isolate from Local Network" = "\U4e0e\U672c\U5730\U7f51\U7edc\U9694\U79bb";
+"Prevents this browser from reaching devices on your home or office network, like printers, NAS drives, or internal servers. Internet access is not affected." = "\U963b\U6b62\U6b64\U6d4f\U89c8\U5668\U8bbf\U95ee\U4f60\U5bb6\U5ead\U6216\U529e\U516c\U7f51\U7edc\U4e0a\U7684\U8bbe\U5907\Uff0c\U5982\U6253\U5370\U673a\U3001NAS \U5b58\U50a8\U6216\U5185\U90e8\U670d\U52a1\U5668\U3002\U4e92\U8054\U7f51\U8bbf\U95ee\U4e0d\U53d7\U5f71\U54cd\U3002";
+"Restrict Outgoing Ports" = "\U9650\U5236\U51fa\U7ad9\U7aef\U53e3";
+"Only allow the browser to connect on specific network ports. Useful for locking down which services the browser can reach." = "\U4ec5\U5141\U8bb8\U6d4f\U89c8\U5668\U901a\U8fc7\U7279\U5b9a\U7f51\U7edc\U7aef\U53e3\U8fde\U63a5\U3002\U53ef\U7528\U4e8e\U9650\U5236\U6d4f\U89c8\U5668\U53ef\U8bbf\U95ee\U7684\U670d\U52a1\U3002";
+"Allowed ports (e.g. 80, 443, 8000-9000)" = "\U5141\U8bb8\U7684\U7aef\U53e3\Uff08\U4f8b\U5982 80, 443, 8000-9000\Uff09";
+"DNS (port 53) is always allowed. Separate ports with commas. Use a dash for ranges." = "DNS\Uff08\U7aef\U53e3 53\Uff09\U59cb\U7ec8\U5141\U8bb8\U3002\U7528\U9017\U53f7\U5206\U9694\U7aef\U53e3\Uff0c\U7528\U77ed\U6a2a\U7ebf\U8868\U793a\U8303\U56f4\U3002";
 
 /* ProfileSettingsView — VPN & Ads */
-"Network privacy and ad blocking" = "\u7f51\u7edc\u9690\u79c1\u548c\u5e7f\u544a\u62e6\u622a";
+"Network privacy and ad blocking" = "\U7f51\U7edc\U9690\U79c1\U548c\U5e7f\U544a\U62e6\U622a";
 "Cloudflare WARP" = "Cloudflare WARP";
-"Routes all browser traffic through Cloudflare\U2019s encrypted network, hiding your IP address from websites. Works like a VPN." = "\u5c06\u6240\u6709\u6d4f\u89c8\u5668\u6d41\u91cf\u901a\u8fc7 Cloudflare \u7684\u52a0\u5bc6\u7f51\u7edc\u8def\u7531\uff0c\u5bf9\u7f51\u7ad9\u9690\u85cf\u4f60\u7684 IP \u5730\u5740\u3002\u5de5\u4f5c\u539f\u7406\u7c7b\u4f3c VPN\u3002";
-"Block Ads" = "\u62e6\u622a\u5e7f\u544a";
-"Blocks ads and tracking scripts from loading on websites. This can make pages load faster and protects your privacy." = "\u963b\u6b62\u7f51\u7ad9\u52a0\u8f7d\u5e7f\u544a\u548c\u8ddf\u8e2a\u811a\u672c\u3002\u8fd9\u53ef\u4ee5\u52a0\u5feb\u9875\u9762\u52a0\u8f7d\u901f\u5ea6\u5e76\u4fdd\u62a4\u4f60\u7684\u9690\u79c1\u3002";
+"Routes all browser traffic through Cloudflare\U2019s encrypted network, hiding your IP address from websites. Works like a VPN." = "\U5c06\U6240\U6709\U6d4f\U89c8\U5668\U6d41\U91cf\U901a\U8fc7 Cloudflare \U7684\U52a0\U5bc6\U7f51\U7edc\U8def\U7531\Uff0c\U5bf9\U7f51\U7ad9\U9690\U85cf\U4f60\U7684 IP \U5730\U5740\U3002\U5de5\U4f5c\U539f\U7406\U7c7b\U4f3c VPN\U3002";
+"Block Ads" = "\U62e6\U622a\U5e7f\U544a";
+"Blocks ads and tracking scripts from loading on websites. This can make pages load faster and protects your privacy." = "\U963b\U6b62\U7f51\U7ad9\U52a0\U8f7d\U5e7f\U544a\U548c\U8ddf\U8e2a\U811a\U672c\U3002\U8fd9\U53ef\U4ee5\U52a0\U5feb\U9875\U9762\U52a0\U8f7d\U901f\U5ea6\U5e76\U4fdd\U62a4\U4f60\U7684\U9690\U79c1\U3002";
 
 /* ProfileSettingsView — Enterprise */
-"Settings for managed environments" = "\u9002\u7528\u4e8e\u53d7\u7ba1\u7406\u73af\u5883\u7684\u8bbe\u7f6e";
-"Root Certificates" = "\u6839\u8bc1\u4e66";
-"Install custom root CA certificates so the browser trusts your organization\U2019s internal websites and services. Accepts PEM, DER, CRT, and CER files." = "\u5b89\u88c5\u81ea\u5b9a\u4e49\u6839 CA \u8bc1\u4e66\uff0c\u4ee5\u4fbf\u6d4f\u89c8\u5668\u4fe1\u4efb\u4f60\u7ec4\u7ec7\u7684\u5185\u90e8\u7f51\u7ad9\u548c\u670d\u52a1\u3002\u652f\u6301 PEM\u3001DER\u3001CRT \u548c CER \u6587\u4ef6\u3002";
-"Add Certificate\U2026" = "\u6dfb\u52a0\u8bc1\u4e66\U2026";
+"Settings for managed environments" = "\U9002\U7528\U4e8e\U53d7\U7ba1\U7406\U73af\U5883\U7684\U8bbe\U7f6e";
+"Root Certificates" = "\U6839\U8bc1\U4e66";
+"Install custom root CA certificates so the browser trusts your organization\U2019s internal websites and services. Accepts PEM, DER, CRT, and CER files." = "\U5b89\U88c5\U81ea\U5b9a\U4e49\U6839 CA \U8bc1\U4e66\Uff0c\U4ee5\U4fbf\U6d4f\U89c8\U5668\U4fe1\U4efb\U4f60\U7ec4\U7ec7\U7684\U5185\U90e8\U7f51\U7ad9\U548c\U670d\U52a1\U3002\U652f\U6301 PEM\U3001DER\U3001CRT \U548c CER \U6587\U4ef6\U3002";
+"Add Certificate\U2026" = "\U6dfb\U52a0\U8bc1\U4e66\U2026";
 
 /* ProfileSettingsView — Advanced */
-"Additional options for power users" = "\u9762\u5411\u9ad8\u7ea7\u7528\u6237\u7684\u9644\u52a0\u9009\u9879";
-"Encrypt Browsing Data" = "\u52a0\u5bc6\u6d4f\u89c8\u6570\u636e";
-"Encrypts all saved browsing data on your Mac\U2019s disk using LUKS. The encryption key is stored securely in your macOS Keychain. If you lose the key, your data cannot be recovered." = "\u4f7f\u7528 LUKS \u52a0\u5bc6 Mac \u78c1\u76d8\u4e0a\u6240\u6709\u5df2\u4fdd\u5b58\u7684\u6d4f\u89c8\u6570\u636e\u3002\u52a0\u5bc6\u5bc6\u94a5\u5b89\u5168\u5b58\u50a8\u5728 macOS \u94a5\u5319\u4e32\u4e2d\u3002\u5982\u679c\u5bc6\u94a5\u4e22\u5931\uff0c\u6570\u636e\u5c06\u65e0\u6cd5\u6062\u590d\u3002";
-"Encryption" = "\u52a0\u5bc6";
-"Turn on \U201CRetain Browsing Data\U201D in General to access disk encryption options." = "\u5728\u201c\u901a\u7528\u201d\u4e2d\u5f00\u542f\U201C\u4fdd\u7559\u6d4f\u89c8\u6570\u636e\U201D\u4ee5\u8bbf\u95ee\u78c1\u76d8\u52a0\u5bc6\u9009\u9879\u3002";
+"Additional options for power users" = "\U9762\U5411\U9ad8\U7ea7\U7528\U6237\U7684\U9644\U52a0\U9009\U9879";
+"Encrypt Browsing Data" = "\U52a0\U5bc6\U6d4f\U89c8\U6570\U636e";
+"Encrypts all saved browsing data on your Mac\U2019s disk using LUKS. The encryption key is stored securely in your macOS Keychain. If you lose the key, your data cannot be recovered." = "\U4f7f\U7528 LUKS \U52a0\U5bc6 Mac \U78c1\U76d8\U4e0a\U6240\U6709\U5df2\U4fdd\U5b58\U7684\U6d4f\U89c8\U6570\U636e\U3002\U52a0\U5bc6\U5bc6\U94a5\U5b89\U5168\U5b58\U50a8\U5728 macOS \U94a5\U5319\U4e32\U4e2d\U3002\U5982\U679c\U5bc6\U94a5\U4e22\U5931\Uff0c\U6570\U636e\U5c06\U65e0\U6cd5\U6062\U590d\U3002";
+"Encryption" = "\U52a0\U5bc6";
+"Turn on \U201CRetain Browsing Data\U201D in General to access disk encryption options." = "\U5728\U201c\U901a\U7528\U201d\U4e2d\U5f00\U542f\U201C\U4fdd\U7559\U6d4f\U89c8\U6570\U636e\U201D\U4ee5\U8bbf\U95ee\U78c1\U76d8\U52a0\U5bc6\U9009\U9879\U3002";
 
 /* ProfileSettingsView — Confirmation dialogs */
-"Increase VM memory?" = "\u589e\u52a0\u865a\u62df\u673a\u5185\u5b58\uff1f";
-"Increase to 2 GB" = "\u589e\u52a0\u5230 2 GB";
-"Keep current" = "\u4fdd\u6301\u5f53\u524d\u8bbe\u7f6e";
-"Cloudflare WARP requires at least 2 GB of RAM to run reliably. Would you like to increase the VM memory?" = "Cloudflare WARP \u9700\u8981\u81f3\u5c11 2 GB \u5185\u5b58\u624d\u80fd\u7a33\u5b9a\u8fd0\u884c\u3002\u662f\u5426\u8981\u589e\u52a0\u865a\u62df\u673a\u5185\u5b58\uff1f";
-"Enable encryption?" = "\u542f\u7528\u52a0\u5bc6\uff1f";
-"Disable encryption?" = "\u505c\u7528\u52a0\u5bc6\uff1f";
-"Delete data and continue" = "\u5220\u9664\u6570\u636e\u5e76\u7ee7\u7eed";
-"Changing the encryption setting will delete all existing browsing data for this profile. This cannot be undone." = "\u66f4\u6539\u52a0\u5bc6\u8bbe\u7f6e\u5c06\u5220\u9664\u6b64\u914d\u7f6e\u6587\u4ef6\u7684\u6240\u6709\u73b0\u6709\u6d4f\u89c8\u6570\u636e\u3002\u6b64\u64cd\u4f5c\u4e0d\u53ef\u64a4\u9500\u3002";
+"Increase VM memory?" = "\U589e\U52a0\U865a\U62df\U673a\U5185\U5b58\Uff1f";
+"Increase to 2 GB" = "\U589e\U52a0\U5230 2 GB";
+"Keep current" = "\U4fdd\U6301\U5f53\U524d\U8bbe\U7f6e";
+"Cloudflare WARP requires at least 2 GB of RAM to run reliably. Would you like to increase the VM memory?" = "Cloudflare WARP \U9700\U8981\U81f3\U5c11 2 GB \U5185\U5b58\U624d\U80fd\U7a33\U5b9a\U8fd0\U884c\U3002\U662f\U5426\U8981\U589e\U52a0\U865a\U62df\U673a\U5185\U5b58\Uff1f";
+"Enable encryption?" = "\U542f\U7528\U52a0\U5bc6\Uff1f";
+"Disable encryption?" = "\U505c\U7528\U52a0\U5bc6\Uff1f";
+"Delete data and continue" = "\U5220\U9664\U6570\U636e\U5e76\U7ee7\U7eed";
+"Changing the encryption setting will delete all existing browsing data for this profile. This cannot be undone." = "\U66f4\U6539\U52a0\U5bc6\U8bbe\U7f6e\U5c06\U5220\U9664\U6b64\U914d\U7f6e\U6587\U4ef6\U7684\U6240\U6709\U73b0\U6709\U6d4f\U89c8\U6570\U636e\U3002\U6b64\U64cd\U4f5c\U4e0d\U53ef\U64a4\U9500\U3002";
 
 /* SettingsView — Categories */
-"Hardware" = "\u786c\u4ef6";
-"Input" = "\u8f93\u5165";
-"Display" = "\u663e\u793a\u5668";
-"Network" = "\u7f51\u7edc";
-"Storage" = "\u5b58\u50a8";
+"Hardware" = "\U786c\U4ef6";
+"Input" = "\U8f93\U5165";
+"Display" = "\U663e\U793a\U5668";
+"Network" = "\U7f51\U7edc";
+"Storage" = "\U5b58\U50a8";
 
 /* SettingsView — Hardware */
-"Resources allocated to each browser session" = "\u5206\u914d\u7ed9\u6bcf\u4e2a\u6d4f\u89c8\u5668\u4f1a\u8bdd\u7684\u8d44\u6e90";
-"Memory" = "\u5185\u5b58";
-"How much RAM each browser gets. 2 GB works for most websites. Increase to 4 GB or more for heavy web apps." = "\u6bcf\u4e2a\u6d4f\u89c8\u5668\u5206\u914d\u7684\u5185\u5b58\u5927\u5c0f\u30022 GB \u53ef\u6ee1\u8db3\u5927\u591a\u6570\u7f51\u7ad9\u7684\u9700\u6c42\u3002\u5bf9\u4e8e\u91cd\u91cf\u7ea7\u7f51\u9875\u5e94\u7528\uff0c\u53ef\u589e\u52a0\u5230 4 GB \u6216\u66f4\u9ad8\u3002";
+"Resources allocated to each browser session" = "\U5206\U914d\U7ed9\U6bcf\U4e2a\U6d4f\U89c8\U5668\U4f1a\U8bdd\U7684\U8d44\U6e90";
+"Memory" = "\U5185\U5b58";
+"How much RAM each browser gets. 2 GB works for most websites. Increase to 4 GB or more for heavy web apps." = "\U6bcf\U4e2a\U6d4f\U89c8\U5668\U5206\U914d\U7684\U5185\U5b58\U5927\U5c0f\U30022 GB \U53ef\U6ee1\U8db3\U5927\U591a\U6570\U7f51\U7ad9\U7684\U9700\U6c42\U3002\U5bf9\U4e8e\U91cd\U91cf\U7ea7\U7f51\U9875\U5e94\U7528\Uff0c\U53ef\U589e\U52a0\U5230 4 GB \U6216\U66f4\U9ad8\U3002";
 "1 GB" = "1 GB";
 "2 GB" = "2 GB";
 "3 GB" = "3 GB";
 "4 GB" = "4 GB";
 "8 GB" = "8 GB";
 "16 GB" = "16 GB";
-"CPU Cores" = "CPU \u6838\u5fc3\u6570";
-"Number of processor cores available to the browser. Automatic scales with memory (2 cores per GB), up to the number of cores on this Mac." = "\u6d4f\u89c8\u5668\u53ef\u7528\u7684\u5904\u7406\u5668\u6838\u5fc3\u6570\u3002\u81ea\u52a8\u6a21\u5f0f\u6839\u636e\u5185\u5b58\u5927\u5c0f\u8c03\u6574\uff08\u6bcf GB \u5185\u5b58 2 \u4e2a\u6838\u5fc3\uff09\uff0c\u4e0a\u9650\u4e3a\u6b64 Mac \u7684\u6838\u5fc3\u603b\u6570\u3002";
-"Automatic (%lld)" = "\u81ea\u52a8 (%lld)";
-"Changes take effect when the next browser session starts." = "\u66f4\u6539\u5c06\u5728\u4e0b\u6b21\u6d4f\u89c8\u5668\u4f1a\u8bdd\u542f\u52a8\u65f6\u751f\u6548\u3002";
+"CPU Cores" = "CPU \U6838\U5fc3\U6570";
+"Number of processor cores available to the browser. Automatic scales with memory (2 cores per GB), up to the number of cores on this Mac." = "\U6d4f\U89c8\U5668\U53ef\U7528\U7684\U5904\U7406\U5668\U6838\U5fc3\U6570\U3002\U81ea\U52a8\U6a21\U5f0f\U6839\U636e\U5185\U5b58\U5927\U5c0f\U8c03\U6574\Uff08\U6bcf GB \U5185\U5b58 2 \U4e2a\U6838\U5fc3\Uff09\Uff0c\U4e0a\U9650\U4e3a\U6b64 Mac \U7684\U6838\U5fc3\U603b\U6570\U3002";
+"Automatic (%lld)" = "\U81ea\U52a8 (%lld)";
+"Changes take effect when the next browser session starts." = "\U66f4\U6539\U5c06\U5728\U4e0b\U6b21\U6d4f\U89c8\U5668\U4f1a\U8bdd\U542f\U52a8\U65f6\U751f\U6548\U3002";
 
 /* SettingsView — Input */
-"Keyboard and trackpad settings" = "\u952e\u76d8\u548c\u89e6\u63a7\u677f\u8bbe\u7f6e";
-"Keyboard Layout" = "\u952e\u76d8\u5e03\u5c40";
-"Match this to your physical keyboard. Changing the layout requires rebuilding the base image." = "\u8bf7\u4e0e\u4f60\u7684\u5b9e\u4f53\u952e\u76d8\u4fdd\u6301\u4e00\u81f4\u3002\u66f4\u6539\u5e03\u5c40\u9700\u8981\u91cd\u65b0\u6784\u5efa\u57fa\u7840\u955c\u50cf\u3002";
-"Natural Scrolling" = "\u81ea\u7136\u6eda\u52a8";
-"Scroll content in the same direction as your finger moves on the trackpad, matching the macOS default." = "\u5185\u5bb9\u6eda\u52a8\u65b9\u5411\u4e0e\u624b\u6307\u5728\u89e6\u63a7\u677f\u4e0a\u7684\u79fb\u52a8\u65b9\u5411\u4e00\u81f4\uff0c\u4e0e macOS \u9ed8\u8ba4\u8bbe\u7f6e\u76f8\u540c\u3002";
-"Use Command as Control" = "\u5c06 Command \u952e\u7528\u4f5c Control \u952e";
-"Makes familiar shortcuts like \U2318C, \U2318V, and \U2318T work inside the browser by swapping the Command and Control keys." = "\u901a\u8fc7\u4ea4\u6362 Command \u548c Control \u952e\uff0c\u8ba9\u4f60\u5728\u6d4f\u89c8\u5668\u4e2d\u4f7f\u7528\u719f\u6089\u7684\u5feb\u6377\u952e\uff0c\u5982 \U2318C\u3001\U2318V \u548c \U2318T\u3002";
+"Keyboard and trackpad settings" = "\U952e\U76d8\U548c\U89e6\U63a7\U677f\U8bbe\U7f6e";
+"Keyboard Layout" = "\U952e\U76d8\U5e03\U5c40";
+"Match this to your physical keyboard. Changing the layout requires rebuilding the base image." = "\U8bf7\U4e0e\U4f60\U7684\U5b9e\U4f53\U952e\U76d8\U4fdd\U6301\U4e00\U81f4\U3002\U66f4\U6539\U5e03\U5c40\U9700\U8981\U91cd\U65b0\U6784\U5efa\U57fa\U7840\U955c\U50cf\U3002";
+"Natural Scrolling" = "\U81ea\U7136\U6eda\U52a8";
+"Scroll content in the same direction as your finger moves on the trackpad, matching the macOS default." = "\U5185\U5bb9\U6eda\U52a8\U65b9\U5411\U4e0e\U624b\U6307\U5728\U89e6\U63a7\U677f\U4e0a\U7684\U79fb\U52a8\U65b9\U5411\U4e00\U81f4\Uff0c\U4e0e macOS \U9ed8\U8ba4\U8bbe\U7f6e\U76f8\U540c\U3002";
+"Use Command as Control" = "\U5c06 Command \U952e\U7528\U4f5c Control \U952e";
+"Makes familiar shortcuts like \U2318C, \U2318V, and \U2318T work inside the browser by swapping the Command and Control keys." = "\U901a\U8fc7\U4ea4\U6362 Command \U548c Control \U952e\Uff0c\U8ba9\U4f60\U5728\U6d4f\U89c8\U5668\U4e2d\U4f7f\U7528\U719f\U6089\U7684\U5feb\U6377\U952e\Uff0c\U5982 \U2318C\U3001\U2318V \U548c \U2318T\U3002";
 
 /* SettingsView — Display */
-"Screen and appearance settings" = "\u5c4f\u5e55\u548c\u5916\u89c2\u8bbe\u7f6e";
-"Scale Factor" = "\u7f29\u653e\u6bd4\u4f8b";
-"Match your Mac\U2019s display. Use 2x for Retina screens (most modern Macs). Changing this requires rebuilding the base image." = "\u8bf7\u4e0e Mac \u7684\u663e\u793a\u5668\u5339\u914d\u3002Retina \u5c4f\u5e55\uff08\u5927\u591a\u6570\u65b0\u6b3e Mac\uff09\u8bf7\u4f7f\u7528 2x\u3002\u66f4\u6539\u6b64\u8bbe\u7f6e\u9700\u8981\u91cd\u65b0\u6784\u5efa\u57fa\u7840\u955c\u50cf\u3002";
-"1x (Standard)" = "1x\uff08\u6807\u51c6\uff09";
+"Screen and appearance settings" = "\U5c4f\U5e55\U548c\U5916\U89c2\U8bbe\U7f6e";
+"Scale Factor" = "\U7f29\U653e\U6bd4\U4f8b";
+"Match your Mac\U2019s display. Use 2x for Retina screens (most modern Macs). Changing this requires rebuilding the base image." = "\U8bf7\U4e0e Mac \U7684\U663e\U793a\U5668\U5339\U914d\U3002Retina \U5c4f\U5e55\Uff08\U5927\U591a\U6570\U65b0\U6b3e Mac\Uff09\U8bf7\U4f7f\U7528 2x\U3002\U66f4\U6539\U6b64\U8bbe\U7f6e\U9700\U8981\U91cd\U65b0\U6784\U5efa\U57fa\U7840\U955c\U50cf\U3002";
+"1x (Standard)" = "1x\Uff08\U6807\U51c6\Uff09";
 "2x (Retina)" = "2x (Retina)";
-"Appearance" = "\u5916\u89c2";
-"Controls whether the browser uses a light or dark color scheme. \U201CSame as System\U201D follows your Mac\U2019s current setting." = "\u63a7\u5236\u6d4f\u89c8\u5668\u4f7f\u7528\u6d45\u8272\u8fd8\u662f\u6df1\u8272\u65b9\u6848\u3002\U201C\u8ddf\u968f\u7cfb\u7edf\U201D\u4f1a\u8ddf\u968f Mac \u7684\u5f53\u524d\u8bbe\u7f6e\u3002";
-"Same as System" = "\u8ddf\u968f\u7cfb\u7edf";
-"Light" = "\u6d45\u8272";
-"Dark" = "\u6df1\u8272";
+"Appearance" = "\U5916\U89c2";
+"Controls whether the browser uses a light or dark color scheme. \U201CSame as System\U201D follows your Mac\U2019s current setting." = "\U63a7\U5236\U6d4f\U89c8\U5668\U4f7f\U7528\U6d45\U8272\U8fd8\U662f\U6df1\U8272\U65b9\U6848\U3002\U201C\U8ddf\U968f\U7cfb\U7edf\U201D\U4f1a\U8ddf\U968f Mac \U7684\U5f53\U524d\U8bbe\U7f6e\U3002";
+"Same as System" = "\U8ddf\U968f\U7cfb\U7edf";
+"Light" = "\U6d45\U8272";
+"Dark" = "\U6df1\U8272";
 
 /* SettingsView — Network */
-"Connection mode and DNS settings" = "\u8fde\u63a5\u6a21\u5f0f\u548c DNS \u8bbe\u7f6e";
-"You probably don\U2019t need to change anything here." = "\u4f60\u53ef\u80fd\u4e0d\u9700\u8981\u66f4\u6539\u6b64\u5904\u7684\u4efb\u4f55\u8bbe\u7f6e\u3002";
-"These settings are only useful if you\U2019re having trouble during installation or if a VPN, firewall, or other local software is preventing the browser from connecting to the internet." = "\u8fd9\u4e9b\u8bbe\u7f6e\u4ec5\u5728\u5b89\u88c5\u8fc7\u7a0b\u4e2d\u9047\u5230\u95ee\u9898\uff0c\u6216 VPN\u3001\u9632\u706b\u5899\u6216\u5176\u4ed6\u672c\u5730\u8f6f\u4ef6\u963b\u6b62\u6d4f\u89c8\u5668\u8fde\u63a5\u4e92\u8054\u7f51\u65f6\u624d\u6709\u7528\u3002";
-"Connection Mode" = "\u8fde\u63a5\u6a21\u5f0f";
-"NAT (recommended) gives the browser its own private network address. Bridged mode places the browser directly on your network, as if it were a separate device." = "NAT\uff08\u63a8\u8350\uff09\u4e3a\u6d4f\u89c8\u5668\u5206\u914d\u72ec\u7acb\u7684\u79c1\u6709\u7f51\u7edc\u5730\u5740\u3002\u6865\u63a5\u6a21\u5f0f\u5c06\u6d4f\u89c8\u5668\u76f4\u63a5\u63a5\u5165\u4f60\u7684\u7f51\u7edc\uff0c\u5982\u540c\u4e00\u53f0\u72ec\u7acb\u7684\u8bbe\u5907\u3002";
-"NAT (Recommended)" = "NAT\uff08\u63a8\u8350\uff09";
-"Bridged" = "\u6865\u63a5";
-"Network Interface" = "\u7f51\u7edc\u63a5\u53e3";
-"Choose which network connection the browser should use. Typically this is your Wi-Fi or Ethernet adapter." = "\u9009\u62e9\u6d4f\u89c8\u5668\u5e94\u4f7f\u7528\u7684\u7f51\u7edc\u8fde\u63a5\u3002\u901a\u5e38\u662f\u4f60\u7684 Wi-Fi \u6216\u4ee5\u592a\u7f51\u9002\u914d\u5668\u3002";
-"No network interfaces available." = "\u6ca1\u6709\u53ef\u7528\u7684\u7f51\u7edc\u63a5\u53e3\u3002";
-"Select\U2026" = "\u9009\u62e9\U2026";
-"LAN isolation and port restriction are not available in bridged mode." = "\u5c40\u57df\u7f51\u9694\u79bb\u548c\u7aef\u53e3\u9650\u5236\u5728\u6865\u63a5\u6a21\u5f0f\u4e0b\u4e0d\u53ef\u7528\u3002";
-"DNS Servers" = "DNS \u670d\u52a1\u5668";
-"Override which DNS servers the browser uses to look up website addresses. Leave empty to use the default. Set this if you\U2019re on a VPN or security software that breaks internet access in the browser." = "\u8986\u76d6\u6d4f\u89c8\u5668\u7528\u4e8e\u67e5\u627e\u7f51\u7ad9\u5730\u5740\u7684 DNS \u670d\u52a1\u5668\u3002\u7559\u7a7a\u5219\u4f7f\u7528\u9ed8\u8ba4\u503c\u3002\u5982\u679c\u4f60\u4f7f\u7528\u7684 VPN \u6216\u5b89\u5168\u8f6f\u4ef6\u5bfc\u81f4\u6d4f\u89c8\u5668\u65e0\u6cd5\u8bbf\u95ee\u4e92\u8054\u7f51\uff0c\u8bf7\u8bbe\u7f6e\u6b64\u9879\u3002";
-"e.g. 1.1.1.1, 8.8.8.8" = "\u4f8b\u5982 1.1.1.1, 8.8.8.8";
-"DNS override only works in NAT mode." = "DNS \u8986\u76d6\u4ec5\u5728 NAT \u6a21\u5f0f\u4e0b\u6709\u6548\u3002";
+"Connection mode and DNS settings" = "\U8fde\U63a5\U6a21\U5f0f\U548c DNS \U8bbe\U7f6e";
+"You probably don\U2019t need to change anything here." = "\U4f60\U53ef\U80fd\U4e0d\U9700\U8981\U66f4\U6539\U6b64\U5904\U7684\U4efb\U4f55\U8bbe\U7f6e\U3002";
+"These settings are only useful if you\U2019re having trouble during installation or if a VPN, firewall, or other local software is preventing the browser from connecting to the internet." = "\U8fd9\U4e9b\U8bbe\U7f6e\U4ec5\U5728\U5b89\U88c5\U8fc7\U7a0b\U4e2d\U9047\U5230\U95ee\U9898\Uff0c\U6216 VPN\U3001\U9632\U706b\U5899\U6216\U5176\U4ed6\U672c\U5730\U8f6f\U4ef6\U963b\U6b62\U6d4f\U89c8\U5668\U8fde\U63a5\U4e92\U8054\U7f51\U65f6\U624d\U6709\U7528\U3002";
+"Connection Mode" = "\U8fde\U63a5\U6a21\U5f0f";
+"NAT (recommended) gives the browser its own private network address. Bridged mode places the browser directly on your network, as if it were a separate device." = "NAT\Uff08\U63a8\U8350\Uff09\U4e3a\U6d4f\U89c8\U5668\U5206\U914d\U72ec\U7acb\U7684\U79c1\U6709\U7f51\U7edc\U5730\U5740\U3002\U6865\U63a5\U6a21\U5f0f\U5c06\U6d4f\U89c8\U5668\U76f4\U63a5\U63a5\U5165\U4f60\U7684\U7f51\U7edc\Uff0c\U5982\U540c\U4e00\U53f0\U72ec\U7acb\U7684\U8bbe\U5907\U3002";
+"NAT (Recommended)" = "NAT\Uff08\U63a8\U8350\Uff09";
+"Bridged" = "\U6865\U63a5";
+"Network Interface" = "\U7f51\U7edc\U63a5\U53e3";
+"Choose which network connection the browser should use. Typically this is your Wi-Fi or Ethernet adapter." = "\U9009\U62e9\U6d4f\U89c8\U5668\U5e94\U4f7f\U7528\U7684\U7f51\U7edc\U8fde\U63a5\U3002\U901a\U5e38\U662f\U4f60\U7684 Wi-Fi \U6216\U4ee5\U592a\U7f51\U9002\U914d\U5668\U3002";
+"No network interfaces available." = "\U6ca1\U6709\U53ef\U7528\U7684\U7f51\U7edc\U63a5\U53e3\U3002";
+"Select\U2026" = "\U9009\U62e9\U2026";
+"LAN isolation and port restriction are not available in bridged mode." = "\U5c40\U57df\U7f51\U9694\U79bb\U548c\U7aef\U53e3\U9650\U5236\U5728\U6865\U63a5\U6a21\U5f0f\U4e0b\U4e0d\U53ef\U7528\U3002";
+"DNS Servers" = "DNS \U670d\U52a1\U5668";
+"Override which DNS servers the browser uses to look up website addresses. Leave empty to use the default. Set this if you\U2019re on a VPN or security software that breaks internet access in the browser." = "\U8986\U76d6\U6d4f\U89c8\U5668\U7528\U4e8e\U67e5\U627e\U7f51\U7ad9\U5730\U5740\U7684 DNS \U670d\U52a1\U5668\U3002\U7559\U7a7a\U5219\U4f7f\U7528\U9ed8\U8ba4\U503c\U3002\U5982\U679c\U4f60\U4f7f\U7528\U7684 VPN \U6216\U5b89\U5168\U8f6f\U4ef6\U5bfc\U81f4\U6d4f\U89c8\U5668\U65e0\U6cd5\U8bbf\U95ee\U4e92\U8054\U7f51\Uff0c\U8bf7\U8bbe\U7f6e\U6b64\U9879\U3002";
+"e.g. 1.1.1.1, 8.8.8.8" = "\U4f8b\U5982 1.1.1.1, 8.8.8.8";
+"DNS override only works in NAT mode." = "DNS \U8986\U76d6\U4ec5\U5728 NAT \U6a21\U5f0f\U4e0b\U6709\U6548\U3002";
 
 /* SettingsView — Storage */
-"Disk usage and base image management" = "\u78c1\u76d8\u4f7f\u7528\u91cf\u548c\u57fa\u7840\u955c\u50cf\u7ba1\u7406";
-"Disk Usage" = "\u78c1\u76d8\u4f7f\u7528\u91cf";
-"Total disk space used by the base image and all profile data." = "\u57fa\u7840\u955c\u50cf\u548c\u6240\u6709\u914d\u7f6e\u6587\u4ef6\u6570\u636e\u5360\u7528\u7684\u78c1\u76d8\u7a7a\u95f4\u603b\u91cf\u3002";
-"Storage Location" = "\u5b58\u50a8\u4f4d\u7f6e";
-"Reset" = "\u8fd8\u539f";
-"Delete the Linux base image. You\U2019ll need to run the initial setup again. This does not delete your profile data or settings." = "\u5220\u9664 Linux \u57fa\u7840\u955c\u50cf\u3002\u4f60\u9700\u8981\u91cd\u65b0\u8fd0\u884c\u521d\u59cb\u8bbe\u7f6e\u3002\u6b64\u64cd\u4f5c\u4e0d\u4f1a\u5220\u9664\u4f60\u7684\u914d\u7f6e\u6587\u4ef6\u6570\u636e\u6216\u8bbe\u7f6e\u3002";
-"Delete Base Image & Reset\U2026" = "\u5220\u9664\u57fa\u7840\u955c\u50cf\u5e76\u8fd8\u539f\U2026";
+"Disk usage and base image management" = "\U78c1\U76d8\U4f7f\U7528\U91cf\U548c\U57fa\U7840\U955c\U50cf\U7ba1\U7406";
+"Disk Usage" = "\U78c1\U76d8\U4f7f\U7528\U91cf";
+"Total disk space used by the base image and all profile data." = "\U57fa\U7840\U955c\U50cf\U548c\U6240\U6709\U914d\U7f6e\U6587\U4ef6\U6570\U636e\U5360\U7528\U7684\U78c1\U76d8\U7a7a\U95f4\U603b\U91cf\U3002";
+"Storage Location" = "\U5b58\U50a8\U4f4d\U7f6e";
+"Reset" = "\U8fd8\U539f";
+"Delete the Linux base image. You\U2019ll need to run the initial setup again. This does not delete your profile data or settings." = "\U5220\U9664 Linux \U57fa\U7840\U955c\U50cf\U3002\U4f60\U9700\U8981\U91cd\U65b0\U8fd0\U884c\U521d\U59cb\U8bbe\U7f6e\U3002\U6b64\U64cd\U4f5c\U4e0d\U4f1a\U5220\U9664\U4f60\U7684\U914d\U7f6e\U6587\U4ef6\U6570\U636e\U6216\U8bbe\U7f6e\U3002";
+"Delete Base Image & Reset\U2026" = "\U5220\U9664\U57fa\U7840\U955c\U50cf\U5e76\U8fd8\U539f\U2026";
 
 /* SettingsView — Dialogs */
-"Delete the base image?" = "\u5220\u9664\u57fa\u7840\u955c\u50cf\uff1f";
-"This will delete the Linux base image. You\U2019ll need to run setup again." = "\u8fd9\u5c06\u5220\u9664 Linux \u57fa\u7840\u955c\u50cf\u3002\u4f60\u9700\u8981\u91cd\u65b0\u8fd0\u884c\u8bbe\u7f6e\u3002";
-"Rebuild required" = "\u9700\u8981\u91cd\u65b0\u6784\u5efa";
-"Rebuild Image" = "\u91cd\u65b0\u6784\u5efa\u955c\u50cf";
-"Changing this setting requires rebuilding the base image. All open browser windows will be closed and any unsaved data will be lost." = "\u66f4\u6539\u6b64\u8bbe\u7f6e\u9700\u8981\u91cd\u65b0\u6784\u5efa\u57fa\u7840\u955c\u50cf\u3002\u6240\u6709\u5df2\u6253\u5f00\u7684\u6d4f\u89c8\u5668\u7a97\u53e3\u5c06\u5173\u95ed\uff0c\u4efb\u4f55\u672a\u4fdd\u5b58\u7684\u6570\u636e\u5c06\u4e22\u5931\u3002";
+"Delete the base image?" = "\U5220\U9664\U57fa\U7840\U955c\U50cf\Uff1f";
+"This will delete the Linux base image. You\U2019ll need to run setup again." = "\U8fd9\U5c06\U5220\U9664 Linux \U57fa\U7840\U955c\U50cf\U3002\U4f60\U9700\U8981\U91cd\U65b0\U8fd0\U884c\U8bbe\U7f6e\U3002";
+"Rebuild required" = "\U9700\U8981\U91cd\U65b0\U6784\U5efa";
+"Rebuild Image" = "\U91cd\U65b0\U6784\U5efa\U955c\U50cf";
+"Changing this setting requires rebuilding the base image. All open browser windows will be closed and any unsaved data will be lost." = "\U66f4\U6539\U6b64\U8bbe\U7f6e\U9700\U8981\U91cd\U65b0\U6784\U5efa\U57fa\U7840\U955c\U50cf\U3002\U6240\U6709\U5df2\U6253\U5f00\U7684\U6d4f\U89c8\U5668\U7a97\U53e3\U5c06\U5173\U95ed\Uff0c\U4efb\U4f55\U672a\U4fdd\U5b58\U7684\U6570\U636e\U5c06\U4e22\U5931\U3002";
 
 /* FileDrawerView */
-"File Transfer" = "\u6587\u4ef6\u4f20\u8f93";
-"Drop files here to upload to VM" = "\u5c06\u6587\u4ef6\u62d6\u653e\u5230\u6b64\u5904\u4ee5\u4e0a\u4f20\u5230\u865a\u62df\u673a";
-"Files downloaded in the VM appear here \U2014 drag or save to keep" = "\u5728\u865a\u62df\u673a\u4e2d\u4e0b\u8f7d\u7684\u6587\u4ef6\u4f1a\u663e\u793a\u5728\u6b64\u5904 \U2014 \u62d6\u62fd\u6216\u4fdd\u5b58\u4ee5\u4fdd\u7559";
-"Blocked" = "\u5df2\u62e6\u622a";
-"Saved \U2014 Show in Finder" = "\u5df2\u4fdd\u5b58 \U2014 \u5728\u8bbf\u8fbe\u4e2d\u663e\u793a";
-"Save to Downloads" = "\u4fdd\u5b58\u5230\u201c\u4e0b\u8f7d\u201d\u6587\u4ef6\u5939";
-"Pending" = "\u7b49\u5f85\u4e2d";
-"Scanning" = "\u626b\u63cf\u4e2d";
-"Clean" = "\u5b89\u5168";
+"File Transfer" = "\U6587\U4ef6\U4f20\U8f93";
+"Drop files here to upload to VM" = "\U5c06\U6587\U4ef6\U62d6\U653e\U5230\U6b64\U5904\U4ee5\U4e0a\U4f20\U5230\U865a\U62df\U673a";
+"Files downloaded in the VM appear here \U2014 drag or save to keep" = "\U5728\U865a\U62df\U673a\U4e2d\U4e0b\U8f7d\U7684\U6587\U4ef6\U4f1a\U663e\U793a\U5728\U6b64\U5904 \U2014 \U62d6\U62fd\U6216\U4fdd\U5b58\U4ee5\U4fdd\U7559";
+"Blocked" = "\U5df2\U62e6\U622a";
+"Saved \U2014 Show in Finder" = "\U5df2\U4fdd\U5b58 \U2014 \U5728\U8bbf\U8fbe\U4e2d\U663e\U793a";
+"Save to Downloads" = "\U4fdd\U5b58\U5230\U201c\U4e0b\U8f7d\U201d\U6587\U4ef6\U5939";
+"Pending" = "\U7b49\U5f85\U4e2d";
+"Scanning" = "\U626b\U63cf\U4e2d";
+"Clean" = "\U5b89\U5168";
 
 /* MediaPreviewView */
-"No camera" = "\u65e0\u6444\u50cf\u5934";
-"Camera" = "\u6444\u50cf\u5934";
-"Microphone" = "\u9ea6\u514b\u98ce";
+"No camera" = "\U65e0\U6444\U50cf\U5934";
+"Camera" = "\U6444\U50cf\U5934";
+"Microphone" = "\U9ea6\U514b\U98ce";
 
 /* WarpEULAView */
-"Bromure can route your VM traffic through Cloudflare\U2019s encrypted WARP network for additional privacy and security." = "Bromure \u53ef\u4ee5\u5c06\u865a\u62df\u673a\u6d41\u91cf\u901a\u8fc7 Cloudflare \u7684\u52a0\u5bc6 WARP \u7f51\u7edc\u8def\u7531\uff0c\u4ee5\u589e\u5f3a\u9690\u79c1\u4fdd\u62a4\u548c\u5b89\u5168\u6027\u3002";
-"By clicking Accept, you agree to the Cloudflare Application Terms of Service and Privacy Policy." = "\u70b9\u51fb\u201c\u63a5\u53d7\u201d\u5373\u8868\u793a\u4f60\u540c\u610f Cloudflare \u5e94\u7528\u670d\u52a1\u6761\u6b3e\u548c\u9690\u79c1\u653f\u7b56\u3002";
-"Decline" = "\u62d2\u7edd";
-"Accept" = "\u63a5\u53d7";
+"Bromure can route your VM traffic through Cloudflare\U2019s encrypted WARP network for additional privacy and security." = "Bromure \U53ef\U4ee5\U5c06\U865a\U62df\U673a\U6d41\U91cf\U901a\U8fc7 Cloudflare \U7684\U52a0\U5bc6 WARP \U7f51\U7edc\U8def\U7531\Uff0c\U4ee5\U589e\U5f3a\U9690\U79c1\U4fdd\U62a4\U548c\U5b89\U5168\U6027\U3002";
+"By clicking Accept, you agree to the Cloudflare Application Terms of Service and Privacy Policy." = "\U70b9\U51fb\U201c\U63a5\U53d7\U201d\U5373\U8868\U793a\U4f60\U540c\U610f Cloudflare \U5e94\U7528\U670d\U52a1\U6761\U6b3e\U548c\U9690\U79c1\U653f\U7b56\U3002";
+"Decline" = "\U62d2\U7edd";
+"Accept" = "\U63a5\U53d7";
 
 /* Init steps — Linux image creation */
 "Preparing..." = "准备中…";
@@ -334,138 +334,142 @@
 "Running setup script (installing packages)" = "正在执行设置脚本（安装软件包）";
 
 /* ProfileColor labels */
-"Blue" = "\u84dd\u8272";
-"Red" = "\u7ea2\u8272";
-"Green" = "\u7eff\u8272";
-"Orange" = "\u6a59\u8272";
-"Purple" = "\u7d2b\u8272";
-"Pink" = "\u7c89\u8272";
-"Teal" = "\u9752\u8272";
-"Gray" = "\u7070\u8272";
+"Blue" = "\U84dd\U8272";
+"Red" = "\U7ea2\U8272";
+"Green" = "\U7eff\U8272";
+"Orange" = "\U6a59\U8272";
+"Purple" = "\U7d2b\U8272";
+"Pink" = "\U7c89\U8272";
+"Teal" = "\U9752\U8272";
+"Gray" = "\U7070\U8272";
 
-/* ProfileSettingsView \u2014 Allow Automation */
-"Allow Automation" = "\u5141\u8BB8\u81EA\u52A8\u5316";
-"Let external tools (Claude Code, Puppeteer, Playwright) create browser sessions and control this profile remotely. When turned off, this profile is hidden from the automation API." = "\u5141\u8BB8\u5916\u90E8\u5DE5\u5177\uFF08Claude Code\u3001Puppeteer\u3001Playwright\uFF09\u521B\u5EFA\u6D4F\u89C8\u5668\u4F1A\u8BDD\u5E76\u8FDC\u7A0B\u63A7\u5236\u6B64\u914D\u7F6E\u6587\u4EF6\u3002\u5173\u95ED\u540E\uFF0C\u6B64\u914D\u7F6E\u6587\u4EF6\u5C06\u4ECE\u81EA\u52A8\u5316 API \u4E2D\u9690\u85CF\u3002";
-"The automation server is currently disabled. Enable it in Bromure \U2192 Settings \U2192 Automation." = "\u81EA\u52A8\u5316\u670D\u52A1\u5668\u5F53\u524D\u5DF2\u7981\u7528\u3002\u8BF7\u5728 Bromure \U2192 \u8BBE\u7F6E \U2192 \u81EA\u52A8\u5316\u4E2D\u542F\u7528\u3002";
+/* ProfileSettingsView \U2014 Allow Automation */
+"Allow Automation" = "\U5141\U8BB8\U81EA\U52A8\U5316";
+"Let external tools (Claude Code, Puppeteer, Playwright) create browser sessions and control this profile remotely. When turned off, this profile is hidden from the automation API." = "\U5141\U8BB8\U5916\U90E8\U5DE5\U5177\UFF08Claude Code\U3001Puppeteer\U3001Playwright\UFF09\U521B\U5EFA\U6D4F\U89C8\U5668\U4F1A\U8BDD\U5E76\U8FDC\U7A0B\U63A7\U5236\U6B64\U914D\U7F6E\U6587\U4EF6\U3002\U5173\U95ED\U540E\UFF0C\U6B64\U914D\U7F6E\U6587\U4EF6\U5C06\U4ECE\U81EA\U52A8\U5316 API \U4E2D\U9690\U85CF\U3002";
+"The automation server is currently disabled. Enable it in Bromure \U2192 Settings \U2192 Automation." = "\U81EA\U52A8\U5316\U670D\U52A1\U5668\U5F53\U524D\U5DF2\U7981\U7528\U3002\U8BF7\U5728 Bromure \U2192 \U8BBE\U7F6E \U2192 \U81EA\U52A8\U5316\U4E2D\U542F\U7528\U3002";
 
-/* ProfileSettingsView \u2014 Session Recording */
-"Session Recording" = "\u4F1A\u8BDD\u5F55\u5236";
-"Record all HTTP requests made during this browsing session. Useful for analyzing what a suspicious link does behind the scenes. When the session ends, you can save or discard the recording." = "\u8BB0\u5F55\u6B64\u6D4F\u89C8\u4F1A\u8BDD\u671F\u95F4\u7684\u6240\u6709 HTTP \u8BF7\u6C42\u3002\u6709\u52A9\u4E8E\u5206\u6790\u53EF\u7591\u94FE\u63A5\u5728\u5E55\u540E\u505A\u4E86\u4EC0\u4E48\u3002\u4F1A\u8BDD\u7ED3\u675F\u65F6\uFF0C\u60A8\u53EF\u4EE5\u4FDD\u5B58\u6216\u4E22\u5F03\u5F55\u5236\u5185\u5BB9\u3002";
-"Capture Level" = "\u6355\u83B7\u7EA7\u522B";
-"Disabled" = "\u5DF2\u7981\u7528";
-"Basic \U2014 URLs only" = "\u57FA\u672C \U2014 \u4EC5 URL";
-"Headers \U2014 URLs + headers + POST data" = "\u5934\u90E8 \U2014 URL + \u5934\u90E8 + POST \u6570\u636E";
-"Full \U2014 URLs + headers + response bodies" = "\u5B8C\u6574 \U2014 URL + \u5934\u90E8 + \u54CD\u5E94\u4F53";
-"This level captures POST data which may include passwords, tokens, and form submissions in clear text." = "\u6B64\u7EA7\u522B\u4F1A\u6355\u83B7 POST \u6570\u636E\uFF0C\u53EF\u80FD\u5305\u542B\u660E\u6587\u5F62\u5F0F\u7684\u5BC6\u7801\u3001\u4EE4\u724C\u548C\u8868\u5355\u63D0\u4EA4\u5185\u5BB9\u3002";
-"Full capture records all request and response bodies including passwords, authentication tokens, personal data, and any sensitive content transmitted over the network. Use only for security analysis of untrusted links." = "\u5B8C\u6574\u6355\u83B7\u4F1A\u8BB0\u5F55\u6240\u6709\u8BF7\u6C42\u548C\u54CD\u5E94\u7684\u6B63\u6587\uFF0C\u5305\u62EC\u5BC6\u7801\u3001\u8BA4\u8BC1\u4EE4\u724C\u3001\u4E2A\u4EBA\u6570\u636E\u4EE5\u53CA\u901A\u8FC7\u7F51\u7EDC\u4F20\u8F93\u7684\u4EFB\u4F55\u654F\u611F\u5185\u5BB9\u3002\u4EC5\u7528\u4E8E\u4E0D\u53EF\u4FE1\u94FE\u63A5\u7684\u5B89\u5168\u5206\u6790\u3002";
+/* ProfileSettingsView \U2014 Session Recording */
+"Session Recording" = "\U4F1A\U8BDD\U5F55\U5236";
+"Record all HTTP requests made during this browsing session. Useful for analyzing what a suspicious link does behind the scenes. When the session ends, you can save or discard the recording." = "\U8BB0\U5F55\U6B64\U6D4F\U89C8\U4F1A\U8BDD\U671F\U95F4\U7684\U6240\U6709 HTTP \U8BF7\U6C42\U3002\U6709\U52A9\U4E8E\U5206\U6790\U53EF\U7591\U94FE\U63A5\U5728\U5E55\U540E\U505A\U4E86\U4EC0\U4E48\U3002\U4F1A\U8BDD\U7ED3\U675F\U65F6\UFF0C\U60A8\U53EF\U4EE5\U4FDD\U5B58\U6216\U4E22\U5F03\U5F55\U5236\U5185\U5BB9\U3002";
+"Capture Level" = "\U6355\U83B7\U7EA7\U522B";
+"Disabled" = "\U5DF2\U7981\U7528";
+"Basic \U2014 URLs only" = "\U57FA\U672C \U2014 \U4EC5 URL";
+"Headers \U2014 URLs + headers + POST data" = "\U5934\U90E8 \U2014 URL + \U5934\U90E8 + POST \U6570\U636E";
+"Full \U2014 URLs + headers + response bodies" = "\U5B8C\U6574 \U2014 URL + \U5934\U90E8 + \U54CD\U5E94\U4F53";
+"This level captures POST data which may include passwords, tokens, and form submissions in clear text." = "\U6B64\U7EA7\U522B\U4F1A\U6355\U83B7 POST \U6570\U636E\UFF0C\U53EF\U80FD\U5305\U542B\U660E\U6587\U5F62\U5F0F\U7684\U5BC6\U7801\U3001\U4EE4\U724C\U548C\U8868\U5355\U63D0\U4EA4\U5185\U5BB9\U3002";
+"Full capture records all request and response bodies including passwords, authentication tokens, personal data, and any sensitive content transmitted over the network. Use only for security analysis of untrusted links." = "\U5B8C\U6574\U6355\U83B7\U4F1A\U8BB0\U5F55\U6240\U6709\U8BF7\U6C42\U548C\U54CD\U5E94\U7684\U6B63\U6587\UFF0C\U5305\U62EC\U5BC6\U7801\U3001\U8BA4\U8BC1\U4EE4\U724C\U3001\U4E2A\U4EBA\U6570\U636E\U4EE5\U53CA\U901A\U8FC7\U7F51\U7EDC\U4F20\U8F93\U7684\U4EFB\U4F55\U654F\U611F\U5185\U5BB9\U3002\U4EC5\U7528\U4E8E\U4E0D\U53EF\U4FE1\U94FE\U63A5\U7684\U5B89\U5168\U5206\U6790\U3002";
 
-/* SettingsView \u2014 Automation */
-"Remote browser control via HTTP API, CDP, and MCP" = "\u901A\u8FC7 HTTP API\u3001CDP \u548C MCP \u8FDC\u7A0B\u63A7\u5236\u6D4F\u89C8\u5668";
-"MCP Server" = "MCP \u670D\u52A1\u5668";
-"Bromure includes a built-in MCP server for Claude Code, Openclaws, and other MCP-compatible AI tools. Add this to your MCP configuration:" = "Bromure \u5185\u7F6E\u4E86\u9002\u7528\u4E8E Claude Code\u3001Openclaws \u53CA\u5176\u4ED6 MCP \u517C\u5BB9 AI \u5DE5\u5177\u7684 MCP \u670D\u52A1\u5668\u3002\u8BF7\u5C06\u4EE5\u4E0B\u5185\u5BB9\u6DFB\u52A0\u5230\u60A8\u7684 MCP \u914D\u7F6E\u4E2D\uFF1A";
-"Add --debug to the args to include VM shell access and app state tools." = "\u5728\u53C2\u6570\u4E2D\u6DFB\u52A0 --debug \u4EE5\u542F\u7528\u865A\u62DF\u673A Shell \u8BBF\u95EE\u548C\u5E94\u7528\u72B6\u6001\u5DE5\u5177\u3002";
-"Binding to all interfaces exposes the automation API to your entire network. Anyone on your LAN can create browser sessions, execute JavaScript, and take screenshots. Only use this on trusted networks." = "\u7ED1\u5B9A\u5230\u6240\u6709\u63A5\u53E3\u4F1A\u5C06\u81EA\u52A8\u5316 API \u66B4\u9732\u5230\u6574\u4E2A\u7F51\u7EDC\u3002\u5C40\u57DF\u7F51\u4E0A\u7684\u4EFB\u4F55\u4EBA\u90FD\u53EF\u4EE5\u521B\u5EFA\u6D4F\u89C8\u5668\u4F1A\u8BDD\u3001\u6267\u884C JavaScript \u548C\u622A\u53D6\u5C4F\u5E55\u622A\u56FE\u3002\u4EC5\u5728\u53EF\u4FE1\u7F51\u7EDC\u4E0A\u4F7F\u7528\u3002";
+/* SettingsView \U2014 Automation */
+"Remote browser control via HTTP API, CDP, and MCP" = "\U901A\U8FC7 HTTP API\U3001CDP \U548C MCP \U8FDC\U7A0B\U63A7\U5236\U6D4F\U89C8\U5668";
+"MCP Server" = "MCP \U670D\U52A1\U5668";
+"Bromure includes a built-in MCP server for Claude Code, Openclaws, and other MCP-compatible AI tools. Add this to your MCP configuration:" = "Bromure \U5185\U7F6E\U4E86\U9002\U7528\U4E8E Claude Code\U3001Openclaws \U53CA\U5176\U4ED6 MCP \U517C\U5BB9 AI \U5DE5\U5177\U7684 MCP \U670D\U52A1\U5668\U3002\U8BF7\U5C06\U4EE5\U4E0B\U5185\U5BB9\U6DFB\U52A0\U5230\U60A8\U7684 MCP \U914D\U7F6E\U4E2D\UFF1A";
+"Add --debug to the args to include VM shell access and app state tools." = "\U5728\U53C2\U6570\U4E2D\U6DFB\U52A0 --debug \U4EE5\U542F\U7528\U865A\U62DF\U673A Shell \U8BBF\U95EE\U548C\U5E94\U7528\U72B6\U6001\U5DE5\U5177\U3002";
+"Binding to all interfaces exposes the automation API to your entire network. Anyone on your LAN can create browser sessions, execute JavaScript, and take screenshots. Only use this on trusted networks." = "\U7ED1\U5B9A\U5230\U6240\U6709\U63A5\U53E3\U4F1A\U5C06\U81EA\U52A8\U5316 API \U66B4\U9732\U5230\U6574\U4E2A\U7F51\U7EDC\U3002\U5C40\U57DF\U7F51\U4E0A\U7684\U4EFB\U4F55\U4EBA\U90FD\U53EF\U4EE5\U521B\U5EFA\U6D4F\U89C8\U5668\U4F1A\U8BDD\U3001\U6267\U884C JavaScript \U548C\U622A\U53D6\U5C4F\U5E55\U622A\U56FE\U3002\U4EC5\U5728\U53EF\U4FE1\U7F51\U7EDC\U4E0A\U4F7F\U7528\U3002";
 
-/* Session Recording \u2014 Save Dialog */
-"Save session recording?" = "\u4FDD\u5B58\u4F1A\u8BDD\u5F55\u5236\uFF1F";
-"This session captured %lld HTTP requests. Save the recording before closing?" = "\u6B64\u4F1A\u8BDD\u5DF2\u6355\u83B7 %lld \u4E2A HTTP \u8BF7\u6C42\u3002\u5173\u95ED\u524D\u4FDD\u5B58\u5F55\u5236\u5185\u5BB9\uFF1F";
-"Save\U2026" = "\u5B58\u50A8\U2026";
-"Discard" = "\u4E22\u5F03";
-"Invalid Trace File" = "\u65E0\u6548\u7684\u8DDF\u8E2A\u6587\u4EF6";
-"The file could not be read as a Bromure session recording." = "\u65E0\u6CD5\u5C06\u6B64\u6587\u4EF6\u8BFB\u53D6\u4E3A Bromure \u4F1A\u8BDD\u5F55\u5236\u3002";
-"Open a saved session recording" = "\u6253\u5F00\u5DF2\u4FDD\u5B58\u7684\u4F1A\u8BDD\u5F55\u5236";
+/* Session Recording \U2014 Save Dialog */
+"Save session recording?" = "\U4FDD\U5B58\U4F1A\U8BDD\U5F55\U5236\UFF1F";
+"This session captured %lld HTTP requests. Save the recording before closing?" = "\U6B64\U4F1A\U8BDD\U5DF2\U6355\U83B7 %lld \U4E2A HTTP \U8BF7\U6C42\U3002\U5173\U95ED\U524D\U4FDD\U5B58\U5F55\U5236\U5185\U5BB9\UFF1F";
+"Save\U2026" = "\U5B58\U50A8\U2026";
+"Discard" = "\U4E22\U5F03";
+"Invalid Trace File" = "\U65E0\U6548\U7684\U8DDF\U8E2A\U6587\U4EF6";
+"The file could not be read as a Bromure session recording." = "\U65E0\U6CD5\U5C06\U6B64\U6587\U4EF6\U8BFB\U53D6\U4E3A Bromure \U4F1A\U8BDD\U5F55\U5236\U3002";
+"Open a saved session recording" = "\U6253\U5F00\U5DF2\U4FDD\U5B58\U7684\U4F1A\U8BDD\U5F55\U5236";
 
 /* Trace Viewer */
-"Time" = "\u65F6\u95F4";
-"Method" = "\u65B9\u6CD5";
-"Host" = "\u4E3B\u673A";
+"Time" = "\U65F6\U95F4";
+"Method" = "\U65B9\U6CD5";
+"Host" = "\U4E3B\U673A";
 "URL" = "URL";
-"Status" = "\u72B6\u6001";
-"Waterfall" = "\u7011\u5E03\u56FE";
-"Duration" = "\u65F6\u957F";
-"Type" = "\u7C7B\u578B";
-"Page" = "\u9875\u9762";
-"Request" = "\u8BF7\u6C42";
-"Response" = "\u54CD\u5E94";
-"Form Fields" = "\u8868\u5355\u5B57\u6BB5";
-"Navigation" = "\u5BFC\u822A";
-"Timing" = "\u65F6\u5E8F";
-"Copied" = "\u5DF2\u62F7\u8D1D";
-"Response body was truncated" = "\u54CD\u5E94\u4F53\u5DF2\u88AB\u622A\u65AD";
-"No form fields captured for this request." = "\u672A\u6355\u83B7\u6B64\u8BF7\u6C42\u7684\u8868\u5355\u5B57\u6BB5\u3002";
-"Form field snapshots are recorded when a form is submitted." = "\u8868\u5355\u5B57\u6BB5\u5FEB\u7167\u4F1A\u5728\u8868\u5355\u63D0\u4EA4\u65F6\u8BB0\u5F55\u3002";
-"Field Name" = "\u5B57\u6BB5\u540D";
-"Value" = "\u503C";
-"This section compares the form field values at capture time with the actual POST data sent. Differences may indicate client-side transformation (e.g., hashing, encoding)." = "\u6B64\u90E8\u5206\u5C06\u6355\u83B7\u65F6\u7684\u8868\u5355\u5B57\u6BB5\u503C\u4E0E\u5B9E\u9645\u53D1\u9001\u7684 POST \u6570\u636E\u8FDB\u884C\u5BF9\u6BD4\u3002\u5DEE\u5F02\u53EF\u80FD\u8868\u660E\u5BA2\u6237\u7AEF\u8FDB\u884C\u4E86\u8F6C\u6362\uFF08\u5982\u54C8\u5E0C\u3001\u7F16\u7801\u7B49\uFF09\u3002";
-"Form:" = "\u8868\u5355\uFF1A";
-"Sent:" = "\u5DF2\u53D1\u9001\uFF1A";
+"Status" = "\U72B6\U6001";
+"Waterfall" = "\U7011\U5E03\U56FE";
+"Duration" = "\U65F6\U957F";
+"Type" = "\U7C7B\U578B";
+"Page" = "\U9875\U9762";
+"Request" = "\U8BF7\U6C42";
+"Response" = "\U54CD\U5E94";
+"Form Fields" = "\U8868\U5355\U5B57\U6BB5";
+"Navigation" = "\U5BFC\U822A";
+"Timing" = "\U65F6\U5E8F";
+"Copied" = "\U5DF2\U62F7\U8D1D";
+"Response body was truncated" = "\U54CD\U5E94\U4F53\U5DF2\U88AB\U622A\U65AD";
+"No form fields captured for this request." = "\U672A\U6355\U83B7\U6B64\U8BF7\U6C42\U7684\U8868\U5355\U5B57\U6BB5\U3002";
+"Form field snapshots are recorded when a form is submitted." = "\U8868\U5355\U5B57\U6BB5\U5FEB\U7167\U4F1A\U5728\U8868\U5355\U63D0\U4EA4\U65F6\U8BB0\U5F55\U3002";
+"Field Name" = "\U5B57\U6BB5\U540D";
+"Value" = "\U503C";
+"This section compares the form field values at capture time with the actual POST data sent. Differences may indicate client-side transformation (e.g., hashing, encoding)." = "\U6B64\U90E8\U5206\U5C06\U6355\U83B7\U65F6\U7684\U8868\U5355\U5B57\U6BB5\U503C\U4E0E\U5B9E\U9645\U53D1\U9001\U7684 POST \U6570\U636E\U8FDB\U884C\U5BF9\U6BD4\U3002\U5DEE\U5F02\U53EF\U80FD\U8868\U660E\U5BA2\U6237\U7AEF\U8FDB\U884C\U4E86\U8F6C\U6362\UFF08\U5982\U54C8\U5E0C\U3001\U7F16\U7801\U7B49\UFF09\U3002";
+"Form:" = "\U8868\U5355\UFF1A";
+"Sent:" = "\U5DF2\U53D1\U9001\UFF1A";
 
 /* Flow Graph */
-"Drag nodes \U2022 Click page to expand sub-resources" = "\u62D6\u52A8\u8282\u70B9 \U2022 \u70B9\u51FB\u9875\u9762\u5C55\u5F00\u5B50\u8D44\u6E90";
-"No navigation events captured" = "\u672A\u6355\u83B7\u5230\u5BFC\u822A\u4E8B\u4EF6";
-"Freeze" = "\u51BB\u7ED3";
-"Resume" = "\u7EE7\u7EED";
-"Start" = "\u5F00\u59CB";
-"req" = "\u4E2A";
+"Drag nodes \U2022 Click page to expand sub-resources" = "\U62D6\U52A8\U8282\U70B9 \U2022 \U70B9\U51FB\U9875\U9762\U5C55\U5F00\U5B50\U8D44\U6E90";
+"No navigation events captured" = "\U672A\U6355\U83B7\U5230\U5BFC\U822A\U4E8B\U4EF6";
+"Freeze" = "\U51BB\U7ED3";
+"Resume" = "\U7EE7\U7EED";
+"Start" = "\U5F00\U59CB";
+"req" = "\U4E2A";
 
 /* ProfileSettingsView — Performance (additional) */
-"Zero-Copy Rasterization" = "\u96F6\u62F7\u8D1D\u5149\u6805\u5316";
-"Reduces memory copies during page rendering. Improves performance on most systems." = "\u51CF\u5C11\u9875\u9762\u6E32\u67D3\u65F6\u7684\u5185\u5B58\u62F7\u8D1D\u3002\u5728\u5927\u591A\u6570\u7CFB\u7EDF\u4E0A\u63D0\u9AD8\u6027\u80FD\u3002";
-"Smooth Scrolling" = "\u5E73\u6ED1\u6EDA\u52A8";
-"Animates scrolling for a smoother feel. Disable for instant, jump-style scrolling." = "\u52A8\u753B\u6EDA\u52A8\u4EE5\u83B7\u5F97\u66F4\u6D41\u7545\u7684\u4F53\u9A8C\u3002\u7981\u7528\u540E\u4F7F\u7528\u5373\u65F6\u8DF3\u8DC3\u5F0F\u6EDA\u52A8\u3002";
+"Zero-Copy Rasterization" = "\U96F6\U62F7\U8D1D\U5149\U6805\U5316";
+"Reduces memory copies during page rendering. Improves performance on most systems." = "\U51CF\U5C11\U9875\U9762\U6E32\U67D3\U65F6\U7684\U5185\U5B58\U62F7\U8D1D\U3002\U5728\U5927\U591A\U6570\U7CFB\U7EDF\U4E0A\U63D0\U9AD8\U6027\U80FD\U3002";
+"Smooth Scrolling" = "\U5E73\U6ED1\U6EDA\U52A8";
+"Animates scrolling for a smoother feel. Disable for instant, jump-style scrolling." = "\U52A8\U753B\U6EDA\U52A8\U4EE5\U83B7\U5F97\U66F4\U6D41\U7545\U7684\U4F53\U9A8C\U3002\U7981\U7528\U540E\U4F7F\U7528\U5373\U65F6\U8DF3\U8DC3\U5F0F\U6EDA\U52A8\U3002";
 
 /* ProfileSettingsView — Privacy & Safety (additional) */
-"Block Screen Capture" = "\u963B\u6B62\u5C4F\u5E55\u6355\u83B7";
-"Hides this browser window from screenshots, screen recordings, and screen sharing apps like Zoom." = "\u5C06\u6B64\u6D4F\u89C8\u5668\u7A97\u53E3\u4ECE\u622A\u56FE\u3001\u5C4F\u5E55\u5F55\u5236\u548C Zoom \u7B49\u5C4F\u5E55\u5171\u4EAB\u5E94\u7528\u4E2D\u9690\u85CF\u3002";
+"Block Screen Capture" = "\U963B\U6B62\U5C4F\U5E55\U6355\U83B7";
+"Hides this browser window from screenshots, screen recordings, and screen sharing apps like Zoom." = "\U5C06\U6B64\U6D4F\U89C8\U5668\U7A97\U53E3\U4ECE\U622A\U56FE\U3001\U5C4F\U5E55\U5F55\U5236\U548C Zoom \U7B49\U5C4F\U5E55\U5171\U4EAB\U5E94\U7528\U4E2D\U9690\U85CF\U3002";
 
 /* ProfileSettingsView — VPN & Ads (additional) */
-"Connect on Startup" = "\u542F\u52A8\u65F6\u8FDE\u63A5";
-"Automatically connect the VPN when the browser session starts. You can always toggle it from the window\U2019s VPN button." = "\u6D4F\u89C8\u5668\u4F1A\u8BDD\u542F\u52A8\u65F6\u81EA\u52A8\u8FDE\u63A5 VPN\u3002\u60A8\u53EF\u4EE5\u968F\u65F6\u901A\u8FC7\u7A97\u53E3\u7684 VPN \u6309\u94AE\u5207\u6362\u3002";
+"Connect on Startup" = "\U542F\U52A8\U65F6\U8FDE\U63A5";
+"Automatically connect the VPN when the browser session starts. You can always toggle it from the window\U2019s VPN button." = "\U6D4F\U89C8\U5668\U4F1A\U8BDD\U542F\U52A8\U65F6\U81EA\U52A8\U8FDE\U63A5 VPN\U3002\U60A8\U53EF\U4EE5\U968F\U65F6\U901A\U8FC7\U7A97\U53E3\U7684 VPN \U6309\U94AE\U5207\U6362\U3002";
 
 /* ProfileSettingsView — Enterprise (additional) */
-"HTTP Proxy" = "HTTP \u4EE3\u7406";
-"Route all browser traffic through a corporate proxy server. When a proxy is configured, VPN and ad blocking are automatically disabled." = "\u901A\u8FC7\u4F01\u4E1A\u4EE3\u7406\u670D\u52A1\u5668\u8DEF\u7531\u6240\u6709\u6D4F\u89C8\u5668\u6D41\u91CF\u3002\u914D\u7F6E\u4EE3\u7406\u540E\uFF0CVPN \u548C\u5E7F\u544A\u62E6\u622A\u4F1A\u81EA\u52A8\u7981\u7528\u3002";
-"Hostname" = "\u4E3B\u673A\u540D";
-"Port" = "\u7AEF\u53E3";
-"Username" = "\u7528\u6237\u540D";
-"Password" = "\u5BC6\u7801";
+"HTTP Proxy" = "HTTP \U4EE3\U7406";
+"Route all browser traffic through a corporate proxy server. When a proxy is configured, VPN and ad blocking are automatically disabled." = "\U901A\U8FC7\U4F01\U4E1A\U4EE3\U7406\U670D\U52A1\U5668\U8DEF\U7531\U6240\U6709\U6D4F\U89C8\U5668\U6D41\U91CF\U3002\U914D\U7F6E\U4EE3\U7406\U540E\UFF0CVPN \U548C\U5E7F\U544A\U62E6\U622A\U4F1A\U81EA\U52A8\U7981\U7528\U3002";
+"Hostname" = "\U4E3B\U673A\U540D";
+"Port" = "\U7AEF\U53E3";
+"Username" = "\U7528\U6237\U540D";
+"Password" = "\U5BC6\U7801";
 
 /* ProfileSettingsView — Advanced (additional) */
-"Start Recording Automatically" = "\u81EA\u52A8\u5F00\u59CB\u8BB0\u5F55";
-"Begin capturing requests as soon as the session opens. When off, recording starts only when you click the record button in the titlebar." = "\u4F1A\u8BDD\u6253\u5F00\u540E\u7ACB\u5373\u5F00\u59CB\u6355\u83B7\u8BF7\u6C42\u3002\u5173\u95ED\u65F6\uFF0C\u4EC5\u5728\u70B9\u51FB\u6807\u9898\u680F\u4E2D\u7684\u5F55\u5236\u6309\u94AE\u65F6\u624D\u5F00\u59CB\u5F55\u5236\u3002";
+"Start Recording Automatically" = "\U81EA\U52A8\U5F00\U59CB\U8BB0\U5F55";
+"Begin capturing requests as soon as the session opens. When off, recording starts only when you click the record button in the titlebar." = "\U4F1A\U8BDD\U6253\U5F00\U540E\U7ACB\U5373\U5F00\U59CB\U6355\U83B7\U8BF7\U6C42\U3002\U5173\U95ED\U65F6\UFF0C\U4EC5\U5728\U70B9\U51FB\U6807\U9898\U680F\U4E2D\U7684\U5F55\U5236\U6309\U94AE\U65F6\U624D\U5F00\U59CB\U5F55\U5236\U3002";
 
 /* SettingsView — Hardware (additional) */
-"Kernel Boot Options" = "\u5185\u6838\u542F\u52A8\u9009\u9879";
-"Additional Linux kernel command-line parameters appended to the virtual machine boot command. The default disables SME to work around a crash on Apple M4 processors." = "\u9644\u52A0\u5230\u865A\u62DF\u673A\u542F\u52A8\u547D\u4EE4\u7684 Linux \u5185\u6838\u547D\u4EE4\u884C\u53C2\u6570\u3002\u9ED8\u8BA4\u7981\u7528 SME \u4EE5\u89E3\u51B3 Apple M4 \u5904\u7406\u5668\u4E0A\u7684\u5D29\u6E83\u95EE\u9898\u3002";
-"Incorrect kernel options will prevent the browser from booting." = "\u9519\u8BEF\u7684\u5185\u6838\u9009\u9879\u5C06\u5BFC\u81F4\u6D4F\u89C8\u5668\u65E0\u6CD5\u542F\u52A8\u3002";
-"Only change this if you know what you are doing. Removing arm64.nosme may cause crashes on M4 Macs. Invalid options may prevent the browser from booting." = "\u4EC5\u5728\u4E86\u89E3\u64CD\u4F5C\u540E\u679C\u65F6\u4FEE\u6539\u3002\u5220\u9664 arm64.nosme \u53EF\u80FD\u5BFC\u81F4 M4 Mac \u5D29\u6E83\u3002\u65E0\u6548\u9009\u9879\u53EF\u80FD\u5BFC\u81F4\u6D4F\u89C8\u5668\u65E0\u6CD5\u542F\u52A8\u3002";
-"Reset to Default" = "\u6062\u590D\u9ED8\u8BA4\u503C";
+"Kernel Boot Options" = "\U5185\U6838\U542F\U52A8\U9009\U9879";
+"Additional Linux kernel command-line parameters appended to the virtual machine boot command. The default disables SME to work around a crash on Apple M4 processors." = "\U9644\U52A0\U5230\U865A\U62DF\U673A\U542F\U52A8\U547D\U4EE4\U7684 Linux \U5185\U6838\U547D\U4EE4\U884C\U53C2\U6570\U3002\U9ED8\U8BA4\U7981\U7528 SME \U4EE5\U89E3\U51B3 Apple M4 \U5904\U7406\U5668\U4E0A\U7684\U5D29\U6E83\U95EE\U9898\U3002";
+"Incorrect kernel options will prevent the browser from booting." = "\U9519\U8BEF\U7684\U5185\U6838\U9009\U9879\U5C06\U5BFC\U81F4\U6D4F\U89C8\U5668\U65E0\U6CD5\U542F\U52A8\U3002";
+"Only change this if you know what you are doing. Removing arm64.nosme may cause crashes on M4 Macs. Invalid options may prevent the browser from booting." = "\U4EC5\U5728\U4E86\U89E3\U64CD\U4F5C\U540E\U679C\U65F6\U4FEE\U6539\U3002\U5220\U9664 arm64.nosme \U53EF\U80FD\U5BFC\U81F4 M4 Mac \U5D29\U6E83\U3002\U65E0\U6548\U9009\U9879\U53EF\U80FD\U5BFC\U81F4\U6D4F\U89C8\U5668\U65E0\U6CD5\U542F\U52A8\U3002";
+"Reset to Default" = "\U6062\U590D\U9ED8\U8BA4\U503C";
 
 /* SettingsView — Automation (additional) */
-"Automation" = "\u81EA\u52A8\u5316";
-"Enable Automation" = "\u542F\u7528\u81EA\u52A8\u5316";
-"Start an HTTP server that lets external tools (Puppeteer, Playwright, Claude Code, Codex) create browser sessions and control them via CDP." = "\u542F\u52A8 HTTP \u670D\u52A1\u5668\uFF0C\u5141\u8BB8\u5916\u90E8\u5DE5\u5177\uFF08Puppeteer\u3001Playwright\u3001Claude Code\u3001Codex\uFF09\u521B\u5EFA\u6D4F\u89C8\u5668\u4F1A\u8BDD\u5E76\u901A\u8FC7 CDP \u63A7\u5236\u3002";
-"API Port" = "API \u7AEF\u53E3";
-"The port for the automation API server. Tools connect here to list profiles, create sessions, and get CDP endpoints." = "\u81EA\u52A8\u5316 API \u670D\u52A1\u5668\u7684\u7AEF\u53E3\u3002\u5DE5\u5177\u8FDE\u63A5\u6B64\u5904\u4EE5\u5217\u51FA\u914D\u7F6E\u6587\u4EF6\u3001\u521B\u5EFA\u4F1A\u8BDD\u548C\u83B7\u53D6 CDP \u7AEF\u70B9\u3002";
-"Bind Address" = "\u7ED1\u5B9A\u5730\u5740";
-"Use 127.0.0.1 to only allow connections from this Mac. Use 0.0.0.0 to allow connections from other machines on the network." = "\u4F7F\u7528 127.0.0.1 \u4EC5\u5141\u8BB8\u6765\u81EA\u6B64 Mac \u7684\u8FDE\u63A5\u3002\u4F7F\u7528 0.0.0.0 \u5141\u8BB8\u6765\u81EA\u7F51\u7EDC\u4E0A\u5176\u4ED6\u8BA1\u7B97\u673A\u7684\u8FDE\u63A5\u3002";
-"127.0.0.1 (localhost only)" = "127.0.0.1\uFF08\u4EC5\u672C\u673A\uFF09";
-"0.0.0.0 (all interfaces)" = "0.0.0.0\uFF08\u6240\u6709\u63A5\u53E3\uFF09";
-"Usage" = "\u7528\u6CD5";
-"Once enabled, external tools can connect to the API:" = "\u542F\u7528\u540E\uFF0C\u5916\u90E8\u5DE5\u5177\u53EF\u4EE5\u8FDE\u63A5\u5230 API\uFF1A";
-"List profiles:" = "\u5217\u51FA\u914D\u7F6E\u6587\u4EF6\uFF1A";
-"Create session:" = "\u521B\u5EFA\u4F1A\u8BDD\uFF1A";
-"List sessions:" = "\u5217\u51FA\u4F1A\u8BDD\uFF1A";
-"Close session:" = "\u5173\u95ED\u4F1A\u8BDD\uFF1A";
+"Automation" = "\U81EA\U52A8\U5316";
+"Enable Automation" = "\U542F\U7528\U81EA\U52A8\U5316";
+"Start an HTTP server that lets external tools (Puppeteer, Playwright, Claude Code, Codex) create browser sessions and control them via CDP." = "\U542F\U52A8 HTTP \U670D\U52A1\U5668\UFF0C\U5141\U8BB8\U5916\U90E8\U5DE5\U5177\UFF08Puppeteer\U3001Playwright\U3001Claude Code\U3001Codex\UFF09\U521B\U5EFA\U6D4F\U89C8\U5668\U4F1A\U8BDD\U5E76\U901A\U8FC7 CDP \U63A7\U5236\U3002";
+"API Port" = "API \U7AEF\U53E3";
+"The port for the automation API server. Tools connect here to list profiles, create sessions, and get CDP endpoints." = "\U81EA\U52A8\U5316 API \U670D\U52A1\U5668\U7684\U7AEF\U53E3\U3002\U5DE5\U5177\U8FDE\U63A5\U6B64\U5904\U4EE5\U5217\U51FA\U914D\U7F6E\U6587\U4EF6\U3001\U521B\U5EFA\U4F1A\U8BDD\U548C\U83B7\U53D6 CDP \U7AEF\U70B9\U3002";
+"Bind Address" = "\U7ED1\U5B9A\U5730\U5740";
+"Use 127.0.0.1 to only allow connections from this Mac. Use 0.0.0.0 to allow connections from other machines on the network." = "\U4F7F\U7528 127.0.0.1 \U4EC5\U5141\U8BB8\U6765\U81EA\U6B64 Mac \U7684\U8FDE\U63A5\U3002\U4F7F\U7528 0.0.0.0 \U5141\U8BB8\U6765\U81EA\U7F51\U7EDC\U4E0A\U5176\U4ED6\U8BA1\U7B97\U673A\U7684\U8FDE\U63A5\U3002";
+"127.0.0.1 (localhost only)" = "127.0.0.1\UFF08\U4EC5\U672C\U673A\UFF09";
+"0.0.0.0 (all interfaces)" = "0.0.0.0\UFF08\U6240\U6709\U63A5\U53E3\UFF09";
+"Usage" = "\U7528\U6CD5";
+"Once enabled, external tools can connect to the API:" = "\U542F\U7528\U540E\UFF0C\U5916\U90E8\U5DE5\U5177\U53EF\U4EE5\U8FDE\U63A5\U5230 API\UFF1A";
+"List profiles:" = "\U5217\U51FA\U914D\U7F6E\U6587\U4EF6\UFF1A";
+"Create session:" = "\U521B\U5EFA\U4F1A\U8BDD\UFF1A";
+"List sessions:" = "\U5217\U51FA\U4F1A\U8BDD\UFF1A";
+"Close session:" = "\U5173\U95ED\U4F1A\U8BDD\UFF1A";
 /* SettingsView — API Reference */
-"API Reference" = "API \u53C2\u8003";
-"HTTP endpoints available when automation is enabled:" = "\u542F\u7528\u81EA\u52A8\u5316\u540E\u53EF\u7528\u7684 HTTP \u7AEF\u70B9\uFF1A";
-"Health check" = "\u5065\u5EB7\u68C0\u67E5";
-"List available profiles" = "\u5217\u51FA\u53EF\u7528\u914D\u7F6E\u6587\u4EF6";
-"List active sessions" = "\u5217\u51FA\u6D3B\u52A8\u4F1A\u8BDD";
-"Create a new browser session" = "\u521B\u5EFA\u65B0\u7684\u6D4F\u89C8\u5668\u4F1A\u8BDD";
-"Get session info" = "\u83B7\u53D6\u4F1A\u8BDD\u4FE1\u606F";
-"Close a session" = "\u5173\u95ED\u4F1A\u8BDD";
-"Get session trace events" = "\u83B7\u53D6\u4F1A\u8BDD\u8DDF\u8E2A\u4E8B\u4EF6";
-"Chrome DevTools Protocol WebSocket proxy" = "Chrome DevTools Protocol WebSocket \u4EE3\u7406";
-"Copy to clipboard" = "\u590D\u5236\u5230\u526A\u8D34\u677F";
+"API Reference" = "API \U53C2\U8003";
+"HTTP endpoints available when automation is enabled:" = "\U542F\U7528\U81EA\U52A8\U5316\U540E\U53EF\U7528\U7684 HTTP \U7AEF\U70B9\UFF1A";
+"Health check" = "\U5065\U5EB7\U68C0\U67E5";
+"List available profiles" = "\U5217\U51FA\U53EF\U7528\U914D\U7F6E\U6587\U4EF6";
+"List active sessions" = "\U5217\U51FA\U6D3B\U52A8\U4F1A\U8BDD";
+"Create a new browser session" = "\U521B\U5EFA\U65B0\U7684\U6D4F\U89C8\U5668\U4F1A\U8BDD";
+"Get session info" = "\U83B7\U53D6\U4F1A\U8BDD\U4FE1\U606F";
+"Close a session" = "\U5173\U95ED\U4F1A\U8BDD";
+"Get session trace events" = "\U83B7\U53D6\U4F1A\U8BDD\U8DDF\U8E2A\U4E8B\U4EF6";
+"Chrome DevTools Protocol WebSocket proxy" = "Chrome DevTools Protocol WebSocket \U4EE3\U7406";
+"Copy to clipboard" = "\U590D\U5236\U5230\U526A\U8D34\U677F";
+
+/* ProfileSettingsView — General (additional) */
+"Match Keyboard Layout" = "\U8DDF\U968F\U952E\U76D8\U5E03\U5C40";
+"Automatically switch the browser\U2019s keyboard layout when you change it on your Mac. Turn this off to always use the layout set in Bromure \U2192 Settings \U2192 Input." = "\U5F53\U60A8\U5728 Mac \U4E0A\U66F4\U6539\U952E\U76D8\U5E03\U5C40\U65F6\UFF0C\U6D4F\U89C8\U5668\U4F1A\U81EA\U52A8\U5207\U6362\U3002\U5173\U95ED\U6B64\U9009\U9879\U540E\U5C06\U59CB\U7EC8\U4F7F\U7528 Bromure \U2192 \U8BBE\U7F6E \U2192 \U8F93\U5165\U4E2D\U8BBE\U5B9A\U7684\U5E03\U5C40\U3002";

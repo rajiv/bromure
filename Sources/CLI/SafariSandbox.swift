@@ -1210,6 +1210,7 @@ final class BrowserSession {
     private(set) var cdpBridge: CDPBridge?
     private(set) var shellBridge: ShellBridge?
     private(set) var traceBridge: TraceBridge?
+    private var keyboardBridge: KeyboardBridge?
     private var traceWindow: NSWindow?
     private var traceRecordButton: NSButton?
     private var warpButton: NSButton?
@@ -1496,6 +1497,11 @@ final class BrowserSession {
             viewAccessory.view = viewBtn
             viewAccessory.layoutAttribute = .trailing
             window.addTitlebarAccessoryViewController(viewAccessory)
+        }
+
+        // Set up keyboard bridge for dynamic layout matching.
+        if config.matchKeyboardLayout, let dev = linkSocketDevice {
+            self.keyboardBridge = MainActor.assumeIsolated { KeyboardBridge(socketDevice: dev) }
         }
 
         let helper = SessionDelegateHelper(session: self)
@@ -1924,6 +1930,8 @@ final class BrowserSession {
             shellBridge = nil
             traceBridge?.stop()
             traceBridge = nil
+            keyboardBridge?.stop()
+            keyboardBridge = nil
             traceWindow?.orderOut(nil)
             traceWindow = nil
             effectsPanel?.orderOut(nil)

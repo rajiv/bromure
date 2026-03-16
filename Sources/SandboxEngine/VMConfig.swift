@@ -168,6 +168,9 @@ public struct VMConfig {
     /// guest agent captures and sends to the host over vsock.
     public var traceLevel: TraceLevel
 
+    /// Whether to dynamically sync the host's keyboard layout to the VM.
+    public var matchKeyboardLayout: Bool
+
     /// Additional Linux kernel boot options appended to the command line.
     /// Default includes module loading and M4 CPU workarounds.
     public var extraKernelOptions: String
@@ -213,6 +216,7 @@ public struct VMConfig {
         enableAutomation: Bool = false,
         testSuite: Bool = false,
         traceLevel: TraceLevel = .disabled,
+        matchKeyboardLayout: Bool = true,
         extraKernelOptions: String = "arm64.nosme",
         keyboardLayout: String? = nil,
         naturalScrolling: Bool? = nil,
@@ -259,35 +263,382 @@ public struct VMConfig {
         self.enableAutomation = enableAutomation
         self.testSuite = testSuite
         self.traceLevel = traceLevel
+        self.matchKeyboardLayout = matchKeyboardLayout
         self.extraKernelOptions = extraKernelOptions
         self.keyboardLayout = keyboardLayout ?? VMConfig.detectKeyboardLayout()
         self.naturalScrolling = naturalScrolling ?? VMConfig.detectNaturalScrolling()
         self.locale = locale ?? VMConfig.detectLocale()
     }
 
+    /// Mapping from macOS keyboard layout names (lowercased, without `com.apple.keylayout.` prefix)
+    /// to X11/XKB layout specifications.
+    ///
+    /// Plain values like `"fr"` are layout-only. Values with a colon like `"ch:fr"` encode
+    /// `layout:variant` — the keyboard agent and xorg template split on `:` to pass
+    /// `-layout ch -variant fr` to `setxkbmap`.
+    ///
+    /// Generated from the full output of `TISCreateInputSourceList(nil, true)` on macOS 26
+    /// cross-referenced with `/usr/share/X11/xkb/rules/evdev.lst`.
+    static let macOSToXkbMap: [String: String] = [
+        // ── US / Generic Latin ────────────────────────────────────────────
+        "us":                       "us",
+        "u.s.":                     "us",       // legacy name
+        "abc":                      "us",       // ABC is a US-QWERTY superset
+        "abc-india":                "us",       // ABC - India (Latin QWERTY)
+        "usextended":               "us",       // US Extended (dead-key compose)
+        "usinternational-pc":       "us:intl",  // US International - PC
+        "unicodehexinput":          "us",       // Unicode Hex Input (no XKB equivalent)
+        "australian":               "us",       // Australian (same as US)
+        "newzealand":               "us",       // New Zealand (same as US)
+        "hawaiian":                 "us",       // Hawaiian (Latin QWERTY)
+        "samoan":                   "us",       // Samoan (Latin QWERTY)
+        "tongan":                   "us",       // Tongan (Latin QWERTY)
+        "maori":                    "us",       // Māori (Latin QWERTY)
+
+        // ── Alternative Latin layouts ─────────────────────────────────────
+        "colemak":                  "us:colemak",
+        "dvorak":                   "us:dvorak",
+        "dvorak-left":              "us:dvorak-l",
+        "dvorak-right":             "us:dvorak-r",
+        "dvorak-qwertycmd":         "us:dvorak", // Dvorak QWERTY-⌘ (no XKB equivalent for cmd layer)
+
+        // ── ABC layout variants (macOS 14+) ──────────────────────────────
+        "abc-azerty":               "fr",
+        "abc-qwertz":               "de",
+
+        // ── British / Irish ───────────────────────────────────────────────
+        "british":                  "gb",
+        "british-pc":               "gb",
+        "irish":                    "ie",
+        "irishextended":            "ie",
+        "welsh":                    "gb",       // Welsh (no dedicated XKB; gb is closest)
+
+        // ── French ────────────────────────────────────────────────────────
+        "french":                   "fr",
+        "french-pc":                "fr",
+        "french-numerical":         "fr",       // French Numerical (same base layout)
+
+        // ── German ────────────────────────────────────────────────────────
+        "german":                   "de",
+        "german-din-2137":          "de",       // DIN 2137 variant
+        "austrian":                 "at",
+
+        // ── Swiss ─────────────────────────────────────────────────────────
+        "swissfrench":              "ch:fr",
+        "swissgerman":              "ch",
+
+        // ── Canadian ──────────────────────────────────────────────────────
+        "canadian":                 "ca",
+        "canadian-csa":             "ca:multix", // Canadian French (CSA) → Canadian Multilingual
+        "canadianfrench-pc":        "ca:fr-legacy",
+
+        // ── Spanish ───────────────────────────────────────────────────────
+        "spanish":                  "es",
+        "spanish-iso":              "es",
+        "latinamerican":            "latam",
+
+        // ── Portuguese / Brazilian ────────────────────────────────────────
+        "portuguese":               "pt",
+        "brazilian":                "br",
+        "brazilian-abnt2":          "br",
+        "brazilian-pro":            "br",
+
+        // ── Italian ───────────────────────────────────────────────────────
+        "italian":                  "it",
+        "italian-pro":              "it",
+
+        // ── Dutch / Belgian ───────────────────────────────────────────────
+        "dutch":                    "nl",
+        "belgian":                  "be",
+
+        // ── Nordic ────────────────────────────────────────────────────────
+        "swedish":                  "se",
+        "swedish-pro":              "se",
+        "norwegian":                "no",
+        "norwegianextended":        "no",
+        "danish":                   "dk",
+        "finnish":                  "fi",
+        "finnishextended":          "fi",
+        "faroese":                  "fo",
+        "icelandic":                "is",
+
+        // ── Sami layouts ──────────────────────────────────────────────────
+        "northernsami":             "no:smi",
+        "finnishsami-pc":           "fi:smi",
+        "norwegiansami-pc":         "no:smi",
+        "swedishsami-pc":           "se:smi",
+        "inarisami":                "fi:smi",      // Inari Sami → Finnish Sami
+        "skoltsami":                "fi:smi",      // Skolt Sami → Finnish Sami
+        "julevsami":                "se:smi",      // Lule Sami (Sweden)
+        "julevsami-norway":         "no:smi",      // Lule Sami (Norway)
+        "pitesami":                 "se:smi",      // Pite Sami → Swedish Sami
+        "southernsami":             "no:smi",      // Southern Sami → Norwegian Sami
+        "umesami":                  "se:smi",      // Ume Sami → Swedish Sami
+        "kildinsami":               "ru",          // Kildin Sami → Russian base
+        "sami-pc":                  "no:smi",
+
+        // ── Baltic ────────────────────────────────────────────────────────
+        "estonian":                 "ee",
+        "latvian":                  "lv",
+        "lithuanian":               "lt",
+        "lithuanian-lst1582":       "lt:std",      // LST 1582 → Lithuanian standard
+
+        // ── Central / Eastern European ────────────────────────────────────
+        "czech":                    "cz",
+        "czech-qwerty":             "cz:qwerty",
+        "polish":                   "pl",
+        "polishpro":                "pl",
+        "slovak":                   "sk",
+        "slovak-qwerty":            "sk:qwerty",
+        "hungarian":                "hu",
+        "hungarian-qwerty":         "hu:qwerty",
+        "slovenian":                "si",
+        "croatian":                 "hr",
+        "croatian-pc":              "hr",
+        "romanian":                 "ro",
+        "romanian-standard":        "ro:std",
+        "serbian":                  "rs",
+        "serbian-latin":            "rs:latin",
+        "maltese":                  "mt",
+        "albanian":                 "al",
+
+        // ── Cyrillic ─────────────────────────────────────────────────────
+        "russian":                  "ru",
+        "russian-phonetic":         "ru:phonetic",
+        "russianwin":               "ru",          // Russian - PC (same base)
+        "ukrainian":                "ua",
+        "ukrainian-pc":             "ua:winkeys",
+        "ukrainian-qwerty":         "ua:phonetic",
+        "byelorussian":             "by",
+        "bulgarian":                "bg",
+        "bulgarian-phonetic":       "bg:phonetic",
+        "macedonian":               "mk",
+        "mongolian-cyrillic":       "mn",
+        "kazakh":                   "kz",
+        "kyrgyz-cyrillic":          "kg",
+        "tajik-cyrillic":           "tj",
+        "uzbek-cyrillic":           "uz",
+        "turkmen":                  "tm",
+        "chuvash":                  "ru:cv",
+
+        // ── Turkish / Azerbaijani ─────────────────────────────────────────
+        "turkish":                  "tr",
+        "turkish-qwerty":           "tr",
+        "turkish-qwerty-pc":        "tr",
+        "turkish-standard":         "tr:f",
+        "azeri":                    "az",
+
+        // ── Greek ─────────────────────────────────────────────────────────
+        "greek":                    "gr",
+        "greekpolytonic":           "gr:polytonic",
+
+        // ── Georgian / Armenian ───────────────────────────────────────────
+        "georgian-qwerty":          "ge",
+        "armenian-hmqwerty":        "am",
+        "armenian-westernqwerty":   "am:western",
+
+        // ── Arabic ────────────────────────────────────────────────────────
+        "arabic":                   "ara",
+        "arabic-qwerty":            "ara:qwerty",
+        "arabic-northafrica":       "ara",
+        "arabic-azerty":            "ara:azerty",
+        "arabicpc":                 "ara",
+
+        // ── Hebrew ────────────────────────────────────────────────────────
+        "hebrew":                   "il",
+        "hebrew-pc":                "il",
+        "hebrew-qwerty":            "il",
+
+        // ── Persian / Dari / Pashto ───────────────────────────────────────
+        "persian":                  "ir",
+        "persian-isiri2901":        "ir",
+        "persian-qwerty":           "ir",
+        "afghandari":               "af",
+        "afghanpashto":             "af:ps",
+        "afghanuzbek":              "af:uz",
+
+        // ── Kurdish ───────────────────────────────────────────────────────
+        "kurdish-kurmanji":         "tr:ku",
+        "kurdish-sorani":           "iq:ku",
+
+        // ── Urdu / Sindhi ─────────────────────────────────────────────────
+        "urdu":                     "pk",
+        "sindhi":                   "pk:snd",
+        "sindhi-devanagari":        "in",
+
+        // ── Indic: Devanagari ─────────────────────────────────────────────
+        "devanagari":               "in",
+        "devanagari-qwerty":        "in",
+        "marathi":                  "in",
+        "nepali":                   "np",
+        "nepali-is16350":           "np",
+        "sanskrit":                 "in",
+        "konkani":                  "in",
+        "maithili":                 "in",
+        "dogri":                    "in",
+        "bodo":                     "in",
+        "kashmiri-devanagari":      "in",
+        "santali-devanagari":       "in",
+
+        // ── Indic: Bangla / Assamese ──────────────────────────────────────
+        "bangla":                   "bd",
+        "bangla-qwerty":            "bd",
+        "assamese":                 "in",
+        "manipuri-bengali":         "in",
+
+        // ── Indic: Tamil / Telugu / Kannada / Malayalam / Oriya ────────────
+        "tamil99":                  "in",
+        "telugu":                   "in",
+        "telugu-qwerty":            "in",
+        "kannada":                  "in",
+        "kannada-qwerty":           "in",
+        "malayalam":                "in",
+        "malayalam-qwerty":         "in",
+        "oriya":                    "in",
+        "oriya-qwerty":             "in",
+
+        // ── Indic: Gujarati / Gurmukhi ────────────────────────────────────
+        "gujarati":                 "in",
+        "gujarati-qwerty":          "in",
+        "gurmukhi":                 "in",
+        "gurmukhi-qwerty":          "in",
+        "anjal":                    "in",          // Tamil Anjal
+
+        // ── Indic: Transliteration ────────────────────────────────────────
+        "transliteration-ar":       "ara",
+        "transliteration-bn":       "bd",
+        "transliteration-gu":       "in",
+        "transliteration-hi":       "in",
+        "transliteration-kn":       "in",
+        "transliteration-ml":       "in",
+        "transliteration-mr":       "in",
+        "transliteration-pa":       "in",
+        "transliteration-ta":       "in",
+        "transliteration-te":       "in",
+        "transliteration-ur":       "pk",
+
+        // ── Indic: Other scripts ──────────────────────────────────────────
+        "santali-olchiki":          "in",
+        "manipuri-meeteimayek":     "in",
+
+        // ── Sinhala ───────────────────────────────────────────────────────
+        "sinhala":                  "lk",
+        "sinhala-qwerty":           "lk:us",
+
+        // ── Tibetan / Dzongkha ────────────────────────────────────────────
+        "tibetan-qwerty":           "cn:tib",
+        "tibetan-wylie":            "cn:tib",
+        "tibetanotanius":           "cn:tib",
+        "dzongkha":                 "bt",
+
+        // ── Southeast Asian ───────────────────────────────────────────────
+        "thai":                     "th",
+        "thai-pattachote":          "th:pat",
+        "thai-qwerty":              "th",          // Thai QWERTY overlay
+        "khmer":                    "kh",
+        "lao":                      "la",
+        "myanmar":                  "mm",
+        "myanmar-qwerty":           "mm",
+        "vietnamese":               "vn",
+
+        // ── Dhivehi (Maldives) ────────────────────────────────────────────
+        "dhivehi-qwerty":           "mv",
+
+        // ── CJK ───────────────────────────────────────────────────────────
+        "japanese":                 "jp",
+        "kana":                     "jp",
+        "korean":                   "kr",
+        "2sethangul":               "kr",
+        "3sethangul":               "kr",
+        "390hangul":                "kr",
+        "gjcromaja":                "kr",
+        "hncromaja":                "kr",
+
+        // Chinese (layout-only)
+        "pinyinkeyboard":           "cn",
+        "traditionalpinyinkeyboard":"tw",
+        "wubihuakeyboard":          "cn",
+        "traditionalwubihuakeyboard":"tw",
+        "zhuyinbopomofo":           "tw",
+        "zhuyineten":               "tw",
+        "cangjiekeyboard":          "tw",
+
+        // ── Uyghur ────────────────────────────────────────────────────────
+        "uyghur":                   "cn:ug",
+
+        // ── African ───────────────────────────────────────────────────────
+        "akan":                     "gh:akan",
+        "hausa":                    "ng:hausa",
+        "igbo":                     "ng:igbo",
+        "yoruba":                   "ng:yoruba",
+        "geez-qwerty":              "et",          // Geʿez (Amharic)
+
+        // ── African: other ────────────────────────────────────────────────
+        "kabyle-azerty":            "dz",          // Kabyle AZERTY → Algeria
+        "kabyle-qwerty":            "dz",
+        "tifinagh-azerty":          "ma:tifinagh", // Tifinagh → Morocco
+        "haitian-creole":           "fr",          // Haitian Creole AZERTY base
+
+        // ── Syriac / Mandaic ──────────────────────────────────────────────
+        "syriac-arabic":            "sy:syc",
+        "syriac-qwerty":            "sy:syc_phonetic",
+        "mandaic-arabic":           "ara",
+        "mandaic-qwerty":           "ara",
+
+        // ── Yiddish ───────────────────────────────────────────────────────
+        "yiddish-qwerty":           "il",
+
+        // ── Inuit / Indigenous Canadian ────────────────────────────────────
+        "inuktitut-qwerty":         "ca:ike",
+        "inuktitut-nattilik":       "ca:ike",
+        "inuktitut-nunavut":        "ca:ike",
+        "inuktitut-nutaaq":         "ca:ike",
+        "inuttitutnunavik":         "ca:ike",
+
+        // ── Indigenous North American ─────────────────────────────────────
+        "cherokee-nation":          "us:chr",
+        "cherokee-qwerty":          "us:chr",
+        "navajo":                   "us",          // Navajo (Latin QWERTY base)
+        "lushootseed":              "us",
+        "chickasaw":                "us",
+        "choctaw":                  "us",
+        "chochenyo":                "us",
+        "mvskoke":                  "us",
+        "nezperce":                 "us",
+        "apache":                   "us",
+        "mikmaw":                   "us",          // Mi'kmaw
+        "wolastoqey":               "us",
+        "osage-qwerty":             "us",
+        "wixarika":                 "latam",       // Wixárika (Huichol)
+
+        // ── Jawi / Malay ──────────────────────────────────────────────────
+        "jawi-qwerty":              "my",
+
+        // ── Other scripts ─────────────────────────────────────────────────
+        "nko":                      "us",          // N'Ko (no standard XKB)
+        "nko-qwerty":               "us",
+        "adlam-qwerty":             "us",          // Adlam (no standard XKB)
+        "rejang-qwerty":            "us",          // Rejang (no standard XKB)
+        "wancho-qwerty":            "us",          // Wancho (no standard XKB)
+        "hanifi-rohingya-qwerty":   "us",          // Hanifi Rohingya (no standard XKB)
+        "pahawh-hmong":             "us",          // Pahawh Hmong (no standard XKB)
+        "ingush":                   "ru",          // Ingush (Cyrillic base)
+    ]
+
     /// Detect the macOS keyboard layout and map to X11 layout name.
+    ///
+    /// Reads `AppleCurrentKeyboardLayoutInputSourceID` from the HIToolbox
+    /// preferences domain. This is updated by the system immediately when
+    /// the user switches keyboards and is reliable on macOS 26.
     public static func detectKeyboardLayout() -> String {
-        guard let raw = UserDefaults.standard.string(forKey: "AppleCurrentKeyboardLayoutInputSourceID")
-                ?? (UserDefaults(suiteName: "com.apple.HIToolbox")?.string(forKey: "AppleCurrentKeyboardLayoutInputSourceID")) else {
+        guard let raw = UserDefaults(suiteName: "com.apple.HIToolbox")?
+                .string(forKey: "AppleCurrentKeyboardLayoutInputSourceID")
+                ?? UserDefaults.standard.string(forKey: "AppleCurrentKeyboardLayoutInputSourceID") else {
             return "us"
         }
-        // e.g. "com.apple.keylayout.US" → "us", "com.apple.keylayout.French" → "fr"
+        // e.g. "com.apple.keylayout.US" → "us", "com.apple.keylayout.ABC-AZERTY" → "abc-azerty"
         let name = raw.replacingOccurrences(of: "com.apple.keylayout.", with: "").lowercased()
-        let map: [String: String] = [
-            "us": "us", "u.s.": "us", "abc": "us",
-            "british": "gb", "french": "fr", "german": "de",
-            "spanish": "es", "italian": "it", "portuguese": "pt",
-            "swedish": "se", "norwegian": "no", "danish": "dk",
-            "finnish": "fi", "dutch": "nl", "belgian": "be",
-            "swiss french": "ch(fr)", "swiss german": "ch(de)",
-            "canadian french": "ca(fr)", "czech": "cz",
-            "polish": "pl", "russian": "ru", "japanese": "jp",
-            "korean": "kr", "turkish": "tr", "arabic": "ara",
-            "hebrew": "il", "brazilian": "br",
-            "australian": "us", "irish": "ie",
-            "colemak": "us(colemak)", "dvorak": "us(dvorak)",
-        ]
-        return map[name] ?? "us"
+        return macOSToXkbMap[name] ?? "us"
     }
 
     /// Detect macOS natural scrolling preference.

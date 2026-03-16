@@ -4,12 +4,18 @@
 # No set -e: non-critical sections (WARP, ad blocking) may fail gracefully
 
 SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
-KB_LAYOUT="${1:-us}"
+KB_LAYOUT_SPEC="${1:-us}"
 NATURAL_SCROLLING="${2:-true}"
 LOCALE="${3:-en_US}"
 DISPLAY_SCALE="${4:-2}"
 ALPINE_VERSION="${5:-3.23}"
 CURSOR_SIZE=$((DISPLAY_SCALE * 24))
+
+# Parse layout:variant format (e.g. "ch:fr" → layout="ch", variant="fr")
+case "$KB_LAYOUT_SPEC" in
+    *:*) KB_LAYOUT="${KB_LAYOUT_SPEC%%:*}"; KB_VARIANT="${KB_LAYOUT_SPEC#*:}" ;;
+    *)   KB_LAYOUT="$KB_LAYOUT_SPEC"; KB_VARIANT="" ;;
+esac
 
 # ---------------------------------------------------------------------------
 # Helpers
@@ -34,7 +40,9 @@ install_config() {
 install_template() {
     # install_template <source> <dest> [mode]
     # Performs %%VAR%% substitution
-    sed -e "s|%%KEYBOARD_LAYOUT%%|$KB_LAYOUT|g" \
+    sed -e "s|%%KEYBOARD_LAYOUT%%|$KB_LAYOUT_SPEC|g" \
+        -e "s|%%XKB_LAYOUT%%|$KB_LAYOUT|g" \
+        -e "s|%%XKB_VARIANT%%|$KB_VARIANT|g" \
         -e "s|%%NATURAL_SCROLLING%%|$NATURAL_SCROLLING|g" \
         -e "s|%%LOCALE%%|$LOCALE|g" \
         "$SCRIPT_DIR/$1" > "$2"
@@ -234,6 +242,7 @@ echo '::once:/usr/local/bin/config-agent.py' >> /mnt/etc/inittab
 echo '::once:/usr/local/bin/resilient-launch.sh su -s /bin/sh chrome -c /usr/local/bin/file-agent.py' >> /mnt/etc/inittab
 echo '::once:/usr/local/bin/resilient-launch.sh /usr/local/bin/webcam-agent.py' >> /mnt/etc/inittab
 echo '::once:/usr/local/bin/resilient-launch.sh /usr/local/bin/warp-agent.py' >> /mnt/etc/inittab
+echo '::once:/usr/local/bin/resilient-launch.sh su -s /bin/sh chrome -c /usr/local/bin/keyboard-agent.py' >> /mnt/etc/inittab
 
 install_config scripts/debug.sh        /mnt/root/debug.sh          755
 install_config scripts/root-profile.sh /mnt/root/.profile
@@ -312,6 +321,7 @@ install_config scripts/file-picker-host.py  /mnt/usr/local/bin/file-picker-host.
 install_config scripts/link-agent.py        /mnt/usr/local/bin/link-agent.py        755
 install_config scripts/webcam-agent.py      /mnt/usr/local/bin/webcam-agent.py      755
 install_config scripts/warp-agent.py        /mnt/usr/local/bin/warp-agent.py        755
+install_config scripts/keyboard-agent.py    /mnt/usr/local/bin/keyboard-agent.py    755
 install_config scripts/routing-socks.py     /mnt/usr/local/bin/routing-socks.py     755
 install_config scripts/config-agent.py      /mnt/usr/local/bin/config-agent.py      755
 install_config scripts/cdp-agent.py         /mnt/usr/local/bin/cdp-agent.py         755

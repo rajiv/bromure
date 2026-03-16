@@ -58,6 +58,7 @@ private func readSetting(_ s: ProfileSettings, key: String) -> String? {
     case "allowAutomation": return String(s.allowAutomation)
     case "traceLevel":      return String(s.traceLevel.rawValue)
     case "traceAutoStart":  return String(s.traceAutoStart)
+    case "matchKeyboardLayout": return String(s.matchKeyboardLayout)
     case "locale":          return s.locale ?? "system"
     case "webcamDeviceID":  return s.webcamDeviceID ?? ""
     case "microphoneDeviceID": return s.microphoneDeviceID ?? ""
@@ -105,6 +106,7 @@ private func writeSetting(_ s: inout ProfileSettings, key: String, value: String
     case "allowAutomation": s.allowAutomation = b
     case "traceLevel":      s.traceLevel = TraceLevel(rawValue: Int(value) ?? 0) ?? .disabled
     case "traceAutoStart":  s.traceAutoStart = b
+    case "matchKeyboardLayout": s.matchKeyboardLayout = b
     case "locale":          s.locale = (value == "system" || value.isEmpty) ? nil : value
     case "webcamDeviceID":  s.webcamDeviceID = value.isEmpty ? nil : value
     case "microphoneDeviceID": s.microphoneDeviceID = value.isEmpty ? nil : value

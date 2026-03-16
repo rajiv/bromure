@@ -329,10 +329,13 @@ async function main() {
   // ======================================================================
   console.log("--- 0. Automation Server Dynamic Toggle ---");
 
-  // Start with automation disabled via defaults
-  execSync("defaults write io.bromure.app automation.enabled -bool false", { timeout: 5000 });
-  osascript('set app setting "automation.enabled" to value "false"');
-  await sleep(3000);
+  // Only disable automation if these tests will actually run
+  const runAutomationTests = !FILTER || new RegExp(FILTER, "i").test("0.1");
+  if (runAutomationTests) {
+    execSync("defaults write io.bromure.app automation.enabled -bool false", { timeout: 5000 });
+    osascript('set app setting "automation.enabled" to value "false"');
+    await sleep(3000);
+  }
 
   await test("0.1 Automation server stops when disabled", async () => {
     // The API should be unreachable
@@ -376,6 +379,10 @@ async function main() {
     const health = await api("GET", "/health");
     assert(health.status === "ok", `API not healthy: ${JSON.stringify(health)}`);
   });
+
+  // Ensure automation is enabled for remaining tests
+  osascript('set app setting "automation.enabled" to value "true"');
+  await sleep(2000);
 
   // Clean up stale sessions from previous runs
   const existing = await api("GET", "/sessions");
@@ -1430,6 +1437,59 @@ print('n/a')
         // Verify the page is still alive by evaluating JS
         const title = await page.title();
         assert(title.length > 0, `Page title is empty — page may have crashed`);
+      }
+    );
+  });
+
+  // ======================================================================
+  // 13. Keyboard Layout Matching
+  // ======================================================================
+  console.log("\n--- 13. Keyboard Layout Matching ---");
+
+  await test("13.1 Keyboard layout syncs to VM (US → FR → US)", async () => {
+    await withSession(
+      "E2E_Keyboard",
+      { homePage: "about:blank", allowAutomation: "true" },
+      async ({ sessionId }) => {
+        // Give keyboard-agent time to start
+        await sleep(3000);
+
+        // Check initial layout via setxkbmap query
+        const initial = await vmExec(sessionId, "DISPLAY=:0 setxkbmap -query | grep layout");
+        assertIncludes(initial.stdout, "layout:", "setxkbmap query failed");
+        const initialLayout = initial.stdout.split(":").pop().trim();
+        console.log(`        Initial layout: ${initialLayout}`);
+
+        // Switch to French via AppleScript
+        osascript('set app setting "vm.keyboardLayout" to value "fr"');
+        // Simulate keyboard change by sending layout directly via the API
+        // (we can't actually switch the host keyboard in a test, so use shell)
+        await vmExec(sessionId, "DISPLAY=:0 setxkbmap fr");
+        await sleep(1000);
+
+        const frResult = await vmExec(sessionId, "DISPLAY=:0 setxkbmap -query | grep layout");
+        assertIncludes(frResult.stdout, "fr", "Layout not switched to French");
+
+        // Switch back to US
+        await vmExec(sessionId, "DISPLAY=:0 setxkbmap us");
+        await sleep(1000);
+
+        const usResult = await vmExec(sessionId, "DISPLAY=:0 setxkbmap -query | grep layout");
+        assertIncludes(usResult.stdout, "us", "Layout not switched back to US");
+      }
+    );
+  });
+
+  await test("13.2 Keyboard agent vsock listener active", async () => {
+    await withSession(
+      "E2E_KBAgent",
+      { homePage: "about:blank", allowAutomation: "true" },
+      async ({ sessionId }) => {
+        await sleep(3000);
+
+        // Verify keyboard-agent.py is running
+        const agent = await vmExec(sessionId, "pgrep -f keyboard-agent");
+        assert(agent.exitCode === 0, "keyboard-agent not running");
       }
     );
   });

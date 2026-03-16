@@ -214,6 +214,9 @@ public struct ProfileSettings: Codable, Equatable {
     // Certificates
     public var rootCAs: [CustomRootCA] = []
 
+    // Input
+    public var matchKeyboardLayout: Bool = true  // dynamically sync host keyboard layout
+
     // Locale
     public var locale: String?  // nil = auto-detect from OS
 
@@ -270,6 +273,7 @@ public struct ProfileSettings: Codable, Equatable {
         speakerDeviceID = try c.decodeIfPresent(String.self, forKey: .speakerDeviceID)
         webcamEffects = try c.decodeIfPresent(WebcamEffects.self, forKey: .webcamEffects) ?? defaults.webcamEffects
         rootCAs = try c.decodeIfPresent([CustomRootCA].self, forKey: .rootCAs) ?? defaults.rootCAs
+        matchKeyboardLayout = try c.decodeIfPresent(Bool.self, forKey: .matchKeyboardLayout) ?? defaults.matchKeyboardLayout
         locale = try c.decodeIfPresent(String.self, forKey: .locale)
         allowAutomation = try c.decodeIfPresent(Bool.self, forKey: .allowAutomation) ?? defaults.allowAutomation
         traceLevel = try c.decodeIfPresent(TraceLevel.self, forKey: .traceLevel) ?? defaults.traceLevel
@@ -343,6 +347,7 @@ public struct ProfileSettings: Codable, Equatable {
             enableAutomation: defaults.bool(forKey: "automation.enabled"),
             testSuite: isTestSuite,
             traceLevel: traceLevel,
+            matchKeyboardLayout: matchKeyboardLayout,
             extraKernelOptions: defaults.string(forKey: "vm.extraKernelOptions") ?? VMConfig.defaultExtraKernelOptions,
             locale: locale
         )

@@ -469,3 +469,7 @@
 "Get session trace events" = "Obtener eventos de traza de la sesi\U00F3n";
 "Chrome DevTools Protocol WebSocket proxy" = "Proxy WebSocket de Chrome DevTools Protocol";
 "Copy to clipboard" = "Copiar al portapapeles";
+
+/* ProfileSettingsView — General (additional) */
+"Match Keyboard Layout" = "Seguir disposici\U00F3n del teclado";
+"Automatically switch the browser\U2019s keyboard layout when you change it on your Mac. Turn this off to always use the layout set in Bromure \U2192 Settings \U2192 Input." = "Cambia autom\U00E1ticamente la disposici\U00F3n del teclado del navegador cuando la cambia en su Mac. Desactive esto para usar siempre la disposici\U00F3n establecida en Bromure \U2192 Ajustes \U2192 Entrada.";

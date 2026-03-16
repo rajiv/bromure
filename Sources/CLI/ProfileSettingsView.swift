@@ -315,6 +315,14 @@ struct ProfileSettingsView: View {
 
             settingsDivider
 
+            settingToggle(
+                "Match Keyboard Layout",
+                description: "Automatically switch the browser\u{2019}s keyboard layout when you change it on your Mac. Turn this off to always use the layout set in Bromure \u{2192} Settings \u{2192} Input.",
+                isOn: $draft.settings.matchKeyboardLayout
+            )
+
+            settingsDivider
+
             // Language
             VStack(alignment: .leading, spacing: 6) {
                 Text("Language").font(.headline)

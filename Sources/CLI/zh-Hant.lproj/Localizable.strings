@@ -406,57 +406,57 @@
 "Freeze" = "凍結";
 "Resume" = "繼續";
 "Start" = "開始";
-"req" = "\u500B";
+"req" = "\U500B";
 
 /* ProfileSettingsView — Performance (additional) */
-"Zero-Copy Rasterization" = "\u96F6\u62F7\u8C9D\u5149\u67F5\u5316";
-"Reduces memory copies during page rendering. Improves performance on most systems." = "\u6E1B\u5C11\u9801\u9762\u7E6A\u88FD\u6642\u7684\u8A18\u61B6\u9AD4\u62F7\u8C9D\u3002\u5728\u5927\u591A\u6578\u7CFB\u7D71\u4E0A\u63D0\u9AD8\u6548\u80FD\u3002";
-"Smooth Scrolling" = "\u5E73\u6ED1\u6372\u52D5";
-"Animates scrolling for a smoother feel. Disable for instant, jump-style scrolling." = "\u52D5\u756B\u6372\u52D5\u4EE5\u7372\u5F97\u66F4\u6D41\u66A2\u7684\u9AD4\u9A57\u3002\u505C\u7528\u5F8C\u4F7F\u7528\u5373\u6642\u8DF3\u8E8D\u5F0F\u6372\u52D5\u3002";
+"Zero-Copy Rasterization" = "\U96F6\U62F7\U8C9D\U5149\U67F5\U5316";
+"Reduces memory copies during page rendering. Improves performance on most systems." = "\U6E1B\U5C11\U9801\U9762\U7E6A\U88FD\U6642\U7684\U8A18\U61B6\U9AD4\U62F7\U8C9D\U3002\U5728\U5927\U591A\U6578\U7CFB\U7D71\U4E0A\U63D0\U9AD8\U6548\U80FD\U3002";
+"Smooth Scrolling" = "\U5E73\U6ED1\U6372\U52D5";
+"Animates scrolling for a smoother feel. Disable for instant, jump-style scrolling." = "\U52D5\U756B\U6372\U52D5\U4EE5\U7372\U5F97\U66F4\U6D41\U66A2\U7684\U9AD4\U9A57\U3002\U505C\U7528\U5F8C\U4F7F\U7528\U5373\U6642\U8DF3\U8E8D\U5F0F\U6372\U52D5\U3002";
 
 /* ProfileSettingsView — Privacy & Safety (additional) */
-"Block Screen Capture" = "\u963B\u6B62\u87A2\u5E55\u64F7\u53D6";
-"Hides this browser window from screenshots, screen recordings, and screen sharing apps like Zoom." = "\u5C07\u6B64\u700F\u89BD\u5668\u8996\u7A97\u5F9E\u87A2\u5E55\u622A\u5716\u3001\u87A2\u5E55\u9304\u88FD\u548C Zoom \u7B49\u87A2\u5E55\u5171\u4EAB\u61C9\u7528\u7A0B\u5F0F\u4E2D\u96B1\u85CF\u3002";
+"Block Screen Capture" = "\U963B\U6B62\U87A2\U5E55\U64F7\U53D6";
+"Hides this browser window from screenshots, screen recordings, and screen sharing apps like Zoom." = "\U5C07\U6B64\U700F\U89BD\U5668\U8996\U7A97\U5F9E\U87A2\U5E55\U622A\U5716\U3001\U87A2\U5E55\U9304\U88FD\U548C Zoom \U7B49\U87A2\U5E55\U5171\U4EAB\U61C9\U7528\U7A0B\U5F0F\U4E2D\U96B1\U85CF\U3002";
 
 /* ProfileSettingsView — VPN & Ads (additional) */
-"Connect on Startup" = "\u555F\u52D5\u6642\u9023\u7DDA";
-"Automatically connect the VPN when the browser session starts. You can always toggle it from the window\U2019s VPN button." = "\u700F\u89BD\u5668\u5DE5\u4F5C\u968E\u6BB5\u555F\u52D5\u6642\u81EA\u52D5\u9023\u63A5 VPN\u3002\u60A8\u53EF\u4EE5\u96A8\u6642\u900F\u904E\u8996\u7A97\u7684 VPN \u6309\u9215\u5207\u63DB\u3002";
+"Connect on Startup" = "\U555F\U52D5\U6642\U9023\U7DDA";
+"Automatically connect the VPN when the browser session starts. You can always toggle it from the window\U2019s VPN button." = "\U700F\U89BD\U5668\U5DE5\U4F5C\U968E\U6BB5\U555F\U52D5\U6642\U81EA\U52D5\U9023\U63A5 VPN\U3002\U60A8\U53EF\U4EE5\U96A8\U6642\U900F\U904E\U8996\U7A97\U7684 VPN \U6309\U9215\U5207\U63DB\U3002";
 
 /* ProfileSettingsView — Enterprise (additional) */
-"HTTP Proxy" = "HTTP \u4EE3\u7406";
-"Route all browser traffic through a corporate proxy server. When a proxy is configured, VPN and ad blocking are automatically disabled." = "\u900F\u904E\u4F01\u696D\u4EE3\u7406\u4F3A\u670D\u5668\u8DEF\u7531\u6240\u6709\u700F\u89BD\u5668\u6D41\u91CF\u3002\u8A2D\u5B9A\u4EE3\u7406\u5F8C\uFF0CVPN \u548C\u5EE3\u544A\u651D\u622A\u6703\u81EA\u52D5\u505C\u7528\u3002";
-"Hostname" = "\u4E3B\u6A5F\u540D\u7A31";
-"Port" = "\u9023\u63A5\u57E0";
-"Username" = "\u4F7F\u7528\u8005\u540D\u7A31";
-"Password" = "\u5BC6\u78BC";
+"HTTP Proxy" = "HTTP \U4EE3\U7406";
+"Route all browser traffic through a corporate proxy server. When a proxy is configured, VPN and ad blocking are automatically disabled." = "\U900F\U904E\U4F01\U696D\U4EE3\U7406\U4F3A\U670D\U5668\U8DEF\U7531\U6240\U6709\U700F\U89BD\U5668\U6D41\U91CF\U3002\U8A2D\U5B9A\U4EE3\U7406\U5F8C\UFF0CVPN \U548C\U5EE3\U544A\U651D\U622A\U6703\U81EA\U52D5\U505C\U7528\U3002";
+"Hostname" = "\U4E3B\U6A5F\U540D\U7A31";
+"Port" = "\U9023\U63A5\U57E0";
+"Username" = "\U4F7F\U7528\U8005\U540D\U7A31";
+"Password" = "\U5BC6\U78BC";
 
 /* ProfileSettingsView — Advanced (additional) */
-"Start Recording Automatically" = "\u81EA\u52D5\u958B\u59CB\u9304\u88FD";
-"Begin capturing requests as soon as the session opens. When off, recording starts only when you click the record button in the titlebar." = "\u5DE5\u4F5C\u968E\u6BB5\u958B\u555F\u5F8C\u7ACB\u5373\u958B\u59CB\u64F7\u53D6\u8ACB\u6C42\u3002\u95DC\u9589\u6642\uFF0C\u50C5\u5728\u9EDE\u64CA\u6A19\u984C\u5217\u4E2D\u7684\u9304\u88FD\u6309\u9215\u6642\u624D\u958B\u59CB\u9304\u88FD\u3002";
+"Start Recording Automatically" = "\U81EA\U52D5\U958B\U59CB\U9304\U88FD";
+"Begin capturing requests as soon as the session opens. When off, recording starts only when you click the record button in the titlebar." = "\U5DE5\U4F5C\U968E\U6BB5\U958B\U555F\U5F8C\U7ACB\U5373\U958B\U59CB\U64F7\U53D6\U8ACB\U6C42\U3002\U95DC\U9589\U6642\UFF0C\U50C5\U5728\U9EDE\U64CA\U6A19\U984C\U5217\U4E2D\U7684\U9304\U88FD\U6309\U9215\U6642\U624D\U958B\U59CB\U9304\U88FD\U3002";
 
 /* SettingsView — Hardware (additional) */
-"Kernel Boot Options" = "\u6838\u5FC3\u555F\u52D5\u9078\u9805";
-"Additional Linux kernel command-line parameters appended to the virtual machine boot command. The default disables SME to work around a crash on Apple M4 processors." = "\u9644\u52A0\u5230\u865B\u64EC\u6A5F\u555F\u52D5\u547D\u4EE4\u7684 Linux \u6838\u5FC3\u547D\u4EE4\u5217\u53C3\u6578\u3002\u9810\u8A2D\u505C\u7528 SME \u4EE5\u89E3\u6C7A Apple M4 \u8655\u7406\u5668\u4E0A\u7684\u7576\u6A5F\u554F\u984C\u3002";
-"Incorrect kernel options will prevent the browser from booting." = "\u932F\u8AA4\u7684\u6838\u5FC3\u9078\u9805\u5C07\u5C0E\u81F4\u700F\u89BD\u5668\u7121\u6CD5\u555F\u52D5\u3002";
-"Only change this if you know what you are doing. Removing arm64.nosme may cause crashes on M4 Macs. Invalid options may prevent the browser from booting." = "\u50C5\u5728\u77AD\u89E3\u64CD\u4F5C\u5F8C\u679C\u6642\u4FEE\u6539\u3002\u522A\u9664 arm64.nosme \u53EF\u80FD\u5C0E\u81F4 M4 Mac \u7576\u6A5F\u3002\u7121\u6548\u9078\u9805\u53EF\u80FD\u5C0E\u81F4\u700F\u89BD\u5668\u7121\u6CD5\u555F\u52D5\u3002";
-"Reset to Default" = "\u6062\u5FA9\u9810\u8A2D\u503C";
+"Kernel Boot Options" = "\U6838\U5FC3\U555F\U52D5\U9078\U9805";
+"Additional Linux kernel command-line parameters appended to the virtual machine boot command. The default disables SME to work around a crash on Apple M4 processors." = "\U9644\U52A0\U5230\U865B\U64EC\U6A5F\U555F\U52D5\U547D\U4EE4\U7684 Linux \U6838\U5FC3\U547D\U4EE4\U5217\U53C3\U6578\U3002\U9810\U8A2D\U505C\U7528 SME \U4EE5\U89E3\U6C7A Apple M4 \U8655\U7406\U5668\U4E0A\U7684\U7576\U6A5F\U554F\U984C\U3002";
+"Incorrect kernel options will prevent the browser from booting." = "\U932F\U8AA4\U7684\U6838\U5FC3\U9078\U9805\U5C07\U5C0E\U81F4\U700F\U89BD\U5668\U7121\U6CD5\U555F\U52D5\U3002";
+"Only change this if you know what you are doing. Removing arm64.nosme may cause crashes on M4 Macs. Invalid options may prevent the browser from booting." = "\U50C5\U5728\U77AD\U89E3\U64CD\U4F5C\U5F8C\U679C\U6642\U4FEE\U6539\U3002\U522A\U9664 arm64.nosme \U53EF\U80FD\U5C0E\U81F4 M4 Mac \U7576\U6A5F\U3002\U7121\U6548\U9078\U9805\U53EF\U80FD\U5C0E\U81F4\U700F\U89BD\U5668\U7121\U6CD5\U555F\U52D5\U3002";
+"Reset to Default" = "\U6062\U5FA9\U9810\U8A2D\U503C";
 
 /* SettingsView — Automation (additional) */
-"Automation" = "\u81EA\u52D5\u5316";
-"Enable Automation" = "\u555F\u7528\u81EA\u52D5\u5316";
+"Automation" = "\U81EA\U52D5\U5316";
+"Enable Automation" = "\U555F\U7528\U81EA\U52D5\U5316";
 "Start an HTTP server that lets external tools (Puppeteer, Playwright, Claude Code, Codex) create browser sessions and control them via CDP." = "啟動 HTTP 伺服器，讓外部工具（Puppeteer、Playwright、Claude Code、Codex）建立瀏覽器工作階段並透過 CDP 控制。";
-"API Port" = "API \u9023\u63A5\u57E0";
-"The port for the automation API server. Tools connect here to list profiles, create sessions, and get CDP endpoints." = "\u81EA\u52D5\u5316 API \u4F3A\u670D\u5668\u7684\u9023\u63A5\u57E0\u3002\u5DE5\u5177\u9023\u63A5\u6B64\u8655\u4EE5\u5217\u51FA\u8A2D\u5B9A\u6A94\u3001\u5EFA\u7ACB\u5DE5\u4F5C\u968E\u6BB5\u548C\u53D6\u5F97 CDP \u7AEF\u9EDE\u3002";
-"Bind Address" = "\u7D81\u5B9A\u4F4D\u5740";
-"Use 127.0.0.1 to only allow connections from this Mac. Use 0.0.0.0 to allow connections from other machines on the network." = "\u4F7F\u7528 127.0.0.1 \u50C5\u5141\u8A31\u4F86\u81EA\u6B64 Mac \u7684\u9023\u7DDA\u3002\u4F7F\u7528 0.0.0.0 \u5141\u8A31\u4F86\u81EA\u7DB2\u8DEF\u4E0A\u5176\u4ED6\u96FB\u8166\u7684\u9023\u7DDA\u3002";
-"127.0.0.1 (localhost only)" = "127.0.0.1\uFF08\u50C5\u672C\u6A5F\uFF09";
-"0.0.0.0 (all interfaces)" = "0.0.0.0\uFF08\u6240\u6709\u4ECB\u9762\uFF09";
-"Usage" = "\u7528\u6CD5";
-"Once enabled, external tools can connect to the API:" = "\u555F\u7528\u5F8C\uFF0C\u5916\u90E8\u5DE5\u5177\u53EF\u4EE5\u9023\u63A5\u5230 API\uFF1A";
-"List profiles:" = "\u5217\u51FA\u8A2D\u5B9A\u6A94\uFF1A";
-"Create session:" = "\u5EFA\u7ACB\u5DE5\u4F5C\u968E\u6BB5\uFF1A";
-"List sessions:" = "\u5217\u51FA\u5DE5\u4F5C\u968E\u6BB5\uFF1A";
-"Close session:" = "\u95DC\u9589\u5DE5\u4F5C\u968E\u6BB5\uFF1A";
+"API Port" = "API \U9023\U63A5\U57E0";
+"The port for the automation API server. Tools connect here to list profiles, create sessions, and get CDP endpoints." = "\U81EA\U52D5\U5316 API \U4F3A\U670D\U5668\U7684\U9023\U63A5\U57E0\U3002\U5DE5\U5177\U9023\U63A5\U6B64\U8655\U4EE5\U5217\U51FA\U8A2D\U5B9A\U6A94\U3001\U5EFA\U7ACB\U5DE5\U4F5C\U968E\U6BB5\U548C\U53D6\U5F97 CDP \U7AEF\U9EDE\U3002";
+"Bind Address" = "\U7D81\U5B9A\U4F4D\U5740";
+"Use 127.0.0.1 to only allow connections from this Mac. Use 0.0.0.0 to allow connections from other machines on the network." = "\U4F7F\U7528 127.0.0.1 \U50C5\U5141\U8A31\U4F86\U81EA\U6B64 Mac \U7684\U9023\U7DDA\U3002\U4F7F\U7528 0.0.0.0 \U5141\U8A31\U4F86\U81EA\U7DB2\U8DEF\U4E0A\U5176\U4ED6\U96FB\U8166\U7684\U9023\U7DDA\U3002";
+"127.0.0.1 (localhost only)" = "127.0.0.1\UFF08\U50C5\U672C\U6A5F\UFF09";
+"0.0.0.0 (all interfaces)" = "0.0.0.0\UFF08\U6240\U6709\U4ECB\U9762\UFF09";
+"Usage" = "\U7528\U6CD5";
+"Once enabled, external tools can connect to the API:" = "\U555F\U7528\U5F8C\UFF0C\U5916\U90E8\U5DE5\U5177\U53EF\U4EE5\U9023\U63A5\U5230 API\UFF1A";
+"List profiles:" = "\U5217\U51FA\U8A2D\U5B9A\U6A94\UFF1A";
+"Create session:" = "\U5EFA\U7ACB\U5DE5\U4F5C\U968E\U6BB5\UFF1A";
+"List sessions:" = "\U5217\U51FA\U5DE5\U4F5C\U968E\U6BB5\UFF1A";
+"Close session:" = "\U95DC\U9589\U5DE5\U4F5C\U968E\U6BB5\UFF1A";
 /* SettingsView — API Reference */
 "API Reference" = "API 參考";
 "HTTP endpoints available when automation is enabled:" = "啟用自動化後可用的 HTTP 端點：";
@@ -469,3 +469,7 @@
 "Get session trace events" = "取得工作階段追蹤事件";
 "Chrome DevTools Protocol WebSocket proxy" = "Chrome DevTools Protocol WebSocket 代理";
 "Copy to clipboard" = "複製到剪貼簿";
+
+/* ProfileSettingsView — General (additional) */
+"Match Keyboard Layout" = "跟隨鍵盤佈局";
+"Automatically switch the browser\U2019s keyboard layout when you change it on your Mac. Turn this off to always use the layout set in Bromure \U2192 Settings \U2192 Input." = "當您在 Mac 上更改鍵盤佈局時，瀏覽器會自動切換。關閉此選項後將始終使用 Bromure → 設定 → 輸入中設定的佈局。";
