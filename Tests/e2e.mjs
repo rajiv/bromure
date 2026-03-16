@@ -180,7 +180,7 @@ let skipped = 0;
 const results = [];
 
 async function test(name, fn) {
-  if (FILTER && !name.toLowerCase().includes(FILTER.toLowerCase())) {
+  if (FILTER && !new RegExp(FILTER, "i").test(name)) {
     skipped++;
     return;
   }
@@ -332,7 +332,7 @@ async function main() {
   // Start with automation disabled via defaults
   execSync("defaults write io.bromure.app automation.enabled -bool false", { timeout: 5000 });
   osascript('set app setting "automation.enabled" to value "false"');
-  await sleep(1500);
+  await sleep(3000);
 
   await test("0.1 Automation server stops when disabled", async () => {
     // The API should be unreachable
@@ -355,12 +355,18 @@ async function main() {
 
   await test("0.3 Automation server stops again when disabled", async () => {
     osascript('set app setting "automation.enabled" to value "false"');
-    await sleep(1500);
-    try {
-      const res = await fetch(`${API}/health`, { signal: AbortSignal.timeout(3000) });
-      throw new Error(`Server still responding (status ${res.status})`);
-    } catch (e) {
-      if (e.message.includes("still responding")) throw e;
+    // Poll until the server stops (up to 10s)
+    for (let i = 0; i < 10; i++) {
+      await sleep(1000);
+      try {
+        await fetch(`${API}/health`, { signal: AbortSignal.timeout(2000) });
+        // Still responding — keep waiting
+        if (i === 9) throw new Error("Server still responding after 10s");
+      } catch (e) {
+        if (e.message.includes("still responding")) throw e;
+        // Connection refused or timeout = stopped
+        return;
+      }
     }
   });
 

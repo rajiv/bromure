@@ -146,12 +146,14 @@ final class GUIAppDelegate: NSObject, NSApplicationDelegate, NSWindowDelegate {
             forName: UserDefaults.didChangeNotification,
             object: nil, queue: .main
         ) { [weak self] _ in
-            guard let self else { return }
-            let enabled = UserDefaults.standard.bool(forKey: "automation.enabled")
-            if enabled && self.automationServer == nil {
-                self.startAutomationServerIfNeeded()
-            } else if !enabled && self.automationServer != nil {
-                self.stopAutomationServer()
+            Task { @MainActor in
+                guard let self else { return }
+                let enabled = UserDefaults.standard.bool(forKey: "automation.enabled")
+                if enabled && self.automationServer == nil {
+                    self.startAutomationServerIfNeeded()
+                } else if !enabled && self.automationServer != nil {
+                    self.stopAutomationServer()
+                }
             }
         }
 
@@ -925,7 +927,6 @@ final class GUIAppDelegate: NSObject, NSApplicationDelegate, NSWindowDelegate {
     @MainActor func stopAutomationServer() {
         automationServer?.stop()
         automationServer = nil
-        print("[AutomationServer] stopped")
     }
 
     @MainActor

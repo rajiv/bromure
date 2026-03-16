@@ -87,8 +87,11 @@ final class AutomationServer {
         source.setEventHandler { [weak self] in
             self?.acceptConnection()
         }
-        source.setCancelHandler {
-            Darwin.close(sock)
+        source.setCancelHandler { [weak self] in
+            // Only close if stop() hasn't already closed it
+            if self?.serverSocket == sock {
+                Darwin.close(sock)
+            }
         }
         source.resume()
         self.acceptSource = source
@@ -99,7 +102,11 @@ final class AutomationServer {
     func stop() {
         acceptSource?.cancel()
         acceptSource = nil
-        serverSocket = -1
+        if serverSocket >= 0 {
+            Darwin.close(serverSocket)
+            serverSocket = -1
+        }
+        print("[AutomationServer] stopped")
     }
 
     // MARK: - Connection handling

@@ -335,8 +335,12 @@ final class SetAppSettingCommand: NSScriptCommand {
                     }
                 }
             }
-            if key == "automation.enabled" && b {
-                (NSApp.delegate as? GUIAppDelegate)?.startAutomationServerIfNeeded()
+            if key == "automation.enabled" {
+                if b {
+                    (NSApp.delegate as? GUIAppDelegate)?.startAutomationServerIfNeeded()
+                } else {
+                    (NSApp.delegate as? GUIAppDelegate)?.stopAutomationServer()
+                }
             }
             return nil
         }
