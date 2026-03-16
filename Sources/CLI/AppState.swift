@@ -56,6 +56,7 @@ final class AppState: @unchecked Sendable {
     /// Called by the app delegate when sessions need to be closed for image rebuild.
     var onCloseAllSessions: (() async -> Void)?
     var onPoolReady: (() -> Void)?
+    var onOpenProfileSettings: ((_ profileID: UUID, _ category: String?) -> Void)?
 
     init() {
         self.storageDir = VMConfig.defaultStorageDirectory
@@ -168,7 +169,25 @@ final class AppState: @unchecked Sendable {
         case .install(let fraction):
             phase = .initializing(status: "Installing...", progress: fraction)
         case .consoleOutput(let text):
-            consoleLog += text
+            // Strip ANSI escape codes (color, cursor movement, etc.)
+            let cleaned = text.replacingOccurrences(
+                of: "\u{1b}\\[[0-9;]*[a-zA-Z]|\u{1b}\\([a-zA-Z]",
+                with: "",
+                options: .regularExpression
+            )
+            // Handle \r (carriage return): overwrite the current line
+            for char in cleaned {
+                if char == "\r" {
+                    // Remove back to the last newline
+                    if let lastNewline = consoleLog.lastIndex(of: "\n") {
+                        consoleLog = String(consoleLog[...lastNewline])
+                    } else {
+                        consoleLog = ""
+                    }
+                } else {
+                    consoleLog.append(char)
+                }
+            }
             // Keep only the last 8KB to avoid unbounded growth
             if consoleLog.count > 8192 {
                 consoleLog = String(consoleLog.suffix(4096))

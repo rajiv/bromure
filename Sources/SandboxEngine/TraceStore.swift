@@ -1,11 +1,11 @@
 import Foundation
 import SQLite3
 
-private let edrDebug = ProcessInfo.processInfo.environment["BROMURE_DEBUG"] != nil
+private let traceDebug = ProcessInfo.processInfo.environment["BROMURE_DEBUG"] != nil
 
 // MARK: - Filter
 
-public struct EDRFilter: Sendable {
+public struct TraceFilter: Sendable {
     public var searchText: String?
     public var hostnames: Set<String>
     public var methods: Set<String>
@@ -16,7 +16,7 @@ public struct EDRFilter: Sendable {
     public var tabId: Int?
     public var documentUrl: String?
 
-    public static var all: EDRFilter { EDRFilter() }
+    public static var all: TraceFilter { TraceFilter() }
 
     public init(
         searchText: String? = nil,
@@ -41,10 +41,10 @@ public struct EDRFilter: Sendable {
     }
 }
 
-// MARK: - EDRStore
+// MARK: - TraceStore
 
 @MainActor
-public final class EDRStore {
+public final class TraceStore {
     private var db: OpaquePointer?
     public let databaseURL: URL
     private let sessionID: String
@@ -58,7 +58,7 @@ public final class EDRStore {
     public init(sessionID: String) {
         self.sessionID = sessionID
         self.databaseURL = FileManager.default.temporaryDirectory
-            .appendingPathComponent("bromure-edr-\(sessionID).sqlite")
+            .appendingPathComponent("bromure-trace-\(sessionID).sqlite")
 
         openDatabase()
         createSchema()
@@ -81,7 +81,7 @@ public final class EDRStore {
         let path = databaseURL.path
         let rc = sqlite3_open_v2(path, &db, SQLITE_OPEN_READWRITE | SQLITE_OPEN_CREATE | SQLITE_OPEN_FULLMUTEX, nil)
         guard rc == SQLITE_OK else {
-            if edrDebug { print("[EDR-Store] failed to open database: \(rc)") }
+            if traceDebug { print("[Trace-Store] failed to open database: \(rc)") }
             return
         }
 
@@ -170,7 +170,7 @@ public final class EDRStore {
 
     // MARK: - Insert
 
-    public func insert(event: EDREvent) {
+    public func insert(event: TraceEvent) {
         guard let db = db else { return }
 
         let hostname = event.hostname ?? URLComponents(string: event.url)?.host
@@ -198,8 +198,8 @@ public final class EDRStore {
             bindTextOrNull(stmt, 15, event.redirectFrom)
 
             let rc = sqlite3_step(stmt)
-            if rc != SQLITE_DONE && edrDebug {
-                print("[EDR-Store] insert event failed: \(rc) - \(String(cString: sqlite3_errmsg(db)))")
+            if rc != SQLITE_DONE && traceDebug {
+                print("[Trace-Store] insert event failed: \(rc) - \(String(cString: sqlite3_errmsg(db)))")
             }
         }
 
@@ -267,7 +267,7 @@ public final class EDRStore {
 
     // MARK: - Query
 
-    public func queryEvents(filter: EDRFilter) -> [EDREvent] {
+    public func queryEvents(filter: TraceFilter) -> [TraceEvent] {
         guard db != nil else { return [] }
 
         var whereClauses: [String] = []
@@ -299,7 +299,7 @@ public final class EDRStore {
 
         bindParameters(stmt: stmt, bindings: bindings)
 
-        var events: [EDREvent] = []
+        var events: [TraceEvent] = []
         while sqlite3_step(stmt) == SQLITE_ROW {
             let event = readEventRow(stmt)
             events.append(event)
@@ -316,7 +316,7 @@ public final class EDRStore {
         return events
     }
 
-    public func eventCount(filter: EDRFilter) -> Int {
+    public func eventCount(filter: TraceFilter) -> Int {
         guard db != nil else { return 0 }
 
         var whereClauses: [String] = []
@@ -406,7 +406,7 @@ public final class EDRStore {
 
     // MARK: - WHERE clause builder
 
-    private func buildWhereClauses(filter: EDRFilter, clauses: inout [String], bindings: inout [Any]) {
+    private func buildWhereClauses(filter: TraceFilter, clauses: inout [String], bindings: inout [Any]) {
         if let text = filter.searchText, !text.isEmpty {
             clauses.append("e.url LIKE ?")
             bindings.append("%\(text)%")
@@ -475,7 +475,7 @@ public final class EDRStore {
 
     // MARK: - Row readers
 
-    private func readEventRow(_ stmt: OpaquePointer?) -> EDREvent {
+    private func readEventRow(_ stmt: OpaquePointer?) -> TraceEvent {
         let id = columnText(stmt, 0) ?? ""
         let timestamp = sqlite3_column_double(stmt, 1)
         let method = columnText(stmt, 2) ?? ""
@@ -492,7 +492,7 @@ public final class EDRStore {
         let navType = columnText(stmt, 13)
         let redirectFrom = columnText(stmt, 14)
 
-        return EDREvent(
+        return TraceEvent(
             id: id, timestamp: timestamp, method: method, url: url,
             statusCode: statusCode, duration: duration,
             mimeType: mimeType, initiator: initiator,
@@ -520,7 +520,7 @@ public final class EDRStore {
         return headers.isEmpty ? nil : headers
     }
 
-    private func loadBodies(event: inout EDREvent) {
+    private func loadBodies(event: inout TraceEvent) {
         let sql = "SELECT direction, content, truncated FROM bodies WHERE event_id = ?"
         guard let stmt = prepare(sql) else { return }
         defer { sqlite3_finalize(stmt) }
@@ -541,19 +541,19 @@ public final class EDRStore {
         }
     }
 
-    private func loadFormFields(eventId: String) -> [EDREvent.FormFieldSnapshot]? {
+    private func loadFormFields(eventId: String) -> [TraceEvent.FormFieldSnapshot]? {
         let sql = "SELECT field_name, field_type, field_value FROM form_snapshots WHERE event_id = ?"
         guard let stmt = prepare(sql) else { return nil }
         defer { sqlite3_finalize(stmt) }
 
         bindText(stmt, 1, eventId)
 
-        var fields: [EDREvent.FormFieldSnapshot] = []
+        var fields: [TraceEvent.FormFieldSnapshot] = []
         while sqlite3_step(stmt) == SQLITE_ROW {
             let name = columnText(stmt, 0) ?? ""
             let type = columnText(stmt, 1) ?? ""
             let value = columnText(stmt, 2) ?? ""
-            fields.append(EDREvent.FormFieldSnapshot(name: name, type: type, value: value))
+            fields.append(TraceEvent.FormFieldSnapshot(name: name, type: type, value: value))
         }
         return fields.isEmpty ? nil : fields
     }
@@ -564,9 +564,9 @@ public final class EDRStore {
         guard let db = db else { return }
         var errMsg: UnsafeMutablePointer<CChar>?
         let rc = sqlite3_exec(db, sql, nil, nil, &errMsg)
-        if rc != SQLITE_OK && edrDebug {
+        if rc != SQLITE_OK && traceDebug {
             let msg = errMsg.map { String(cString: $0) } ?? "unknown"
-            print("[EDR-Store] exec error (\(rc)): \(msg)")
+            print("[Trace-Store] exec error (\(rc)): \(msg)")
             sqlite3_free(errMsg)
         }
     }
@@ -575,8 +575,8 @@ public final class EDRStore {
         guard let db = db else { return nil }
         var stmt: OpaquePointer?
         let rc = sqlite3_prepare_v2(db, sql, -1, &stmt, nil)
-        if rc != SQLITE_OK && edrDebug {
-            print("[EDR-Store] prepare error (\(rc)): \(String(cString: sqlite3_errmsg(db)))")
+        if rc != SQLITE_OK && traceDebug {
+            print("[Trace-Store] prepare error (\(rc)): \(String(cString: sqlite3_errmsg(db)))")
         }
         return stmt
     }

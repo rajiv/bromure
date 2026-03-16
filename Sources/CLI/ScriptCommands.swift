@@ -30,6 +30,8 @@ private func readSetting(_ s: ProfileSettings, key: String) -> String? {
     case "clipboard":       return String(s.enableClipboardSharing)
     case "gpu":             return String(s.enableGPU)
     case "webgl":           return String(s.enableWebGL)
+    case "zeroCopy":        return String(s.enableZeroCopy)
+    case "smoothScrolling": return String(s.enableSmoothScrolling)
     case "audio":           return String(s.enableAudio)
     case "audioVolume":     return String(s.audioVolume)
     case "webcam":          return String(s.enableWebcam)
@@ -54,7 +56,8 @@ private func readSetting(_ s: ProfileSettings, key: String) -> String? {
     case "proxyUsername":   return s.proxyUsername
     case "proxyPassword":   return s.proxyPassword
     case "allowAutomation": return String(s.allowAutomation)
-    case "edrLevel":        return String(s.edrLevel.rawValue)
+    case "traceLevel":      return String(s.traceLevel.rawValue)
+    case "traceAutoStart":  return String(s.traceAutoStart)
     case "locale":          return s.locale ?? "system"
     case "webcamDeviceID":  return s.webcamDeviceID ?? ""
     case "microphoneDeviceID": return s.microphoneDeviceID ?? ""
@@ -74,6 +77,8 @@ private func writeSetting(_ s: inout ProfileSettings, key: String, value: String
     case "clipboard":       s.enableClipboardSharing = b
     case "gpu":             s.enableGPU = b
     case "webgl":           s.enableWebGL = b
+    case "zeroCopy":        s.enableZeroCopy = b
+    case "smoothScrolling": s.enableSmoothScrolling = b
     case "audio":           s.enableAudio = b
     case "audioVolume":     s.audioVolume = Int(value) ?? s.audioVolume
     case "webcam":          s.enableWebcam = b
@@ -98,7 +103,8 @@ private func writeSetting(_ s: inout ProfileSettings, key: String, value: String
     case "proxyUsername":   s.proxyUsername = value
     case "proxyPassword":   s.proxyPassword = value
     case "allowAutomation": s.allowAutomation = b
-    case "edrLevel":        s.edrLevel = EDRLevel(rawValue: Int(value) ?? 0) ?? .disabled
+    case "traceLevel":      s.traceLevel = TraceLevel(rawValue: Int(value) ?? 0) ?? .disabled
+    case "traceAutoStart":  s.traceAutoStart = b
     case "locale":          s.locale = (value == "system" || value.isEmpty) ? nil : value
     case "webcamDeviceID":  s.webcamDeviceID = value.isEmpty ? nil : value
     case "microphoneDeviceID": s.microphoneDeviceID = value.isEmpty ? nil : value
@@ -307,7 +313,27 @@ final class SetAppSettingCommand: NSScriptCommand {
             let poolKeys = ["vm.memoryGB", "vm.cpuCount", "vm.swapCmdCtrl", "vm.appearance",
                             "vm.networkMode", "vm.bridgedInterface", "vm.dnsServers"]
             if poolKeys.contains(key) {
-                (NSApp.delegate as? GUIAppDelegate)?.state.restartPool()
+                if let delegate = NSApp.delegate as? GUIAppDelegate {
+                    delegate.state.restartPool()
+                    // Offer to restart active sessions
+                    if !delegate.sessions.isEmpty {
+                        let alert = NSAlert()
+                        alert.messageText = NSLocalizedString("Restart sessions?", comment: "")
+                        alert.informativeText = NSLocalizedString("Hardware settings have changed. Restart all browser sessions to apply them?", comment: "")
+                        alert.addButton(withTitle: NSLocalizedString("Restart All", comment: ""))
+                        alert.addButton(withTitle: NSLocalizedString("Later", comment: ""))
+                        if alert.runModal() == .alertFirstButtonReturn {
+                            let sessions = delegate.sessions
+                            Task { @MainActor in
+                                for session in sessions {
+                                    if let profile = session.profile {
+                                        await delegate.restartSession(session, profile: profile)
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
             }
             if key == "automation.enabled" && b {
                 (NSApp.delegate as? GUIAppDelegate)?.startAutomationServerIfNeeded()
@@ -336,7 +362,46 @@ final class ToggleWarpCommand: NSScriptCommand {
     }
 }
 
-// MARK: - EDR Trace Command
+// MARK: - Profile Settings Command
+
+@objc(BromureOpenProfileSettingsCommand)
+final class OpenProfileSettingsCommand: NSScriptCommand {
+    override func performDefaultImplementation() -> Any? {
+        onMain {
+            guard let delegate = NSApp.delegate as? GUIAppDelegate else { return nil }
+            let nameOrID = directParameter as? String ?? ""
+            guard let profile = findProfile(nameOrID) else {
+                scriptErrorNumber = errOSAScriptError
+                scriptErrorString = "Profile not found: \(nameOrID)"
+                return nil
+            }
+            let category = evaluatedArguments?["category"] as? String
+            delegate.state.onOpenProfileSettings?(profile.id, category)
+            return nil
+        }
+    }
+}
+
+// MARK: - Trace Recording Control
+
+@objc(BromureToggleTraceCommand)
+final class ToggleTraceCommand: NSScriptCommand {
+    override func performDefaultImplementation() -> Any? {
+        onMain {
+            guard let delegate = NSApp.delegate as? GUIAppDelegate else { return nil }
+            let sessionID = directParameter as? String ?? ""
+            guard let session = delegate.sessions.first(where: { $0.id.uuidString == sessionID }) else {
+                scriptErrorNumber = errOSAScriptError
+                scriptErrorString = "Session not found: \(sessionID)"
+                return nil
+            }
+            session.toggleTraceRecording()
+            return nil
+        }
+    }
+}
+
+// MARK: - Trace Command
 
 @objc(BromureGetTraceCommand)
 final class GetTraceCommand: NSScriptCommand {
@@ -345,7 +410,7 @@ final class GetTraceCommand: NSScriptCommand {
             guard let delegate = NSApp.delegate as? GUIAppDelegate else { return "[]" as Any }
             let sessionID = directParameter as? String ?? ""
             guard let session = delegate.sessions.first(where: { $0.id.uuidString == sessionID }),
-                  let bridge = session.edrBridge else {
+                  let bridge = session.traceBridge else {
                 return "[]" as Any
             }
             let data = bridge.exportAsJSON()

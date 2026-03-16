@@ -82,10 +82,21 @@
             <direct-parameter type="text" description="Session ID (UUID)"/>
         </command>
 
-        <command name="get trace" code="BrmrGtTr" description="Get EDR trace events for a session as a JSON array.">
+        <command name="get trace" code="BrmrGtTr" description="Get trace events for a session as a JSON array.">
             <cocoa class="BromureGetTraceCommand"/>
             <direct-parameter type="text" description="Session ID (UUID)"/>
             <result type="text" description="JSON array of trace events"/>
+        </command>
+
+        <command name="toggle trace" code="BrmrTgTr" description="Toggle trace recording on/off for a session (same as clicking the record button in the titlebar).">
+            <cocoa class="BromureToggleTraceCommand"/>
+            <direct-parameter type="text" description="Session ID (UUID)"/>
+        </command>
+
+        <command name="open profile settings" code="BrmrOpPs" description="Open the settings panel for a profile by name or UUID. Optionally select a category tab.">
+            <cocoa class="BromureOpenProfileSettingsCommand"/>
+            <direct-parameter type="text" description="Profile name or UUID"/>
+            <parameter name="category" code="pCat" type="text" optional="yes" description="Category: general, performance, media, fileTransfer, privacy, network, vpnAds, enterprise, advanced"/>
         </command>
 
     </suite>

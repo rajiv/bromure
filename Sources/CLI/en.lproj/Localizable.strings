@@ -342,3 +342,68 @@
 "Pink" = "Pink";
 "Teal" = "Teal";
 "Gray" = "Gray";
+
+/* ProfileSettingsView — Allow Automation */
+"Allow Automation" = "Allow Automation";
+"Let external tools (Claude Code, Puppeteer, Playwright) create browser sessions and control this profile remotely. When turned off, this profile is hidden from the automation API." = "Let external tools (Claude Code, Puppeteer, Playwright) create browser sessions and control this profile remotely. When turned off, this profile is hidden from the automation API.";
+"The automation server is currently disabled. Enable it in Bromure \U2192 Settings \U2192 Automation." = "The automation server is currently disabled. Enable it in Bromure \U2192 Settings \U2192 Automation.";
+
+/* ProfileSettingsView — Session Recording */
+"Session Recording" = "Session Recording";
+"Record all HTTP requests made during this browsing session. Useful for analyzing what a suspicious link does behind the scenes. When the session ends, you can save or discard the recording." = "Record all HTTP requests made during this browsing session. Useful for analyzing what a suspicious link does behind the scenes. When the session ends, you can save or discard the recording.";
+"Capture Level" = "Capture Level";
+"Disabled" = "Disabled";
+"Basic \U2014 URLs only" = "Basic \U2014 URLs only";
+"Headers \U2014 URLs + headers + POST data" = "Headers \U2014 URLs + headers + POST data";
+"Full \U2014 URLs + headers + response bodies" = "Full \U2014 URLs + headers + response bodies";
+"This level captures POST data which may include passwords, tokens, and form submissions in clear text." = "This level captures POST data which may include passwords, tokens, and form submissions in clear text.";
+"Full capture records all request and response bodies including passwords, authentication tokens, personal data, and any sensitive content transmitted over the network. Use only for security analysis of untrusted links." = "Full capture records all request and response bodies including passwords, authentication tokens, personal data, and any sensitive content transmitted over the network. Use only for security analysis of untrusted links.";
+
+/* SettingsView — Automation */
+"Remote browser control via HTTP API, CDP, and MCP" = "Remote browser control via HTTP API, CDP, and MCP";
+"MCP Server" = "MCP Server";
+"Bromure includes a built-in MCP server for Claude Code, Openclaws, and other MCP-compatible AI tools. Add this to your MCP configuration:" = "Bromure includes a built-in MCP server for Claude Code, Openclaws, and other MCP-compatible AI tools. Add this to your MCP configuration:";
+"Add --debug to the args to include VM shell access and app state tools." = "Add --debug to the args to include VM shell access and app state tools.";
+"Binding to all interfaces exposes the automation API to your entire network. Anyone on your LAN can create browser sessions, execute JavaScript, and take screenshots. Only use this on trusted networks." = "Binding to all interfaces exposes the automation API to your entire network. Anyone on your LAN can create browser sessions, execute JavaScript, and take screenshots. Only use this on trusted networks.";
+
+/* Session Recording — Save Dialog */
+"Save session recording?" = "Save session recording?";
+"This session captured %lld HTTP requests. Save the recording before closing?" = "This session captured %lld HTTP requests. Save the recording before closing?";
+"Save\U2026" = "Save\U2026";
+"Discard" = "Discard";
+"Invalid Trace File" = "Invalid Trace File";
+"The file could not be read as a Bromure session recording." = "The file could not be read as a Bromure session recording.";
+"Open a saved session recording" = "Open a saved session recording";
+
+/* Trace Viewer */
+"Time" = "Time";
+"Method" = "Method";
+"Host" = "Host";
+"URL" = "URL";
+"Status" = "Status";
+"Waterfall" = "Waterfall";
+"Duration" = "Duration";
+"Type" = "Type";
+"Page" = "Page";
+"Request" = "Request";
+"Response" = "Response";
+"Form Fields" = "Form Fields";
+"Navigation" = "Navigation";
+"Timing" = "Timing";
+"Copied" = "Copied";
+"Response body was truncated" = "Response body was truncated";
+"No form fields captured for this request." = "No form fields captured for this request.";
+"Form field snapshots are recorded when a form is submitted." = "Form field snapshots are recorded when a form is submitted.";
+"Field Name" = "Field Name";
+"Value" = "Value";
+"This section compares the form field values at capture time with the actual POST data sent. Differences may indicate client-side transformation (e.g., hashing, encoding)." = "This section compares the form field values at capture time with the actual POST data sent. Differences may indicate client-side transformation (e.g., hashing, encoding).";
+"Form:" = "Form:";
+"Sent:" = "Sent:";
+
+/* Flow Graph */
+"Drag nodes \U2022 Click page to expand sub-resources" = "Drag nodes \U2022 Click page to expand sub-resources";
+"No navigation events captured" = "No navigation events captured";
+"Freeze" = "Freeze";
+"Resume" = "Resume";
+"Start" = "Start";
+"req" = "req";

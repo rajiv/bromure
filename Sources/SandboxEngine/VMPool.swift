@@ -271,6 +271,9 @@ public final class VMPool {
         if config.proxyHost == nil { cfg["useProxy"] = true }
         if !config.enableGPU { cfg["disableGPU"] = true }
         if !config.enableWebGL { cfg["disableWebGL"] = true }
+        if config.enableGPU { cfg["gpuAccel"] = true }
+        if config.enableZeroCopy { cfg["zeroCopy"] = true }
+        if config.enableSmoothScrolling { cfg["smoothScrolling"] = true }
         if config.phishingWarning { cfg["phishingGuard"] = true }
         if config.swapCmdCtrl { cfg["swapCmdCtrl"] = true }
         if config.enableFileTransfer { cfg["fileTransfer"] = true }
@@ -304,7 +307,7 @@ public final class VMPool {
         if ProcessInfo.processInfo.environment["BROMURE_DEBUG_CLAUDE"] != nil {
             cfg["debugShell"] = true
         }
-        if config.edrLevel != .disabled { cfg["edrLevel"] = config.edrLevel.rawValue }
+        if config.traceLevel != .disabled { cfg["traceLevel"] = config.traceLevel.rawValue }
         if !config.rootCAs.isEmpty { cfg["rootCAs"] = config.rootCAs }
         cfg["locale"] = config.locale
 

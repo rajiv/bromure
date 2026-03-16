@@ -1,7 +1,0 @@
-{
-  "name": "com.bromure.edr_tracer",
-  "description": "Bromure EDR web session tracer agent — forwards request telemetry to host over vsock.",
-  "path": "/usr/local/bin/edr-agent.py",
-  "type": "stdio",
-  "allowed_origins": ["chrome-extension://ianphpmabbpccnochnggokbpnlecfapj/"]
-}

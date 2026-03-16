@@ -1,17 +1,17 @@
 "use strict";
 
 /**
- * Bromure EDR Web Session Tracer — background service worker.
+ * Bromure Trace — background service worker.
  *
  * Captures web request telemetry at three detail levels and forwards events
- * to the host via native messaging (edr-agent.py → vsock).
+ * to the host via native messaging (trace-agent.py -> vsock).
  *
  * Level 1 (basic):   URL, method, status, duration
  * Level 2 (headers): + request/response headers, POST body
  * Level 3 (full):    + response bodies via CDP (chrome.debugger)
  */
 
-const NATIVE_HOST = "com.bromure.edr_tracer";
+const NATIVE_HOST = "com.bromure.trace";
 const BATCH_INTERVAL_MS = 100;
 const MAX_RESPONSE_BODY = 1 * 1024 * 1024; // 1 MB
 
@@ -19,7 +19,7 @@ let nativePort = null;
 let traceLevel = 0; // 0 = unconfigured, waiting for config
 let eventCounter = 0;
 
-// In-flight requests: requestId → {startTime, method, url, requestHeaders, postData, initiator, tabId, type}
+// In-flight requests: requestId -> {startTime, method, url, requestHeaders, postData, initiator, tabId, type}
 const inflight = new Map();
 
 // Event batch buffer
@@ -38,7 +38,7 @@ function connectNative() {
   try {
     nativePort = chrome.runtime.connectNative(NATIVE_HOST);
   } catch (e) {
-    console.error("[EDR] connectNative failed:", e);
+    console.error("[Trace] connectNative failed:", e);
     nativePort = null;
     return;
   }
@@ -47,7 +47,7 @@ function connectNative() {
     if (msg.type === "config" && typeof msg.level === "number") {
       const prev = traceLevel;
       traceLevel = msg.level;
-      console.log(`[EDR] trace level set to ${traceLevel}`);
+      console.log(`[Trace] trace level set to ${traceLevel}`);
       if (prev === 0 && traceLevel > 0) {
         installListeners();
       }
@@ -56,7 +56,7 @@ function connectNative() {
 
   nativePort.onDisconnect.addListener(() => {
     console.log(
-      "[EDR] native host disconnected",
+      "[Trace] native host disconnected",
       chrome.runtime.lastError?.message || ""
     );
     nativePort = null;
@@ -83,7 +83,7 @@ function flushEvents() {
   try {
     nativePort.postMessage({ type: "events", events: batch });
   } catch (e) {
-    console.error("[EDR] failed to send batch:", e);
+    console.error("[Trace] failed to send batch:", e);
   }
 }
 
@@ -254,7 +254,7 @@ function attachDebugger(tabId) {
   chrome.debugger.attach({ tabId }, "1.3", () => {
     if (chrome.runtime.lastError) {
       console.warn(
-        `[EDR] debugger attach failed for tab ${tabId}:`,
+        `[Trace] debugger attach failed for tab ${tabId}:`,
         chrome.runtime.lastError.message
       );
       return;
@@ -262,7 +262,7 @@ function attachDebugger(tabId) {
     debuggedTabs.add(tabId);
     chrome.debugger.sendCommand({ tabId }, "Network.enable", {}, () => {
       if (chrome.runtime.lastError) {
-        console.warn("[EDR] Network.enable failed:", chrome.runtime.lastError.message);
+        console.warn("[Trace] Network.enable failed:", chrome.runtime.lastError.message);
       }
     });
   });

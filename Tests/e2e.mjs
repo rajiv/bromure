@@ -481,29 +481,35 @@ async function main() {
   });
 
   // ======================================================================
-  // 4. Performance (GPU / WebGL)
+  // 4. Performance (GPU / WebGL / Zero-Copy / Smooth Scrolling)
   // ======================================================================
   console.log("\n--- 4. Performance ---");
 
-  await test("4.1 GPU enabled — no --disable-gpu flag", async () => {
+  await test("4.1 GPU ON — GL acceleration flags present", async () => {
     await withSession("E2E_GPU_On", { gpu: "true" },
       async ({ browser }) => {
         const flags = await getChromeFlags(browser);
-        assert(!flags.includes("--disable-gpu"), "GPU disabled when it should be on");
+        assertIncludes(flags, "--use-gl=angle");
+        assertIncludes(flags, "--use-angle=gl");
+        assertIncludes(flags, "--ignore-gpu-blocklist");
+        assertIncludes(flags, "--enable-gpu-rasterization");
+        assert(!flags.includes("--disable-gpu"), "--disable-gpu present when GPU is on");
       }
     );
   });
 
-  await test("4.2 GPU disabled — --disable-gpu flag present", async () => {
+  await test("4.2 GPU OFF — disable flag, no GL flags", async () => {
     await withSession("E2E_GPU_Off", { gpu: "false" },
       async ({ browser }) => {
         const flags = await getChromeFlags(browser);
         assertIncludes(flags, "--disable-gpu");
+        assert(!flags.includes("--use-gl=angle"), "--use-gl present when GPU is off");
+        assert(!flags.includes("--enable-gpu-rasterization"), "--enable-gpu-rasterization present when GPU is off");
       }
     );
   });
 
-  await test("4.3 WebGL disabled (default) — flag present", async () => {
+  await test("4.3 WebGL OFF (default) — disable flags present", async () => {
     await withSession("E2E_WebGL_Off", {},
       async ({ browser }) => {
         const flags = await getChromeFlags(browser);
@@ -512,11 +518,57 @@ async function main() {
     );
   });
 
-  await test("4.4 WebGL enabled — no disable flag", async () => {
-    await withSession("E2E_WebGL_On", { webgl: "true" },
+  await test("4.4 WebGL ON — no disable flag", async () => {
+    await withSession("E2E_WebGL_On", { webgl: "true", gpu: "true" },
       async ({ browser }) => {
         const flags = await getChromeFlags(browser);
-        assert(!flags.includes("--disable-webgl"), "WebGL still disabled");
+        assert(!flags.includes("--disable-webgl"), "--disable-webgl present when WebGL is on");
+      }
+    );
+  });
+
+  await test("4.5 GPU OFF forces WebGL OFF", async () => {
+    await withSession("E2E_GPU_Off_WebGL", { gpu: "false", webgl: "true" },
+      async ({ browser }) => {
+        const flags = await getChromeFlags(browser);
+        assertIncludes(flags, "--disable-gpu");
+        assertIncludes(flags, "--disable-webgl", "WebGL should be forced off when GPU is disabled");
+      }
+    );
+  });
+
+  await test("4.6 Zero-Copy ON (default) — flag present", async () => {
+    await withSession("E2E_ZeroCopy_On", {},
+      async ({ browser }) => {
+        const flags = await getChromeFlags(browser);
+        assertIncludes(flags, "--enable-zero-copy");
+      }
+    );
+  });
+
+  await test("4.7 Zero-Copy OFF — flag absent", async () => {
+    await withSession("E2E_ZeroCopy_Off", { zeroCopy: "false" },
+      async ({ browser }) => {
+        const flags = await getChromeFlags(browser);
+        assert(!flags.includes("--enable-zero-copy"), "--enable-zero-copy present when disabled");
+      }
+    );
+  });
+
+  await test("4.8 Smooth Scrolling ON (default) — flag present", async () => {
+    await withSession("E2E_Smooth_On", {},
+      async ({ browser }) => {
+        const flags = await getChromeFlags(browser);
+        assertIncludes(flags, "--enable-smooth-scrolling");
+      }
+    );
+  });
+
+  await test("4.9 Smooth Scrolling OFF — flag absent", async () => {
+    await withSession("E2E_Smooth_Off", { smoothScrolling: "false" },
+      async ({ browser }) => {
+        const flags = await getChromeFlags(browser);
+        assert(!flags.includes("--enable-smooth-scrolling"), "--enable-smooth-scrolling present when disabled");
       }
     );
   });
@@ -1103,14 +1155,14 @@ print('n/a')
   });
 
   // ======================================================================
-  // 16. EDR Session Recording
+  // 16. Session Recording (Trace)
   // ======================================================================
-  console.log("\n--- 16. EDR Session Recording ---");
+  console.log("\n--- 16. Session Recording (Trace) ---");
 
-  await test("16.1 EDR disabled — no trace events", async () => {
-    await withSession("E2E_EDR_Off", {},
+  await test("16.1 Trace disabled — no trace events", async () => {
+    await withSession("E2E_Trace_Off", {},
       async ({ sessionId, browser }) => {
-        // edrLevel defaults to 0 (disabled) — no trace data should exist
+        // traceLevel defaults to 0 (disabled) — no trace data should exist
         const page = await getPage(browser);
         await page.goto("https://example.com", { waitUntil: "load", timeout: 15000 });
         await sleep(2000);
@@ -1123,8 +1175,8 @@ print('n/a')
     );
   });
 
-  await test("16.2 EDR Level 1 — captures URLs and status codes", async () => {
-    await withSession("E2E_EDR_Basic", { edrLevel: "1" },
+  await test("16.2 Trace Level 1 — captures URLs and status codes", async () => {
+    await withSession("E2E_Trace_Basic", { traceLevel: "1" },
       async ({ sessionId, browser }) => {
         // Navigate to generate traffic after extension has initialized
         await sleep(3000);
@@ -1143,19 +1195,19 @@ print('n/a')
   });
 
   if (hasDebugShell) {
-    await test("16.3 EDR extension loaded in chrome-env", async () => {
-      await withSession("E2E_EDR_Env", { edrLevel: "2" },
+    await test("16.3 Trace extension loaded in chrome-env", async () => {
+      await withSession("E2E_Trace_Env", { traceLevel: "2" },
         async ({ sessionId }) => {
           const r = await vmExec(sessionId, "cat /tmp/bromure/chrome-env");
-          assertIncludes(r.stdout, "edr-tracer");
-          assertIncludes(r.stdout, "EDR_LEVEL=2");
+          assertIncludes(r.stdout, "trace");
+          assertIncludes(r.stdout, "TRACE_LEVEL=2");
         }
       );
     });
   }
 
   await test("16.4 Trace accessible via automation API", async () => {
-    await withSession("E2E_EDR_API", { edrLevel: "1" },
+    await withSession("E2E_Trace_API", { traceLevel: "1" },
       async ({ sessionId, browser }) => {
         await sleep(3000);
         const page = await getPage(browser);
@@ -1169,7 +1221,7 @@ print('n/a')
   });
 
   await test("16.5 Trace events include hostname", async () => {
-    await withSession("E2E_EDR_Host", { edrLevel: "1" },
+    await withSession("E2E_Trace_Host", { traceLevel: "1" },
       async ({ sessionId, browser }) => {
         await sleep(3000);
         const page = await getPage(browser);
@@ -1184,7 +1236,7 @@ print('n/a')
 
   if (hasDebugShell) {
     await test("16.6 Form field capture at Level 2", async () => {
-      await withSession("E2E_EDR_Forms", { edrLevel: "2" },
+      await withSession("E2E_Trace_Forms", { traceLevel: "2" },
         async ({ sessionId, browser }) => {
           await sleep(3000);
           const page = await getPage(browser);
@@ -1213,18 +1265,90 @@ print('n/a')
   }
 
   await test("16.7 Redirect tracking", async () => {
-    await withSession("E2E_EDR_Redir", { edrLevel: "1" },
+    await withSession("E2E_Trace_Redir", { traceLevel: "1" },
       async ({ sessionId, browser }) => {
         await sleep(3000);
         const page = await getPage(browser);
-        // httpbin.org/redirect/2 does 2 redirects before landing
         await page.goto("https://httpbin.org/redirect/2", { waitUntil: "load", timeout: 15000 });
         await sleep(5000);
         const trace = await api("GET", `/sessions/${sessionId}/trace`);
         assert(trace.events && trace.events.length > 0, "No trace events for redirect test");
-        // Should have redirect events or multiple requests to httpbin
         const httpbinEvents = trace.events.filter((e) => e.url && e.url.includes("httpbin"));
         assert(httpbinEvents.length >= 2, `Expected >=2 httpbin events for redirect chain, got ${httpbinEvents.length}`);
+      }
+    );
+  });
+
+  await test("16.8 traceAutoStart=false — no events until manually started", async () => {
+    // Create profile with trace enabled but autostart OFF
+    osascript('create profile "E2E_Trace_Manual"');
+    osascript('set profile setting "E2E_Trace_Manual" key "allowAutomation" to value "true"');
+    osascript('set profile setting "E2E_Trace_Manual" key "traceLevel" to value "1"');
+    osascript('set profile setting "E2E_Trace_Manual" key "traceAutoStart" to value "false"');
+
+    let sessionId;
+    try {
+      await waitForPool();
+      const sess = await api("POST", "/sessions", { profile: "E2E_Trace_Manual", url: "https://example.com" });
+      assert(!sess.error, `Session failed: ${sess.error}`);
+      sessionId = sess.id;
+      await sleep(5000);
+
+      // No events should be captured (recording paused)
+      const trace1 = await api("GET", `/sessions/${sessionId}/trace`);
+      assert(
+        !trace1.events || trace1.events.length === 0,
+        `Expected 0 events with autostart off, got ${trace1.events?.length}`
+      );
+
+      // Start recording via AppleScript
+      osascript(`toggle trace "${sessionId}"`);
+      await sleep(1000);
+
+      // Navigate to generate traffic
+      const browser = await connectSession(sessionId);
+      const page = await getPage(browser);
+      await page.goto("https://httpbin.org/get", { waitUntil: "load", timeout: 15000 });
+      await sleep(3000);
+      browser.disconnect();
+      await sleep(500);
+
+      // Now events should be captured
+      const trace2 = await api("GET", `/sessions/${sessionId}/trace`);
+      assert(trace2.events && trace2.events.length > 0, "No events after starting recording");
+    } finally {
+      if (sessionId) await api("DELETE", `/sessions/${sessionId}`);
+      await sleep(500);
+      try { osascript('delete profile "E2E_Trace_Manual"'); } catch {}
+    }
+  });
+
+  await test("16.9 Toggle trace pauses and resumes", async () => {
+    await withSession("E2E_Trace_Toggle", { traceLevel: "1" },
+      async ({ sessionId, browser }) => {
+        await sleep(3000);
+        const page = await getPage(browser);
+
+        // Generate traffic while recording
+        await page.goto("https://httpbin.org/get", { waitUntil: "load", timeout: 15000 });
+        await sleep(3000);
+        const trace1 = await api("GET", `/sessions/${sessionId}/trace`);
+        const count1 = trace1.events?.length || 0;
+        assert(count1 > 0, "No events while recording");
+
+        // Pause recording
+        osascript(`toggle trace "${sessionId}"`);
+        await sleep(1000);
+
+        // Generate more traffic
+        await page.goto("https://httpbin.org/post", { waitUntil: "load", timeout: 15000 });
+        await sleep(3000);
+        const trace2 = await api("GET", `/sessions/${sessionId}/trace`);
+        const count2 = trace2.events?.length || 0;
+        assert(count2 === count1, `Events grew while paused: ${count1} → ${count2}`);
+
+        // Resume
+        osascript(`toggle trace "${sessionId}"`);
       }
     );
   });

@@ -318,7 +318,7 @@ install_config scripts/routing-socks.py     /mnt/usr/local/bin/routing-socks.py 
 install_config scripts/config-agent.py      /mnt/usr/local/bin/config-agent.py      755
 install_config scripts/cdp-agent.py         /mnt/usr/local/bin/cdp-agent.py         755
 install_config scripts/shell-agent.py       /mnt/usr/local/bin/shell-agent.py       755
-install_config scripts/edr-agent.py        /mnt/usr/local/bin/edr-agent.py        755
+install_config scripts/trace-agent.py      /mnt/usr/local/bin/trace-agent.py      755
 install_config scripts/resilient-launch.sh /mnt/usr/local/bin/resilient-launch.sh 755
 install_config scripts/download-guard.sh    /mnt/usr/local/bin/download-guard.sh    755
 install_config scripts/test-runner.sh      /mnt/usr/local/bin/test-runner.sh       755
@@ -363,21 +363,21 @@ for f in manifest.json block.js; do
         cp "$SCRIPT_DIR/extensions/webrtc-block/$f" /mnt/opt/bromure/extensions/webrtc-block/
 done
 
-# EDR tracer extension
-mkdir -p /mnt/opt/bromure/extensions/edr-tracer
+# Trace extension
+mkdir -p /mnt/opt/bromure/extensions/trace
 for f in manifest.json background.js form-capture.js; do
-    [ -f "$SCRIPT_DIR/extensions/edr-tracer/$f" ] && \
-        cp "$SCRIPT_DIR/extensions/edr-tracer/$f" /mnt/opt/bromure/extensions/edr-tracer/
+    [ -f "$SCRIPT_DIR/extensions/trace/$f" ] && \
+        cp "$SCRIPT_DIR/extensions/trace/$f" /mnt/opt/bromure/extensions/trace/
 done
 
-# Native messaging hosts (link sender + file picker + EDR tracer)
+# Native messaging hosts (link sender + file picker + trace)
 mkdir -p /mnt/etc/chromium/native-messaging-hosts
 install_config configs/com.bromure.link_sender.json \
     /mnt/etc/chromium/native-messaging-hosts/com.bromure.link_sender.json
 install_config configs/com.bromure.file_picker.json \
     /mnt/etc/chromium/native-messaging-hosts/com.bromure.file_picker.json
-install_config configs/com.bromure.edr_tracer.json \
-    /mnt/etc/chromium/native-messaging-hosts/com.bromure.edr_tracer.json
+install_config configs/com.bromure.trace.json \
+    /mnt/etc/chromium/native-messaging-hosts/com.bromure.trace.json
 
 # Download Tranco top domains list (research-grade popularity ranking)
 echo "SANDBOX_STEP_START:Downloading popular domains list"

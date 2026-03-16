@@ -1,14 +1,14 @@
 #!/usr/bin/python3 -u
-"""Bromure EDR web session tracer agent — runs inside the guest VM.
+"""Bromure trace agent — runs inside the guest VM.
 
 Bridges Chrome native messaging (stdin/stdout) to the host over vsock.
 The Chrome extension captures web request telemetry and sends batched events;
-this agent forwards them to the host EDR bridge.
+this agent forwards them to the host trace bridge.
 
 Protocol: newline-delimited JSON over vsock (port 5900).
 Native messaging: 4-byte LE length prefix + JSON (Chrome standard).
 
-Reads /tmp/bromure/chrome-env for EDR_LEVEL on startup and sends it
+Reads /tmp/bromure/chrome-env for TRACE_LEVEL on startup and sends it
 to the extension as the initial config message.
 """
 
@@ -26,13 +26,13 @@ HOST_CID = 2  # Apple Virtualization.framework host CID
 CHROME_ENV_PATH = "/tmp/bromure/chrome-env"
 
 
-def read_edr_level():
-    """Read EDR_LEVEL from chrome-env config file. Defaults to 1."""
+def read_trace_level():
+    """Read TRACE_LEVEL from chrome-env config file. Defaults to 1."""
     try:
         with open(CHROME_ENV_PATH, "r") as f:
             for line in f:
                 line = line.strip()
-                if line.startswith("EDR_LEVEL="):
+                if line.startswith("TRACE_LEVEL="):
                     val = line.split("=", 1)[1].strip().strip('"').strip("'")
                     return int(val)
     except (FileNotFoundError, ValueError, OSError):
@@ -68,14 +68,14 @@ def send_json(sock, obj):
     sock.sendall(line.encode("utf-8"))
 
 
-def run(sock, edr_level):
+def run(sock, trace_level):
     """Main loop: bridge native messaging <-> vsock.
 
-    On connect, sends the EDR config to the extension. Then forwards
+    On connect, sends the trace config to the extension. Then forwards
     extension events to the host and host messages to the extension.
     """
     # Send config to the extension so it knows what level to trace at.
-    nm_write({"type": "config", "level": edr_level})
+    nm_write({"type": "config", "level": trace_level})
 
     sock_buf = b""
     sock_fd = sock.fileno()
@@ -121,13 +121,13 @@ def main():
     signal.signal(signal.SIGTERM, lambda *_: sys.exit(0))
     signal.signal(signal.SIGINT, lambda *_: sys.exit(0))
 
-    edr_level = read_edr_level()
+    trace_level = read_trace_level()
 
     while True:
         try:
             sock = socket.socket(socket.AF_VSOCK, socket.SOCK_STREAM)
             sock.connect((HOST_CID, VSOCK_PORT))
-            run(sock, edr_level)
+            run(sock, trace_level)
         except (ConnectionError, OSError):
             pass
         finally:

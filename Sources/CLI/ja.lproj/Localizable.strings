@@ -342,3 +342,68 @@
 "Pink" = "ピンク";
 "Teal" = "ティール";
 "Gray" = "グレイ";
+
+/* ProfileSettingsView — Allow Automation */
+"Allow Automation" = "自動化を許可";
+"Let external tools (Claude Code, Puppeteer, Playwright) create browser sessions and control this profile remotely. When turned off, this profile is hidden from the automation API." = "外部ツール（Claude Code、Puppeteer、Playwright）がブラウザセッションを作成し、このプロファイルをリモートで操作できるようにします。オフにすると、このプロファイルは自動化APIから非表示になります。";
+"The automation server is currently disabled. Enable it in Bromure \U2192 Settings \U2192 Automation." = "自動化サーバは現在無効です。Bromure \U2192 設定 \U2192 自動化で有効にしてください。";
+
+/* ProfileSettingsView — Session Recording */
+"Session Recording" = "セッションの記録";
+"Record all HTTP requests made during this browsing session. Useful for analyzing what a suspicious link does behind the scenes. When the session ends, you can save or discard the recording." = "このブラウジングセッション中のすべてのHTTPリクエストを記録します。不審なリンクが裏で何をしているか分析するのに役立ちます。セッション終了時に記録を保存または破棄できます。";
+"Capture Level" = "キャプチャレベル";
+"Disabled" = "無効";
+"Basic \U2014 URLs only" = "基本 \U2014 URLのみ";
+"Headers \U2014 URLs + headers + POST data" = "ヘッダー \U2014 URL + ヘッダー + POSTデータ";
+"Full \U2014 URLs + headers + response bodies" = "完全 \U2014 URL + ヘッダー + レスポンスボディ";
+"This level captures POST data which may include passwords, tokens, and form submissions in clear text." = "このレベルではPOSTデータがキャプチャされ、パスワード、トークン、フォームの送信内容が平文で含まれる場合があります。";
+"Full capture records all request and response bodies including passwords, authentication tokens, personal data, and any sensitive content transmitted over the network. Use only for security analysis of untrusted links." = "完全キャプチャでは、パスワード、認証トークン、個人データ、その他ネットワーク上で送信される機密情報を含むすべてのリクエストとレスポンスのボディが記録されます。信頼できないリンクのセキュリティ分析にのみ使用してください。";
+
+/* SettingsView — Automation */
+"Remote browser control via HTTP API, CDP, and MCP" = "HTTP API、CDP、MCPによるブラウザのリモート制御";
+"MCP Server" = "MCPサーバ";
+"Bromure includes a built-in MCP server for Claude Code, Openclaws, and other MCP-compatible AI tools. Add this to your MCP configuration:" = "BromureにはClaude Code、Openclaws、その他のMCP対応 AIツール用の内蔵MCPサーバが含まれています。MCP設定に以下を追加してください:";
+"Add --debug to the args to include VM shell access and app state tools." = "引数に --debug を追加すると、VMシェルアクセスとアプリ状態ツールが含まれます。";
+"Binding to all interfaces exposes the automation API to your entire network. Anyone on your LAN can create browser sessions, execute JavaScript, and take screenshots. Only use this on trusted networks." = "すべてのインターフェイスでリッスンすると、自動化APIがネットワーク全体に公開されます。LAN上の誰でもブラウザセッションの作成、JavaScriptの実行、スクリーンショットの取得が可能になります。信頼できるネットワークでのみ使用してください。";
+
+/* Session Recording — Save Dialog */
+"Save session recording?" = "セッションの記録を保存しますか？";
+"This session captured %lld HTTP requests. Save the recording before closing?" = "このセッションで%lld件のHTTPリクエストが記録されました。閉じる前に記録を保存しますか？";
+"Save\U2026" = "保存\U2026";
+"Discard" = "破棄";
+"Invalid Trace File" = "無効なトレースファイル";
+"The file could not be read as a Bromure session recording." = "このファイルをBromureのセッション記録として読み込めませんでした。";
+"Open a saved session recording" = "保存済みのセッション記録を開く";
+
+/* Trace Viewer */
+"Time" = "時刻";
+"Method" = "メソッド";
+"Host" = "ホスト";
+"URL" = "URL";
+"Status" = "ステータス";
+"Waterfall" = "ウォーターフォール";
+"Duration" = "所要時間";
+"Type" = "タイプ";
+"Page" = "ページ";
+"Request" = "リクエスト";
+"Response" = "レスポンス";
+"Form Fields" = "フォームフィールド";
+"Navigation" = "ナビゲーション";
+"Timing" = "タイミング";
+"Copied" = "コピー済み";
+"Response body was truncated" = "レスポンスボディは切り詰められました";
+"No form fields captured for this request." = "このリクエストのフォームフィールドはキャプチャされていません。";
+"Form field snapshots are recorded when a form is submitted." = "フォームフィールドのスナップショットはフォームの送信時に記録されます。";
+"Field Name" = "フィールド名";
+"Value" = "値";
+"This section compares the form field values at capture time with the actual POST data sent. Differences may indicate client-side transformation (e.g., hashing, encoding)." = "このセクションでは、キャプチャ時のフォームフィールドの値と実際に送信されたPOSTデータを比較します。差異がある場合、クライアント側での変換（ハッシュ化、エンコーディングなど）が行われている可能性があります。";
+"Form:" = "フォーム:";
+"Sent:" = "送信:";
+
+/* Flow Graph */
+"Drag nodes \U2022 Click page to expand sub-resources" = "ノードをドラッグ \U2022 ページをクリックしてサブリソースを展開";
+"No navigation events captured" = "ナビゲーションイベントは記録されていません";
+"Freeze" = "固定";
+"Resume" = "再開";
+"Start" = "開始";
+"req" = "件";

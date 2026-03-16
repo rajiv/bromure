@@ -1,10 +1,10 @@
 import Foundation
 import Virtualization
 
-private let edrDebug = ProcessInfo.processInfo.environment["BROMURE_DEBUG"] != nil
+private let traceDebug = ProcessInfo.processInfo.environment["BROMURE_DEBUG"] != nil
 
 /// An HTTP trace event captured from the guest browser via CDP Network domain.
-public struct EDREvent: Codable, Identifiable, Sendable {
+public struct TraceEvent: Codable, Identifiable, Sendable {
     public let id: String
     public let timestamp: Double
     public let method: String
@@ -90,29 +90,32 @@ public struct EDREvent: Codable, Identifiable, Sendable {
 ///
 /// Protocol: newline-delimited JSON on vsock port 5900.
 ///
-/// Each line is a JSON-encoded ``EDREvent``. Events are persisted to a temporary
-/// SQLite database via ``EDRStore``.
+/// Each line is a JSON-encoded ``TraceEvent``. Events are persisted to a temporary
+/// SQLite database via ``TraceStore``.
 @MainActor
-public final class EDRBridge: NSObject, @unchecked Sendable {
-    private static let edrPort: UInt32 = 5900
+public final class TraceBridge: NSObject, @unchecked Sendable {
+    private static let tracePort: UInt32 = 5900
 
     private weak var socketDevice: VZVirtioSocketDevice?
-    private var listenerDelegate: EDRListenerDelegate?
+    private var listenerDelegate: TraceListenerDelegate?
     private var connection: VZVirtioSocketConnection?
     private var readSource: DispatchSourceRead?
 
     /// SQLite-backed event storage.
-    public private(set) var store: EDRStore
+    public private(set) var store: TraceStore
+
+    /// Whether tracing is actively recording. When paused, incoming events are dropped.
+    public var isRecording: Bool = true
 
     /// Called on the main queue whenever a new event is received.
-    public var onNewEvent: ((EDREvent) -> Void)?
+    public var onNewEvent: ((TraceEvent) -> Void)?
 
     /// Current trace events (oldest first).
-    public var traceEvents: [EDREvent] { store.queryEvents(filter: .all) }
+    public var traceEvents: [TraceEvent] { store.queryEvents(filter: .all) }
 
     /// Return events with a timestamp strictly greater than the given value.
-    public func eventsSince(timestamp: Double) -> [EDREvent] {
-        return store.queryEvents(filter: EDRFilter(timeStart: timestamp))
+    public func eventsSince(timestamp: Double) -> [TraceEvent] {
+        return store.queryEvents(filter: TraceFilter(timeStart: timestamp))
     }
 
     /// Remove all stored events and recreate the database.
@@ -139,32 +142,32 @@ public final class EDRBridge: NSObject, @unchecked Sendable {
 
     public init(socketDevice: VZVirtioSocketDevice, sessionID: String = UUID().uuidString) {
         self.socketDevice = socketDevice
-        self.store = EDRStore(sessionID: sessionID)
+        self.store = TraceStore(sessionID: sessionID)
         super.init()
 
-        if edrDebug { print("[EDR] init: setting up vsock listener on port \(Self.edrPort)") }
+        if traceDebug { print("[Trace] init: setting up vsock listener on port \(Self.tracePort)") }
 
-        let delegate = EDRListenerDelegate { [weak self] conn in
+        let delegate = TraceListenerDelegate { [weak self] conn in
             self?.handleConnection(conn)
         }
         let listener = VZVirtioSocketListener()
         listener.delegate = delegate
         self.listenerDelegate = delegate
-        socketDevice.setSocketListener(listener, forPort: Self.edrPort)
+        socketDevice.setSocketListener(listener, forPort: Self.tracePort)
     }
 
     public func stop() {
-        if edrDebug { print("[EDR] stop") }
+        if traceDebug { print("[Trace] stop") }
         readSource?.cancel()
         readSource = nil
-        socketDevice?.removeSocketListener(forPort: Self.edrPort)
+        socketDevice?.removeSocketListener(forPort: Self.tracePort)
         connection = nil
     }
 
     // MARK: - Connection handling
 
     private func handleConnection(_ conn: VZVirtioSocketConnection) {
-        if edrDebug { print("[EDR] guest connected (fd=\(conn.fileDescriptor))") }
+        if traceDebug { print("[Trace] guest connected (fd=\(conn.fileDescriptor))") }
 
         readSource?.cancel()
         connection = conn
@@ -177,7 +180,7 @@ public final class EDRBridge: NSObject, @unchecked Sendable {
             var buf = [UInt8](repeating: 0, count: 65536)
             let n = Darwin.read(fd, &buf, buf.count)
             guard n > 0 else {
-                if edrDebug { print("[EDR] connection closed") }
+                if traceDebug { print("[Trace] connection closed") }
                 source.cancel()
                 return
             }
@@ -185,7 +188,7 @@ public final class EDRBridge: NSObject, @unchecked Sendable {
 
             // Cap buffer to prevent abuse (4 MB — events can carry response bodies)
             if pendingData.count > 4_194_304 {
-                if edrDebug { print("[EDR] buffer overflow, disconnecting") }
+                if traceDebug { print("[Trace] buffer overflow, disconnecting") }
                 source.cancel()
                 return
             }
@@ -201,7 +204,7 @@ public final class EDRBridge: NSObject, @unchecked Sendable {
         }
 
         source.setCancelHandler { [weak self] in
-            if edrDebug { print("[EDR] dispatch source cancelled") }
+            if traceDebug { print("[Trace] dispatch source cancelled") }
             self?.readSource = nil
             self?.connection = nil
         }
@@ -211,13 +214,15 @@ public final class EDRBridge: NSObject, @unchecked Sendable {
     }
 
     private func handleMessage(_ data: Data) {
+        guard isRecording else { return }  // paused — drop events
+
         let decoder = JSONDecoder()
-        guard let event = try? decoder.decode(EDREvent.self, from: data) else {
-            if edrDebug { print("[EDR] ignoring invalid message (\(data.count) bytes)") }
+        guard let event = try? decoder.decode(TraceEvent.self, from: data) else {
+            if traceDebug { print("[Trace] ignoring invalid message (\(data.count) bytes)") }
             return
         }
 
-        if edrDebug { print("[EDR] \(event.method) \(event.url) → \(event.statusCode.map(String.init) ?? "pending")") }
+        if traceDebug { print("[Trace] \(event.method) \(event.url) \u{2192} \(event.statusCode.map(String.init) ?? "pending")") }
 
         store.insert(event: event)
 
@@ -227,7 +232,7 @@ public final class EDRBridge: NSObject, @unchecked Sendable {
 
 // MARK: - Listener delegate
 
-private final class EDRListenerDelegate: NSObject, VZVirtioSocketListenerDelegate {
+private final class TraceListenerDelegate: NSObject, VZVirtioSocketListenerDelegate {
     let onConnection: (VZVirtioSocketConnection) -> Void
 
     init(onConnection: @escaping (VZVirtioSocketConnection) -> Void) {
@@ -239,7 +244,7 @@ private final class EDRListenerDelegate: NSObject, VZVirtioSocketListenerDelegat
         shouldAcceptNewConnection connection: VZVirtioSocketConnection,
         from socketDevice: VZVirtioSocketDevice
     ) -> Bool {
-        if edrDebug { print("[EDR] listener: accepting connection") }
+        if traceDebug { print("[Trace] listener: accepting connection") }
         onConnection(connection)
         return true
     }

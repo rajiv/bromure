@@ -84,6 +84,12 @@ public struct VMConfig {
     /// Whether WebGL and WebGPU are enabled in the browser.
     public var enableWebGL: Bool
 
+    /// Whether zero-copy rasterization is enabled (reduces memory copies).
+    public var enableZeroCopy: Bool
+
+    /// Whether smooth scrolling is enabled.
+    public var enableSmoothScrolling: Bool
+
     /// Whether to block known malware sites via Cloudflare DNS (1.1.1.2/1.0.0.2).
     public var blockMalwareSites: Bool
 
@@ -158,9 +164,9 @@ public struct VMConfig {
     /// Set via the BROMURE_TEST_SUITE environment variable on the host.
     public var testSuite: Bool
 
-    /// EDR trace verbosity level. Controls how much HTTP traffic data the
+    /// Trace verbosity level. Controls how much HTTP traffic data the
     /// guest agent captures and sends to the host over vsock.
-    public var edrLevel: EDRLevel
+    public var traceLevel: TraceLevel
 
     public init(
         cpuCount: Int? = nil,
@@ -178,6 +184,8 @@ public struct VMConfig {
         homePage: String = "https://bromure.io/hello",
         enableGPU: Bool = true,
         enableWebGL: Bool = false,
+        enableZeroCopy: Bool = true,
+        enableSmoothScrolling: Bool = true,
         blockMalwareSites: Bool = false,
         enableFileTransfer: Bool = false,
         phishingWarning: Bool = false,
@@ -200,7 +208,7 @@ public struct VMConfig {
         blockDownloads: Bool = false,
         enableAutomation: Bool = false,
         testSuite: Bool = false,
-        edrLevel: EDRLevel = .disabled,
+        traceLevel: TraceLevel = .disabled,
         keyboardLayout: String? = nil,
         naturalScrolling: Bool? = nil,
         locale: String? = nil
@@ -221,6 +229,8 @@ public struct VMConfig {
         self.homePage = homePage
         self.enableGPU = enableGPU
         self.enableWebGL = enableWebGL
+        self.enableZeroCopy = enableZeroCopy
+        self.enableSmoothScrolling = enableSmoothScrolling
         self.blockMalwareSites = blockMalwareSites
         self.enableFileTransfer = enableFileTransfer
         self.phishingWarning = phishingWarning
@@ -243,7 +253,7 @@ public struct VMConfig {
         self.blockDownloads = blockDownloads
         self.enableAutomation = enableAutomation
         self.testSuite = testSuite
-        self.edrLevel = edrLevel
+        self.traceLevel = traceLevel
         self.keyboardLayout = keyboardLayout ?? VMConfig.detectKeyboardLayout()
         self.naturalScrolling = naturalScrolling ?? VMConfig.detectNaturalScrolling()
         self.locale = locale ?? VMConfig.detectLocale()

@@ -58,7 +58,7 @@ private enum StatusFilter: Int, CaseIterable {
         }
     }
 
-    func matches(_ event: EDREvent) -> Bool {
+    func matches(_ event: TraceEvent) -> Bool {
         guard let code = event.statusCode else {
             return self == .error && event.errorText != nil
         }
@@ -117,11 +117,11 @@ private enum MIMECategory: String {
 
 // MARK: - Main View
 
-struct EDRTraceView: View {
-    let events: [EDREvent]
+struct TraceView: View {
+    let events: [TraceEvent]
     let sessionName: String
     let availableHostnames: [String]
-    var onFilterChanged: ((EDRFilter) -> Void)?
+    var onFilterChanged: ((TraceFilter) -> Void)?
     var onExport: (() -> Void)?
     var onExportDB: (() -> Void)?
     var onClear: (() -> Void)?
@@ -132,14 +132,23 @@ struct EDRTraceView: View {
     @State private var activeMethodFilters: Set<MethodFilter> = []
     @State private var activeStatusFilters: Set<StatusFilter> = []
     @State private var selectedHostnames: Set<String> = []
+    @State private var selectedTabId: Int?  // nil = all tabs
     @State private var timeFromText = ""
     @State private var timeToText = ""
     @State private var selectedEventID: String?
     @State private var detailTab: DetailTab = .request
     @State private var showBodySearch = false
 
-    private var filteredEvents: [EDREvent] {
+    /// All distinct tab IDs in the events.
+    private var availableTabIds: [Int] {
+        Array(Set(events.compactMap(\.tabId))).sorted()
+    }
+
+    private var filteredEvents: [TraceEvent] {
         events.filter { event in
+            if let tabFilter = selectedTabId {
+                guard event.tabId == tabFilter else { return false }
+            }
             if !searchText.isEmpty {
                 guard event.url.localizedCaseInsensitiveContains(searchText) else { return false }
             }
@@ -167,7 +176,7 @@ struct EDRTraceView: View {
         }
     }
 
-    private var selectedEvent: EDREvent? {
+    private var selectedEvent: TraceEvent? {
         guard let id = selectedEventID else { return nil }
         return events.first { $0.id == id }
     }
@@ -188,7 +197,7 @@ struct EDRTraceView: View {
     private var hasActiveFilters: Bool {
         !searchText.isEmpty || !bodySearchText.isEmpty || !activeMethodFilters.isEmpty
             || !activeStatusFilters.isEmpty || !selectedHostnames.isEmpty
-            || !timeFromText.isEmpty || !timeToText.isEmpty
+            || selectedTabId != nil || !timeFromText.isEmpty || !timeToText.isEmpty
     }
 
     var body: some View {
@@ -215,7 +224,7 @@ struct EDRTraceView: View {
     }
 
     private func notifyFilterChanged() {
-        let filter = EDRFilter(
+        let filter = TraceFilter(
             searchText: searchText.isEmpty ? nil : searchText,
             hostnames: selectedHostnames,
             methods: Set(activeMethodFilters.map(\.filterMethod)),
@@ -264,11 +273,11 @@ struct EDRTraceView: View {
 
                 // Navigation Graph
                 Button { onShowFlowGraph?() } label: {
-                    Label("Flow Graph", systemImage: "point.3.connected.trianglepath.dotted")
+                    Label("Flow", systemImage: "building.2")
                         .font(.system(size: 11))
                 }
                 .buttonStyle(.borderless)
-                .help("Open navigation flow graph in a new window")
+                .help("Open isometric flow view in a new window")
                 .disabled(onShowFlowGraph == nil)
 
                 Divider().frame(height: 16)
@@ -335,6 +344,46 @@ struct EDRTraceView: View {
                 }
 
                 thinDivider
+
+                // Tab filter
+                if availableTabIds.count > 1 {
+                    Menu {
+                        Button("All Tabs") { selectedTabId = nil }
+                        Divider()
+                        ForEach(availableTabIds, id: \.self) { tabId in
+                            Button {
+                                selectedTabId = (selectedTabId == tabId) ? nil : tabId
+                            } label: {
+                                HStack {
+                                    if selectedTabId == tabId {
+                                        Image(systemName: "checkmark")
+                                    }
+                                    Text(verbatim: "Tab \(tabId)")
+                                }
+                            }
+                        }
+                    } label: {
+                        HStack(spacing: 3) {
+                            Image(systemName: "rectangle.stack")
+                                .font(.system(size: 9))
+                            Text(selectedTabId.map { "Tab \($0)" } ?? "Tabs")
+                                .font(.system(size: 10, weight: .medium))
+                        }
+                        .foregroundStyle(selectedTabId != nil ? Color.accentColor : Color.secondary)
+                        .padding(.horizontal, 6)
+                        .padding(.vertical, 3)
+                        .background(
+                            selectedTabId != nil
+                                ? Color.accentColor.opacity(0.12)
+                                : Color.primary.opacity(0.05)
+                        )
+                        .clipShape(RoundedRectangle(cornerRadius: 4))
+                    }
+                    .menuStyle(.borderlessButton)
+                    .fixedSize()
+
+                    thinDivider
+                }
 
                 // Hostname filter
                 if !availableHostnames.isEmpty {
@@ -418,6 +467,7 @@ struct EDRTraceView: View {
                         activeMethodFilters.removeAll()
                         activeStatusFilters.removeAll()
                         selectedHostnames.removeAll()
+                        selectedTabId = nil
                         timeFromText = ""
                         timeToText = ""
                     }
@@ -742,7 +792,7 @@ private struct WaterfallBar: View {
 // MARK: - Timeline Row
 
 private struct TimelineRow: View {
-    let event: EDREvent
+    let event: TraceEvent
     let baseTimestamp: Double
     let totalDuration: Double
     let isSelected: Bool
@@ -1011,7 +1061,7 @@ private struct SyntaxTextView: View {
 // MARK: - Request Detail
 
 private struct RequestDetailView: View {
-    let event: EDREvent
+    let event: TraceEvent
 
     var body: some View {
         VStack(alignment: .leading, spacing: 14) {
@@ -1073,7 +1123,7 @@ private struct RequestDetailView: View {
 // MARK: - Response Detail
 
 private struct ResponseDetailView: View {
-    let event: EDREvent
+    let event: TraceEvent
 
     var body: some View {
         VStack(alignment: .leading, spacing: 14) {
@@ -1141,7 +1191,7 @@ private struct ResponseDetailView: View {
 // MARK: - Form Fields Detail
 
 private struct FormFieldsDetailView: View {
-    let event: EDREvent
+    let event: TraceEvent
 
     var body: some View {
         VStack(alignment: .leading, spacing: 14) {
@@ -1176,7 +1226,7 @@ private struct FormFieldsDetailView: View {
         .padding(12)
     }
 
-    private func formFieldsTable(_ fields: [EDREvent.FormFieldSnapshot]) -> some View {
+    private func formFieldsTable(_ fields: [TraceEvent.FormFieldSnapshot]) -> some View {
         VStack(alignment: .leading, spacing: 1) {
             // Header
             HStack(spacing: 0) {
@@ -1228,7 +1278,7 @@ private struct FormFieldsDetailView: View {
         )
     }
 
-    private func comparisonView(fields: [EDREvent.FormFieldSnapshot], postData: String) -> some View {
+    private func comparisonView(fields: [TraceEvent.FormFieldSnapshot], postData: String) -> some View {
         VStack(alignment: .leading, spacing: 6) {
             Text("This section compares the form field values at capture time with the actual POST data sent. Differences may indicate client-side transformation (e.g., hashing, encoding).")
                 .font(.system(size: 10))
@@ -1319,11 +1369,11 @@ private struct FormFieldsDetailView: View {
 // MARK: - Navigation Detail
 
 private struct NavigationDetailView: View {
-    let event: EDREvent
-    let allEvents: [EDREvent]
+    let event: TraceEvent
+    let allEvents: [TraceEvent]
     let baseTimestamp: Double
 
-    private var tabEvents: [EDREvent] {
+    private var tabEvents: [TraceEvent] {
         guard let tabId = event.tabId else { return [event] }
         return allEvents
             .filter { $0.tabId == tabId }
@@ -1332,7 +1382,7 @@ private struct NavigationDetailView: View {
 
     private struct NavNode: Identifiable {
         let id: String
-        let event: EDREvent
+        let event: TraceEvent
         let isDocument: Bool
         var children: [NavNode]
     }
@@ -1371,7 +1421,7 @@ private struct NavigationDetailView: View {
                     Image(systemName: "rectangle.stack")
                         .font(.system(size: 10))
                         .foregroundStyle(.secondary)
-                    Text("Tab \(tabId)")
+                    Text(verbatim: "Tab \(tabId)")
                         .font(.system(size: 11, weight: .medium))
                         .foregroundStyle(.secondary)
                     Text("\u{2014} \(tabEvents.count) events")
@@ -1412,7 +1462,7 @@ private struct NavigationDetailView: View {
         .padding(12)
     }
 
-    private func flowView(_ docs: [EDREvent]) -> some View {
+    private func flowView(_ docs: [TraceEvent]) -> some View {
         ScrollView(.horizontal, showsIndicators: false) {
             HStack(spacing: 0) {
                 ForEach(Array(docs.enumerated()), id: \.element.id) { index, doc in
@@ -1426,7 +1476,7 @@ private struct NavigationDetailView: View {
         }
     }
 
-    private func flowNode(doc: EDREvent) -> some View {
+    private func flowNode(doc: TraceEvent) -> some View {
         let path = URL(string: doc.url)?.path ?? doc.url
         let isCurrent = doc.id == event.id
         return VStack(spacing: 2) {
@@ -1448,7 +1498,7 @@ private struct NavigationDetailView: View {
         )
     }
 
-    private func flowArrow(nextDoc: EDREvent) -> some View {
+    private func flowArrow(nextDoc: TraceEvent) -> some View {
         HStack(spacing: 2) {
             Rectangle()
                 .fill(.quaternary)
@@ -1535,7 +1585,7 @@ private struct NavigationDetailView: View {
 // MARK: - Timing Detail
 
 private struct TimingDetailView: View {
-    let event: EDREvent
+    let event: TraceEvent
     let baseTimestamp: Double
 
     var body: some View {

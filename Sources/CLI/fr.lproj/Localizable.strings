@@ -342,3 +342,68 @@
 "Pink" = "Rose";
 "Teal" = "Sarcelle";
 "Gray" = "Gris";
+
+/* ProfileSettingsView — Allow Automation */
+"Allow Automation" = "Autoriser l\U2019automatisation";
+"Let external tools (Claude Code, Puppeteer, Playwright) create browser sessions and control this profile remotely. When turned off, this profile is hidden from the automation API." = "Permet aux outils externes (Claude Code, Puppeteer, Playwright) de cr\U00E9er des sessions de navigation et de contr\U00F4ler ce profil \U00E0 distance. Lorsque cette option est d\U00E9sactiv\U00E9e, ce profil est masqu\U00E9 de l\U2019API d\U2019automatisation.";
+"The automation server is currently disabled. Enable it in Bromure \U2192 Settings \U2192 Automation." = "Le serveur d\U2019automatisation est actuellement d\U00E9sactiv\U00E9. Activez-le dans Bromure \U2192 R\U00E9glages \U2192 Automatisation.";
+
+/* ProfileSettingsView — Session Recording */
+"Session Recording" = "Enregistrement de session";
+"Record all HTTP requests made during this browsing session. Useful for analyzing what a suspicious link does behind the scenes. When the session ends, you can save or discard the recording." = "Enregistre toutes les requ\U00EAtes HTTP effectu\U00E9es pendant cette session de navigation. Utile pour analyser ce qu\U2019un lien suspect fait en arri\U00E8re-plan. \U00C0 la fin de la session, vous pouvez sauvegarder ou supprimer l\U2019enregistrement.";
+"Capture Level" = "Niveau de capture";
+"Disabled" = "D\U00E9sactiv\U00E9";
+"Basic \U2014 URLs only" = "Basique \U2014 URL uniquement";
+"Headers \U2014 URLs + headers + POST data" = "En-t\U00EAtes \U2014 URL + en-t\U00EAtes + donn\U00E9es POST";
+"Full \U2014 URLs + headers + response bodies" = "Complet \U2014 URL + en-t\U00EAtes + corps des r\U00E9ponses";
+"This level captures POST data which may include passwords, tokens, and form submissions in clear text." = "Ce niveau capture les donn\U00E9es POST, qui peuvent inclure des mots de passe, des jetons et des soumissions de formulaires en clair.";
+"Full capture records all request and response bodies including passwords, authentication tokens, personal data, and any sensitive content transmitted over the network. Use only for security analysis of untrusted links." = "La capture compl\U00E8te enregistre tous les corps de requ\U00EAtes et de r\U00E9ponses, y compris les mots de passe, les jetons d\U2019authentification, les donn\U00E9es personnelles et tout contenu sensible transmis sur le r\U00E9seau. \U00C0 utiliser uniquement pour l\U2019analyse de s\U00E9curit\U00E9 de liens non fiables.";
+
+/* SettingsView — Automation */
+"Remote browser control via HTTP API, CDP, and MCP" = "Contr\U00F4le du navigateur \U00E0 distance via HTTP API, CDP et MCP";
+"MCP Server" = "Serveur MCP";
+"Bromure includes a built-in MCP server for Claude Code, Openclaws, and other MCP-compatible AI tools. Add this to your MCP configuration:" = "Bromure inclut un serveur MCP int\U00E9gr\U00E9 pour Claude Code, Openclaws et d\U2019autres outils d\U2019IA compatibles MCP. Ajoutez ceci \U00E0 votre configuration MCP :";
+"Add --debug to the args to include VM shell access and app state tools." = "Ajoutez --debug aux arguments pour inclure l\U2019acc\U00E8s au shell de la VM et les outils d\U2019\U00E9tat de l\U2019application.";
+"Binding to all interfaces exposes the automation API to your entire network. Anyone on your LAN can create browser sessions, execute JavaScript, and take screenshots. Only use this on trusted networks." = "L\U2019\U00E9coute sur toutes les interfaces expose l\U2019API d\U2019automatisation \U00E0 l\U2019ensemble de votre r\U00E9seau. N\U2019importe qui sur votre r\U00E9seau local peut cr\U00E9er des sessions de navigation, ex\U00E9cuter du JavaScript et prendre des captures d\U2019\U00E9cran. \U00C0 utiliser uniquement sur des r\U00E9seaux de confiance.";
+
+/* Session Recording — Save Dialog */
+"Save session recording?" = "Sauvegarder l\U2019enregistrement de session\U00A0?";
+"This session captured %lld HTTP requests. Save the recording before closing?" = "Cette session a captur\U00E9 %lld requ\U00EAtes HTTP. Sauvegarder l\U2019enregistrement avant de fermer\U00A0?";
+"Save\U2026" = "Enregistrer\U2026";
+"Discard" = "Ignorer";
+"Invalid Trace File" = "Fichier de trace invalide";
+"The file could not be read as a Bromure session recording." = "Le fichier n\U2019a pas pu \U00EAtre lu comme un enregistrement de session Bromure.";
+"Open a saved session recording" = "Ouvrir un enregistrement de session sauvegard\U00E9";
+
+/* Trace Viewer */
+"Time" = "Heure";
+"Method" = "M\U00E9thode";
+"Host" = "H\U00F4te";
+"URL" = "URL";
+"Status" = "Statut";
+"Waterfall" = "Cascade";
+"Duration" = "Dur\U00E9e";
+"Type" = "Type";
+"Page" = "Page";
+"Request" = "Requ\U00EAte";
+"Response" = "R\U00E9ponse";
+"Form Fields" = "Champs de formulaire";
+"Navigation" = "Navigation";
+"Timing" = "Chronologie";
+"Copied" = "Copi\U00E9";
+"Response body was truncated" = "Le corps de la r\U00E9ponse a \U00E9t\U00E9 tronqu\U00E9";
+"No form fields captured for this request." = "Aucun champ de formulaire captur\U00E9 pour cette requ\U00EAte.";
+"Form field snapshots are recorded when a form is submitted." = "Les instantan\U00E9s des champs de formulaire sont enregistr\U00E9s lors de la soumission d\U2019un formulaire.";
+"Field Name" = "Nom du champ";
+"Value" = "Valeur";
+"This section compares the form field values at capture time with the actual POST data sent. Differences may indicate client-side transformation (e.g., hashing, encoding)." = "Cette section compare les valeurs des champs de formulaire au moment de la capture avec les donn\U00E9es POST r\U00E9ellement envoy\U00E9es. Les diff\U00E9rences peuvent indiquer une transformation c\U00F4t\U00E9 client (hachage, encodage, etc.).";
+"Form:" = "Formulaire :";
+"Sent:" = "Envoy\U00E9 :";
+
+/* Flow Graph */
+"Drag nodes \U2022 Click page to expand sub-resources" = "Glissez les n\U0153uds \U2022 Cliquez sur une page pour d\U00E9plier les sous-ressources";
+"No navigation events captured" = "Aucun \U00E9v\U00E9nement de navigation captur\U00E9";
+"Freeze" = "Figer";
+"Resume" = "Reprendre";
+"Start" = "D\U00E9but";
+"req" = "req";

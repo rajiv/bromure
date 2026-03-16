@@ -70,10 +70,25 @@
 
 ## 4. Performance
 
-- [ ] GPU Acceleration ON (default) — verify smooth scrolling, CSS animations
-- [ ] GPU Acceleration OFF — verify Chromium falls back to software rendering
-- [ ] WebGL OFF (default) — verify `chrome://gpu` shows WebGL disabled
-- [ ] WebGL ON — verify WebGL content renders (e.g., `get.webgl.org`)
+### 4.1 GPU Acceleration
+- [ ] GPU ON (default) — `chrome://version` shows `--use-gl=angle --use-angle=gl --ignore-gpu-blocklist --enable-gpu-rasterization`
+- [ ] GPU ON — does NOT show `--disable-gpu`
+- [ ] GPU OFF — `chrome://version` shows `--disable-gpu`
+- [ ] GPU OFF — does NOT show `--use-gl=angle` or `--enable-gpu-rasterization`
+- [ ] GPU OFF → WebGL toggle is greyed out and forced off
+
+### 4.2 WebGL
+- [ ] WebGL OFF (default) — `chrome://version` shows `--disable-webgl --disable-3d-apis`
+- [ ] WebGL ON — `chrome://version` does NOT show `--disable-webgl`
+- [ ] WebGL ON + GPU OFF — WebGL is forced off (greyed out in settings)
+
+### 4.3 Zero-Copy Rasterization
+- [ ] Zero-Copy ON (default) — `chrome://version` shows `--enable-zero-copy`
+- [ ] Zero-Copy OFF — `chrome://version` does NOT show `--enable-zero-copy`
+
+### 4.4 Smooth Scrolling
+- [ ] Smooth Scrolling ON (default) — `chrome://version` shows `--enable-smooth-scrolling`
+- [ ] Smooth Scrolling OFF — `chrome://version` does NOT show `--enable-smooth-scrolling`
 
 ---
 
@@ -329,13 +344,21 @@ These verify that toggling one setting correctly enables/disables dependent sett
 - [ ] `DELETE /sessions/:id` destroys session and VM
 - [ ] CDP proxy at `/cdp/:sessionId/*` correctly forwards to Chromium DevTools
 
-### 18.2 Session Recording (EDR)
+### 18.2 Session Recording (Trace)
+
+#### Recording Controls
+- [ ] Trace enabled — record button (red circle) visible in titlebar
+- [ ] Click record button toggles recording on/off (button changes between filled/hollow)
+- [ ] `traceAutoStart = true` (default) — recording starts automatically when session opens
+- [ ] `traceAutoStart = false` — session opens with recording paused, no events captured until manually started
+- [ ] `toggle trace` AppleScript command toggles recording for a session
+- [ ] Pausing recording stops event capture; resuming captures new events from that point
 
 #### Basic Capture
-- [ ] EDR disabled (default) — no trace events captured, no titlebar button
-- [ ] EDR Level 1 (basic) — captures timestamp, method, URL, hostname, status, duration
-- [ ] EDR Level 2 (headers) — additionally captures request/response headers and POST data
-- [ ] EDR Level 3 (full) — additionally captures response bodies (truncated at 1 MB)
+- [ ] Trace disabled (default) — no trace events captured, no titlebar button
+- [ ] Trace Level 1 (basic) — captures timestamp, method, URL, hostname, status, duration
+- [ ] Trace Level 2 (headers) — additionally captures request/response headers and POST data
+- [ ] Trace Level 3 (full) — additionally captures response bodies (truncated at 1 MB)
 - [ ] Privacy warning shown at Level 2 (POST data may contain passwords)
 - [ ] Privacy warning shown at Level 3 (response bodies contain sensitive data)
 

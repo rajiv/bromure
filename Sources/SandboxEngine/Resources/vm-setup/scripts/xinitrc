@@ -80,7 +80,7 @@ fi
 
 LANG_FLAG=
 [ -n "$CHROME_LANG" ] && LANG_FLAG="--lang=$CHROME_LANG"
-chromium-browser --no-first-run --start-maximized --force-device-scale-factor=%%DISPLAY_SCALE%% --use-gl=angle --use-angle=gl --ignore-gpu-blocklist --enable-gpu-rasterization --enable-smooth-scrolling --enable-zero-copy --disable-vulkan $LANG_FLAG $EXTRA_FLAGS "$CHROME_URL"
+chromium-browser --no-first-run --start-maximized --force-device-scale-factor=%%DISPLAY_SCALE%% --disable-vulkan $LANG_FLAG $EXTRA_FLAGS "$CHROME_URL"
 doas udhcpc -R -i eth0 2>/dev/null
 doas poweroff
 

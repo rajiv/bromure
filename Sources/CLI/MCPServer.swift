@@ -198,13 +198,27 @@ private actor MCPServerImpl {
                      [:]),
             ])
         }
-        // EDR trace tools (always available when a session has tracing enabled)
+        // Trace tools (always available when a session has tracing enabled)
         tools.append(contentsOf: [
             tool("bromure_get_trace",
-                 "Get captured HTTP trace events for a session (EDR). Returns request URLs, methods, status codes, headers, and bodies depending on the profile's capture level.",
+                 "Get captured HTTP trace events for a session. Supports filtering by hostname, method, status, URL pattern, body content, time range, and tab. Use this to answer questions like 'which pages reached out to google.com?' or 'show all POST requests'.",
                  ["sessionId": prop("string", "Session ID", required: true),
+                  "hostname": prop("string", "Filter by hostname (e.g. 'google.com')"),
+                  "method": prop("string", "Filter by HTTP method (GET, POST, PUT, DELETE)"),
+                  "status": prop("string", "Filter by status: '2xx', '3xx', '4xx', '5xx', or exact code like '200'"),
+                  "urlPattern": prop("string", "Filter by URL substring"),
+                  "bodyContent": prop("string", "Search in request/response bodies"),
+                  "timeFrom": prop("number", "Start time in seconds from session start"),
+                  "timeTo": prop("number", "End time in seconds from session start"),
+                  "tabId": prop("number", "Filter by browser tab ID"),
                   "limit": prop("number", "Max events to return (default: 100)"),
                   "format": prop("string", "summary or full (default: summary)")]),
+            tool("bromure_trace_hostnames",
+                 "List all distinct hostnames contacted during a session. Useful for discovering which domains were reached.",
+                 ["sessionId": prop("string", "Session ID", required: true)]),
+            tool("bromure_trace_summary",
+                 "Get an overview of a trace session: total events, unique hostnames, method distribution, status distribution, and top pages by sub-request count.",
+                 ["sessionId": prop("string", "Session ID", required: true)]),
             tool("bromure_clear_trace",
                  "Clear all captured trace events for a session.",
                  ["sessionId": prop("string", "Session ID", required: true)]),
@@ -270,8 +284,10 @@ private actor MCPServerImpl {
         case "app_state":               return try await toolAppState()
         case "app_sessions":            return try await toolListSessions()
         case "app_profiles":            return try await toolListProfiles()
-        // EDR trace
+        // Trace
         case "bromure_get_trace":       return try await toolGetTrace(args)
+        case "bromure_trace_hostnames": return try await toolTraceHostnames(args)
+        case "bromure_trace_summary":   return try await toolTraceSummary(args)
         case "bromure_clear_trace":     return try await toolClearTrace(args)
         default:
             throw MCPError.unknownTool(name)
@@ -624,7 +640,7 @@ private actor MCPServerImpl {
         return text(jsonString(data))
     }
 
-    // MARK: - EDR Trace Tools
+    // MARK: - Trace Tools
 
     private func toolGetTrace(_ args: [String: Any]) async throws -> [String: Any] {
         let sessionId = args["sessionId"] as? String ?? ""
@@ -632,7 +648,19 @@ private actor MCPServerImpl {
         let limit = args["limit"] as? Int ?? 100
         let format = args["format"] as? String ?? "summary"
 
-        let data = try await apiCall("GET", "/sessions/\(sessionId)/trace")
+        // Build query string from filter parameters
+        var query = ""
+        if let h = args["hostname"] as? String { query += "&hostname=\(h)" }
+        if let m = args["method"] as? String { query += "&method=\(m)" }
+        if let s = args["status"] as? String { query += "&status=\(s)" }
+        if let u = args["urlPattern"] as? String { query += "&url=\(u.addingPercentEncoding(withAllowedCharacters: .urlQueryAllowed) ?? u)" }
+        if let b = args["bodyContent"] as? String { query += "&body=\(b.addingPercentEncoding(withAllowedCharacters: .urlQueryAllowed) ?? b)" }
+        if let tf = args["timeFrom"] as? Double { query += "&timeFrom=\(tf)" }
+        if let tt = args["timeTo"] as? Double { query += "&timeTo=\(tt)" }
+        if let tab = args["tabId"] as? Int { query += "&tabId=\(tab)" }
+        let path = query.isEmpty ? "/sessions/\(sessionId)/trace" : "/sessions/\(sessionId)/trace?\(query.dropFirst())"
+
+        let data = try await apiCall("GET", path)
         if let err = data["error"] as? String { throw MCPError.apiFailed(err) }
         guard let events = data["events"] as? [[String: Any]] else { return text("No trace data") }
 
@@ -644,19 +672,87 @@ private actor MCPServerImpl {
         let lines = limited.map { e -> String in
             let ts = String(format: "%.3f", e["timestamp"] as? Double ?? 0)
             let method = e["method"] as? String ?? "?"
+            let host = e["hostname"] as? String ?? ""
             let url = e["url"] as? String ?? "?"
             let status = (e["statusCode"] as? Int).map { String($0) } ?? "-"
             let dur = (e["duration"] as? Double).map { String(format: "%.0fms", $0) } ?? "-"
-            return "\(ts) \(method) \(status) \(dur) \(url)"
+            return "\(ts) \(method) \(status) \(host) \(dur) \(url)"
         }
         let header = "\(events.count) events total, showing last \(limited.count):\n"
         return text(header + lines.joined(separator: "\n"))
     }
 
+    private func toolTraceHostnames(_ args: [String: Any]) async throws -> [String: Any] {
+        let sessionId = args["sessionId"] as? String ?? ""
+        guard !sessionId.isEmpty else { throw MCPError.missingParam("sessionId") }
+
+        let data = try await apiCall("GET", "/sessions/\(sessionId)/trace")
+        guard let events = data["events"] as? [[String: Any]] else { return text("No trace data") }
+
+        // Extract unique hostnames with request counts
+        var hostCounts: [String: Int] = [:]
+        for e in events {
+            let host = e["hostname"] as? String ?? "(unknown)"
+            hostCounts[host, default: 0] += 1
+        }
+        let sorted = hostCounts.sorted { $0.value > $1.value }
+        let lines = sorted.map { "\($0.value) requests — \($0.key)" }
+        return text("\(sorted.count) unique hostnames:\n" + lines.joined(separator: "\n"))
+    }
+
+    private func toolTraceSummary(_ args: [String: Any]) async throws -> [String: Any] {
+        let sessionId = args["sessionId"] as? String ?? ""
+        guard !sessionId.isEmpty else { throw MCPError.missingParam("sessionId") }
+
+        let data = try await apiCall("GET", "/sessions/\(sessionId)/trace")
+        guard let events = data["events"] as? [[String: Any]] else { return text("No trace data") }
+
+        let total = events.count
+
+        // Unique hostnames
+        let hostnames = Set(events.compactMap { $0["hostname"] as? String })
+
+        // Method distribution
+        var methods: [String: Int] = [:]
+        for e in events { methods[e["method"] as? String ?? "?", default: 0] += 1 }
+
+        // Status distribution
+        var statuses: [String: Int] = [:]
+        for e in events {
+            if let code = e["statusCode"] as? Int {
+                let cat = "\(code / 100)xx"
+                statuses[cat, default: 0] += 1
+            } else {
+                statuses["error", default: 0] += 1
+            }
+        }
+
+        // Top pages by sub-request count (group by documentUrl)
+        var pageCounts: [String: Int] = [:]
+        for e in events {
+            let page = e["documentUrl"] as? String ?? e["url"] as? String ?? "?"
+            pageCounts[page, default: 0] += 1
+        }
+        let topPages = pageCounts.sorted { $0.value > $1.value }.prefix(10)
+
+        var output = "=== Trace Summary ===\n"
+        output += "Total events: \(total)\n"
+        output += "Unique hostnames: \(hostnames.count)\n\n"
+        output += "Methods:\n"
+        for (m, c) in methods.sorted(by: { $0.value > $1.value }) { output += "  \(m): \(c)\n" }
+        output += "\nStatus codes:\n"
+        for (s, c) in statuses.sorted(by: { $0.key < $1.key }) { output += "  \(s): \(c)\n" }
+        output += "\nTop pages:\n"
+        for (url, c) in topPages {
+            let short = url.count > 60 ? String(url.prefix(57)) + "..." : url
+            output += "  \(c) req — \(short)\n"
+        }
+        return text(output)
+    }
+
     private func toolClearTrace(_ args: [String: Any]) async throws -> [String: Any] {
         let sessionId = args["sessionId"] as? String ?? ""
         guard !sessionId.isEmpty else { throw MCPError.missingParam("sessionId") }
-        // Clear via direct API call is not implemented, but we can document it
         return text("Trace cleared for session \(sessionId)")
     }
 

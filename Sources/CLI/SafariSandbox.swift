@@ -534,7 +534,7 @@ final class GUIAppDelegate: NSObject, NSApplicationDelegate, NSWindowDelegate {
         panel.message = NSLocalizedString("Open a saved session recording", comment: "")
         guard panel.runModal() == .OK, let url = panel.url else { return }
         guard let data = try? Data(contentsOf: url),
-              let events = try? JSONDecoder().decode([EDREvent].self, from: data) else {
+              let events = try? JSONDecoder().decode([TraceEvent].self, from: data) else {
             let alert = NSAlert()
             alert.messageText = NSLocalizedString("Invalid Trace File", comment: "")
             alert.informativeText = NSLocalizedString("The file could not be read as a Bromure session recording.", comment: "")
@@ -545,7 +545,7 @@ final class GUIAppDelegate: NSObject, NSApplicationDelegate, NSWindowDelegate {
 
         let name = url.deletingPathExtension().lastPathComponent
         let hostnames = Array(Set(events.compactMap(\.hostname))).sorted()
-        let traceView = EDRTraceView(events: events, sessionName: name, availableHostnames: hostnames)
+        let traceView = TraceView(events: events, sessionName: name, availableHostnames: hostnames)
         let hostView = NSHostingView(rootView: traceView)
         hostView.setFrameSize(NSSize(width: 1200, height: 700))
 
@@ -564,10 +564,16 @@ final class GUIAppDelegate: NSObject, NSApplicationDelegate, NSWindowDelegate {
         win.isReleasedWhenClosed = false
     }
 
-    @MainActor @objc func showEDRTraceAction(_ sender: Any?) {
+    @MainActor @objc func toggleTraceRecordingAction(_ sender: Any?) {
+        guard let keyWindow = NSApp.keyWindow,
+              let session = sessions.first(where: { $0.window === keyWindow }) else { return }
+        session.toggleTraceRecording()
+    }
+
+    @MainActor @objc func showTraceAction(_ sender: Any?) {
         guard let keyWindow = NSApp.keyWindow,
               let session = sessions.first(where: { $0.window === keyWindow }),
-              session.edrBridge != nil else { return }
+              session.traceBridge != nil else { return }
         session.showTraceViewer()
     }
 
@@ -815,11 +821,34 @@ final class GUIAppDelegate: NSObject, NSApplicationDelegate, NSWindowDelegate {
             return ShellProxyConnection(fd: conn.fileDescriptor, conn: conn)
         }
 
-        server.onGetTrace = { [weak self] sessionID in
+        server.onGetTrace = { [weak self] sessionID, filters in
             guard let self else { return [] }
             guard let session = self.sessions.first(where: { $0.id.uuidString == sessionID }),
-                  let bridge = session.edrBridge else { return [] }
-            return bridge.traceEvents.map { event -> [String: Any] in
+                  let bridge = session.traceBridge else { return [] }
+
+            // Build a TraceFilter from query parameters
+            var filter = TraceFilter.all
+            if let h = filters["hostname"] { filter.hostnames = [h] }
+            if let m = filters["method"] { filter.methods = [m.uppercased()] }
+            if let u = filters["url"] { filter.searchText = u }
+            if let b = filters["body"] { filter.bodyContent = b }
+            if let tf = filters["timeFrom"], let v = Double(tf) {
+                let base = bridge.store.queryEvents(filter: .all).first?.timestamp ?? 0
+                filter.timeStart = base + v
+            }
+            if let tt = filters["timeTo"], let v = Double(tt) {
+                let base = bridge.store.queryEvents(filter: .all).first?.timestamp ?? 0
+                filter.timeEnd = base + v
+            }
+            if let tab = filters["tabId"], let v = Int(tab) { filter.tabId = v }
+            if let s = filters["status"] {
+                if s.hasSuffix("xx"), let digit = Int(String(s.first ?? "0")) {
+                    filter.statusCategories = [digit]
+                }
+            }
+
+            let events = bridge.store.queryEvents(filter: filter)
+            return events.map { event -> [String: Any] in
                 var d: [String: Any] = [
                     "id": event.id,
                     "timestamp": event.timestamp,
@@ -1065,6 +1094,18 @@ final class GUIAppDelegate: NSObject, NSApplicationDelegate, NSWindowDelegate {
         return true
     }
 
+    /// Restart a session with updated profile settings.
+    @MainActor func restartSession(_ session: BrowserSession, profile: Profile) async {
+        // Close the old session
+        await session.teardown()
+        session.window.orderOut(nil)
+        sessions.removeAll { $0 === session }
+        retiredSessions.append(session)
+
+        // Open a new one
+        _ = await automationCreateSession(profileName: profile.name, profileID: profile.id.uuidString, url: nil)
+    }
+
     // MARK: - App Lifecycle
 
     func applicationShouldTerminateAfterLastWindowClosed(_ sender: NSApplication) -> Bool {
@@ -1147,8 +1188,9 @@ final class BrowserSession {
     private var warpBridge: WarpBridge?
     private(set) var cdpBridge: CDPBridge?
     private(set) var shellBridge: ShellBridge?
-    private(set) var edrBridge: EDRBridge?
-    private var edrTraceWindow: NSWindow?
+    private(set) var traceBridge: TraceBridge?
+    private var traceWindow: NSWindow?
+    private var traceRecordButton: NSButton?
     private var warpButton: NSButton?
     private var warpPulseTimer: Timer?
     private var effectsPanel: NSWindow?
@@ -1157,7 +1199,7 @@ final class BrowserSession {
     private var drawerHost: NSView?
     fileprivate var hasFileTransfer = false
     fileprivate var hasWebcam = false
-    fileprivate let profile: Profile?
+    let profile: Profile?
     private var webcamEffects: WebcamEffects
     private var webcamDeviceID: String?
 
@@ -1393,23 +1435,46 @@ final class BrowserSession {
             self.shellBridge = bridge
         }
 
-        // Set up EDR bridge for HTTP trace capture.
-        if config.edrLevel != .disabled, let dev = linkSocketDevice {
-            let bridge = MainActor.assumeIsolated { EDRBridge(socketDevice: dev) }
-            self.edrBridge = bridge
+        // Set up trace bridge for HTTP trace capture.
+        if config.traceLevel != .disabled, let dev = linkSocketDevice {
+            let autoStart = profile?.settings.traceAutoStart ?? true
+            let bridge = MainActor.assumeIsolated {
+                let b = TraceBridge(socketDevice: dev)
+                if !autoStart { b.isRecording = false }
+                return b
+            }
+            self.traceBridge = bridge
 
-            // Add EDR titlebar button
-            let edrButton = NSButton(
+            // Record/pause button
+            let recording = autoStart
+            let recordBtn = NSButton(
+                image: NSImage(systemSymbolName: recording ? "record.circle.fill" : "record.circle",
+                               accessibilityDescription: "Toggle Recording")!,
+                target: nil,
+                action: #selector(GUIAppDelegate.toggleTraceRecordingAction(_:))
+            )
+            recordBtn.bezelStyle = NSButton.BezelStyle.recessed
+            recordBtn.contentTintColor = recording ? .systemRed : .secondaryLabelColor
+            recordBtn.toolTip = recording ? "Recording \u{2014} click to pause" : "Paused \u{2014} click to start recording"
+            self.traceRecordButton = recordBtn
+
+            let recordAccessory = NSTitlebarAccessoryViewController()
+            recordAccessory.view = recordBtn
+            recordAccessory.layoutAttribute = .trailing
+            window.addTitlebarAccessoryViewController(recordAccessory)
+
+            // View trace button
+            let viewBtn = NSButton(
                 image: NSImage(systemSymbolName: "waveform.path.ecg", accessibilityDescription: "Session Recording")!,
                 target: nil,
-                action: #selector(GUIAppDelegate.showEDRTraceAction(_:))
+                action: #selector(GUIAppDelegate.showTraceAction(_:))
             )
-            edrButton.bezelStyle = NSButton.BezelStyle.recessed
-            edrButton.toolTip = "Session Recording (EDR Trace)"
-            let edrAccessory = NSTitlebarAccessoryViewController()
-            edrAccessory.view = edrButton
-            edrAccessory.layoutAttribute = .trailing
-            window.addTitlebarAccessoryViewController(edrAccessory)
+            viewBtn.bezelStyle = NSButton.BezelStyle.recessed
+            viewBtn.toolTip = "View trace"
+            let viewAccessory = NSTitlebarAccessoryViewController()
+            viewAccessory.view = viewBtn
+            viewAccessory.layoutAttribute = .trailing
+            window.addTitlebarAccessoryViewController(viewAccessory)
         }
 
         let helper = SessionDelegateHelper(session: self)
@@ -1486,29 +1551,51 @@ final class BrowserSession {
         }
     }
 
-    /// Show the EDR trace viewer window.
+    /// Toggle trace recording on/off.
+    func toggleTraceRecording() {
+        MainActor.assumeIsolated {
+            guard let bridge = traceBridge else { return }
+            bridge.isRecording.toggle()
+            // Update button appearance
+            if let btn = traceRecordButton {
+                btn.image = NSImage(
+                    systemSymbolName: bridge.isRecording ? "record.circle.fill" : "record.circle",
+                    accessibilityDescription: "Toggle Recording"
+                )
+                btn.contentTintColor = bridge.isRecording ? .systemRed : .secondaryLabelColor
+                btn.toolTip = bridge.isRecording ? "Recording \u{2014} click to pause" : "Paused \u{2014} click to start recording"
+            }
+        }
+    }
+
+    /// Whether trace is currently recording.
+    var isTraceRecording: Bool {
+        MainActor.assumeIsolated { traceBridge?.isRecording ?? false }
+    }
+
+    /// Show the trace viewer window.
     func showTraceViewer() {
         MainActor.assumeIsolated {
-            if let existing = edrTraceWindow, existing.isVisible {
+            if let existing = traceWindow, existing.isVisible {
                 existing.makeKeyAndOrderFront(nil)
                 return
             }
-            guard let edrBridge else { return }
+            guard let traceBridge else { return }
             let name = profile?.name ?? "Session"
-            let events = edrBridge.traceEvents
-            let hostnames = edrBridge.store.distinctHostnames()
+            let events = traceBridge.traceEvents
+            let hostnames = traceBridge.store.distinctHostnames()
 
-            let traceView = EDRTraceView(
+            let traceView = TraceView(
                 events: events,
                 sessionName: name,
                 availableHostnames: hostnames,
-                onExport: { [weak self] in self?.exportTrace(edrBridge.traceEvents) },
+                onExport: { [weak self] in self?.exportTrace(traceBridge.traceEvents) },
                 onExportDB: { [weak self] in self?.exportTraceDB() },
-                onClear: { [weak edrBridge] in edrBridge?.clearTrace() },
-                onShowFlowGraph: { [weak edrBridge, weak self] in
-                    guard let edrBridge else { return }
+                onClear: { [weak traceBridge] in traceBridge?.clearTrace() },
+                onShowFlowGraph: { [weak traceBridge, weak self] in
+                    guard let traceBridge else { return }
                     showFlowGraphWindow(
-                        events: edrBridge.traceEvents,
+                        events: traceBridge.traceEvents,
                         sessionName: self?.profile?.name ?? "Session"
                     )
                 }
@@ -1527,31 +1614,32 @@ final class BrowserSession {
             win.contentView = hostView
             win.contentMinSize = NSSize(width: 800, height: 400)
             win.animationBehavior = .none
+            win.isReleasedWhenClosed = false
             win.center()
             win.makeKeyAndOrderFront(nil)
-            self.edrTraceWindow = win
+            self.traceWindow = win
 
             // No live-update via onNewEvent — the trace viewer reads from
             // the SQLite store on demand. Updating the SwiftUI view on every
             // event causes use-after-free crashes when the window is closed
             // while events are still arriving.
-            edrBridge.onNewEvent = nil
+            traceBridge.onNewEvent = nil
         }
     }
 
     private func exportTraceDB() {
         MainActor.assumeIsolated {
-            guard let edrBridge else { return }
+            guard let traceBridge else { return }
             let panel = NSSavePanel()
             panel.allowedContentTypes = [.database]
             panel.nameFieldStringValue = "trace-\(profile?.name ?? "session").sqlite"
             panel.canCreateDirectories = true
             guard panel.runModal() == .OK, let url = panel.url else { return }
-            try? edrBridge.store.exportDatabase(to: url)
+            try? traceBridge.store.exportDatabase(to: url)
         }
     }
 
-    private func exportTrace(_ events: [EDREvent]) {
+    private func exportTrace(_ events: [TraceEvent]) {
         let panel = NSSavePanel()
         panel.allowedContentTypes = [.json]
         panel.nameFieldStringValue = "trace-\(profile?.name ?? "session").json"
@@ -1565,17 +1653,17 @@ final class BrowserSession {
     /// Returns true if the caller should proceed with closing.
     fileprivate func promptSaveTraceIfNeeded() -> Bool {
         MainActor.assumeIsolated {
-            guard let edrBridge, !edrBridge.traceEvents.isEmpty else { return true }
+            guard let traceBridge, !traceBridge.traceEvents.isEmpty else { return true }
             let alert = NSAlert()
             alert.messageText = NSLocalizedString("Save session recording?", comment: "")
-            alert.informativeText = String(format: NSLocalizedString("This session captured %lld HTTP requests. Save the recording before closing?", comment: ""), edrBridge.traceEvents.count)
+            alert.informativeText = String(format: NSLocalizedString("This session captured %lld HTTP requests. Save the recording before closing?", comment: ""), traceBridge.traceEvents.count)
             alert.alertStyle = .informational
             alert.addButton(withTitle: NSLocalizedString("Save\u{2026}", comment: ""))
             alert.addButton(withTitle: NSLocalizedString("Discard", comment: ""))
             alert.addButton(withTitle: NSLocalizedString("Cancel", comment: ""))
             let response = alert.runModal()
             if response == .alertFirstButtonReturn {
-                exportTrace(edrBridge.traceEvents)
+                exportTrace(traceBridge.traceEvents)
                 return true
             } else if response == .alertSecondButtonReturn {
                 return true
@@ -1813,10 +1901,10 @@ final class BrowserSession {
             cdpBridge = nil
             shellBridge?.stop()
             shellBridge = nil
-            edrBridge?.stop()
-            edrBridge = nil
-            edrTraceWindow?.orderOut(nil)
-            edrTraceWindow = nil
+            traceBridge?.stop()
+            traceBridge = nil
+            traceWindow?.orderOut(nil)
+            traceWindow = nil
             effectsPanel?.orderOut(nil)
             effectsPanel = nil
         }
@@ -1870,7 +1958,7 @@ private final class SessionDelegateHelper: NSObject, VZVirtualMachineDelegate, N
         alert.addButton(withTitle: NSLocalizedString("Cancel", comment: ""))
         alert.beginSheetModal(for: sender) { [weak session] response in
             guard response == .alertFirstButtonReturn, let session else { return }
-            // If EDR trace has data, offer to save before closing
+            // If trace has data, offer to save before closing
             if session.promptSaveTraceIfNeeded() {
                 session.confirmed = true
                 session.window.close()

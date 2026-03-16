@@ -117,8 +117,19 @@ def write_chrome_env(cfg):
         extra_flags.append("--proxy-server=http://127.0.0.1:3128")
     if cfg.get("disableGPU"):
         extra_flags.append("--disable-gpu")
+    else:
+        # GPU acceleration enabled — add GL/rasterization flags
+        if cfg.get("gpuAccel"):
+            extra_flags.append("--use-gl=angle")
+            extra_flags.append("--use-angle=gl")
+            extra_flags.append("--ignore-gpu-blocklist")
+            extra_flags.append("--enable-gpu-rasterization")
     if cfg.get("disableWebGL"):
         extra_flags.append("--disable-webgl --disable-3d-apis")
+    if cfg.get("zeroCopy"):
+        extra_flags.append("--enable-zero-copy")
+    if cfg.get("smoothScrolling"):
+        extra_flags.append("--enable-smooth-scrolling")
 
     extensions = []
     if cfg.get("phishingGuard"):
@@ -128,12 +139,12 @@ def write_chrome_env(cfg):
     if cfg.get("fileTransfer"):
         extra_flags.append("--silent-debugger-extension-api")
         extensions.append("/opt/bromure/extensions/file-picker")
-    # EDR tracer extension: loaded when edrLevel > 0
-    edr_level = cfg.get("edrLevel", 0)
-    if edr_level > 0:
-        extensions.append("/opt/bromure/extensions/edr-tracer")
+    # Trace extension: loaded when traceLevel > 0
+    trace_level = cfg.get("traceLevel", 0)
+    if trace_level > 0:
+        extensions.append("/opt/bromure/extensions/trace")
         # Level 3 (full) needs debugger API without the infobar
-        if edr_level >= 3 and not cfg.get("fileTransfer"):
+        if trace_level >= 3 and not cfg.get("fileTransfer"):
             extra_flags.append("--silent-debugger-extension-api")
     # WebRTC block extension: loaded only when both webcam and microphone are off
     if not cfg.get("webcam") and not cfg.get("microphone"):
@@ -209,8 +220,8 @@ def write_chrome_env(cfg):
         lines.append("AUTOMATION=1")
     if cfg.get("debugShell"):
         lines.append("DEBUG_SHELL=1")
-    if cfg.get("edrLevel", 0) > 0:
-        lines.append(f"EDR_LEVEL={cfg['edrLevel']}")
+    if cfg.get("traceLevel", 0) > 0:
+        lines.append(f"TRACE_LEVEL={cfg['traceLevel']}")
 
     # Locale: forward host OS locale to Chromium
     locale = cfg.get("locale", "en_US")

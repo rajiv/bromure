@@ -342,3 +342,68 @@
 "Pink" = "Rosa";
 "Teal" = "Blaugr\U00FCn";
 "Gray" = "Grau";
+
+/* ProfileSettingsView — Allow Automation */
+"Allow Automation" = "Automatisierung erlauben";
+"Let external tools (Claude Code, Puppeteer, Playwright) create browser sessions and control this profile remotely. When turned off, this profile is hidden from the automation API." = "Externen Tools (Claude Code, Puppeteer, Playwright) erlauben, Browsersitzungen zu erstellen und dieses Profil fernzusteuern. Bei Deaktivierung wird dieses Profil von der Automatisierungs-API verborgen.";
+"The automation server is currently disabled. Enable it in Bromure \U2192 Settings \U2192 Automation." = "Der Automatisierungsserver ist derzeit deaktiviert. Aktivieren Sie ihn unter Bromure \U2192 Einstellungen \U2192 Automatisierung.";
+
+/* ProfileSettingsView — Session Recording */
+"Session Recording" = "Sitzungsaufzeichnung";
+"Record all HTTP requests made during this browsing session. Useful for analyzing what a suspicious link does behind the scenes. When the session ends, you can save or discard the recording." = "Zeichnet alle HTTP-Anfragen w\U00E4hrend dieser Browsersitzung auf. N\U00FCtzlich, um zu analysieren, was ein verd\U00E4chtiger Link im Hintergrund tut. Am Ende der Sitzung k\U00F6nnen Sie die Aufzeichnung speichern oder verwerfen.";
+"Capture Level" = "Erfassungsstufe";
+"Disabled" = "Deaktiviert";
+"Basic \U2014 URLs only" = "Einfach \U2014 nur URLs";
+"Headers \U2014 URLs + headers + POST data" = "Header \U2014 URLs + Header + POST-Daten";
+"Full \U2014 URLs + headers + response bodies" = "Vollst\U00E4ndig \U2014 URLs + Header + Antworttexte";
+"This level captures POST data which may include passwords, tokens, and form submissions in clear text." = "Diese Stufe erfasst POST-Daten, die Passw\U00F6rter, Token und Formular\U00FCbermittlungen im Klartext enthalten k\U00F6nnen.";
+"Full capture records all request and response bodies including passwords, authentication tokens, personal data, and any sensitive content transmitted over the network. Use only for security analysis of untrusted links." = "Die vollst\U00E4ndige Erfassung zeichnet alle Anfrage- und Antworttexte auf, einschlie\U00DFlich Passw\U00F6rter, Authentifizierungstoken, pers\U00F6nliche Daten und alle sensiblen Inhalte, die \U00FCber das Netzwerk \U00FCbertragen werden. Nur f\U00FCr die Sicherheitsanalyse nicht vertrauensw\U00FCrdiger Links verwenden.";
+
+/* SettingsView — Automation */
+"Remote browser control via HTTP API, CDP, and MCP" = "Fernsteuerung des Browsers \U00FCber HTTP-API, CDP und MCP";
+"MCP Server" = "MCP-Server";
+"Bromure includes a built-in MCP server for Claude Code, Openclaws, and other MCP-compatible AI tools. Add this to your MCP configuration:" = "Bromure enth\U00E4lt einen integrierten MCP-Server f\U00FCr Claude Code, Openclaws und andere MCP-kompatible KI-Tools. F\U00FCgen Sie dies Ihrer MCP-Konfiguration hinzu:";
+"Add --debug to the args to include VM shell access and app state tools." = "F\U00FCgen Sie --debug zu den Argumenten hinzu, um VM-Shell-Zugriff und App-Status-Tools einzuschlie\U00DFen.";
+"Binding to all interfaces exposes the automation API to your entire network. Anyone on your LAN can create browser sessions, execute JavaScript, and take screenshots. Only use this on trusted networks." = "Das Binden an alle Schnittstellen macht die Automatisierungs-API im gesamten Netzwerk verf\U00FCgbar. Jeder in Ihrem LAN kann Browsersitzungen erstellen, JavaScript ausf\U00FChren und Screenshots aufnehmen. Nur in vertrauensw\U00FCrdigen Netzwerken verwenden.";
+
+/* Session Recording — Save Dialog */
+"Save session recording?" = "Sitzungsaufzeichnung speichern?";
+"This session captured %lld HTTP requests. Save the recording before closing?" = "Diese Sitzung hat %lld HTTP-Anfragen erfasst. Aufzeichnung vor dem Schlie\U00DFen speichern?";
+"Save\U2026" = "Sichern\U2026";
+"Discard" = "Verwerfen";
+"Invalid Trace File" = "Ung\U00FCltige Trace-Datei";
+"The file could not be read as a Bromure session recording." = "Die Datei konnte nicht als Bromure-Sitzungsaufzeichnung gelesen werden.";
+"Open a saved session recording" = "Eine gespeicherte Sitzungsaufzeichnung \U00F6ffnen";
+
+/* Trace Viewer */
+"Time" = "Zeit";
+"Method" = "Methode";
+"Host" = "Host";
+"URL" = "URL";
+"Status" = "Status";
+"Waterfall" = "Wasserfall";
+"Duration" = "Dauer";
+"Type" = "Typ";
+"Page" = "Seite";
+"Request" = "Anfrage";
+"Response" = "Antwort";
+"Form Fields" = "Formularfelder";
+"Navigation" = "Navigation";
+"Timing" = "Zeitverlauf";
+"Copied" = "Kopiert";
+"Response body was truncated" = "Der Antworttext wurde gek\U00FCrzt";
+"No form fields captured for this request." = "Keine Formularfelder f\U00FCr diese Anfrage erfasst.";
+"Form field snapshots are recorded when a form is submitted." = "Momentaufnahmen der Formularfelder werden beim Absenden eines Formulars aufgezeichnet.";
+"Field Name" = "Feldname";
+"Value" = "Wert";
+"This section compares the form field values at capture time with the actual POST data sent. Differences may indicate client-side transformation (e.g., hashing, encoding)." = "Dieser Abschnitt vergleicht die Formularfeldwerte zum Zeitpunkt der Erfassung mit den tats\U00E4chlich gesendeten POST-Daten. Unterschiede k\U00F6nnen auf clientseitige Transformationen hinweisen (z.\U00A0B. Hashing, Kodierung).";
+"Form:" = "Formular:";
+"Sent:" = "Gesendet:";
+
+/* Flow Graph */
+"Drag nodes \U2022 Click page to expand sub-resources" = "Knoten ziehen \U2022 Auf Seite klicken, um Unterressourcen aufzuklappen";
+"No navigation events captured" = "Keine Navigationsereignisse erfasst";
+"Freeze" = "Einfrieren";
+"Resume" = "Fortsetzen";
+"Start" = "Start";
+"req" = "Anf.";

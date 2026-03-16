@@ -323,29 +323,6 @@ struct ProfileSettingsView: View {
 
             settingsDivider
 
-            // Allow Automation
-            VStack(alignment: .leading, spacing: 6) {
-                settingToggle(
-                    "Allow Automation",
-                    description: "Let external tools (Claude Code, Puppeteer, Playwright) create browser sessions and control this profile remotely. When turned off, this profile is hidden from the automation API.",
-                    isOn: $draft.settings.allowAutomation
-                )
-
-                if draft.settings.allowAutomation && !automationEnabled {
-                    Label {
-                        Text("The automation server is currently disabled. Enable it in Bromure \u{2192} Settings \u{2192} Automation.")
-                            .font(.callout)
-                    } icon: {
-                        Image(systemName: "exclamationmark.triangle.fill")
-                            .foregroundStyle(.yellow)
-                    }
-                    .padding(10)
-                    .background(.orange.opacity(0.1), in: RoundedRectangle(cornerRadius: 8))
-                }
-            }
-
-            settingsDivider
-
             // Comments (at the bottom)
             VStack(alignment: .leading, spacing: 6) {
                 Text("Comments").font(.headline)
@@ -373,6 +350,11 @@ struct ProfileSettingsView: View {
                 description: "Uses your Mac\u{2019}s graphics chip to make web pages render faster. Turn this off if you notice visual glitches or display problems.",
                 isOn: $draft.settings.enableGPU
             )
+            .onChange(of: draft.settings.enableGPU) { _, newValue in
+                if !newValue {
+                    draft.settings.enableWebGL = false
+                }
+            }
 
             settingsDivider
 
@@ -380,6 +362,24 @@ struct ProfileSettingsView: View {
                 "WebGL",
                 description: "Lets websites display 3D graphics and interactive content. Required by some games, maps, and data visualizations.",
                 isOn: $draft.settings.enableWebGL
+            )
+            .disabled(!draft.settings.enableGPU)
+            .opacity(draft.settings.enableGPU ? 1 : 0.5)
+
+            settingsDivider
+
+            settingToggle(
+                "Zero-Copy Rasterization",
+                description: "Reduces memory copies during page rendering. Improves performance on most systems.",
+                isOn: $draft.settings.enableZeroCopy
+            )
+
+            settingsDivider
+
+            settingToggle(
+                "Smooth Scrolling",
+                description: "Animates scrolling for a smoother feel. Disable for instant, jump-style scrolling.",
+                isOn: $draft.settings.enableSmoothScrolling
             )
         }
     }
@@ -648,46 +648,6 @@ struct ProfileSettingsView: View {
                 description: "Adds a right-click menu option to send a web page link to another Bromure profile.",
                 isOn: $draft.settings.enableLinkSender
             )
-
-            settingsDivider
-
-            // EDR Tracer
-            VStack(alignment: .leading, spacing: 6) {
-                Text("Session Recording").font(.headline)
-                Text("Record all HTTP requests made during this browsing session. Useful for analyzing what a suspicious link does behind the scenes. When the session ends, you can save or discard the recording.")
-                    .settingDescription()
-                Picker("Capture Level", selection: $draft.settings.edrLevel) {
-                    Text("Disabled").tag(EDRLevel.disabled)
-                    Text("Basic \u{2014} URLs only").tag(EDRLevel.basic)
-                    Text("Headers \u{2014} URLs + headers + POST data").tag(EDRLevel.headers)
-                    Text("Full \u{2014} URLs + headers + response bodies").tag(EDRLevel.full)
-                }
-                .labelsHidden()
-
-                if draft.settings.edrLevel == .headers {
-                    Label {
-                        Text("This level captures POST data which may include passwords, tokens, and form submissions in clear text.")
-                            .font(.callout)
-                    } icon: {
-                        Image(systemName: "exclamationmark.triangle.fill")
-                            .foregroundStyle(.yellow)
-                    }
-                    .padding(10)
-                    .background(.orange.opacity(0.1), in: RoundedRectangle(cornerRadius: 8))
-                }
-
-                if draft.settings.edrLevel == .full {
-                    Label {
-                        Text("Full capture records all request and response bodies including passwords, authentication tokens, personal data, and any sensitive content transmitted over the network. Use only for security analysis of untrusted links.")
-                            .font(.callout)
-                    } icon: {
-                        Image(systemName: "exclamationmark.triangle.fill")
-                            .foregroundStyle(.red)
-                    }
-                    .padding(10)
-                    .background(.red.opacity(0.1), in: RoundedRectangle(cornerRadius: 8))
-                }
-            }
         }
     }
 
@@ -891,6 +851,80 @@ struct ProfileSettingsView: View {
         VStack(alignment: .leading, spacing: 20) {
             sectionHeader("Advanced", subtitle: "Additional options for power users")
 
+            // Allow Automation
+            VStack(alignment: .leading, spacing: 6) {
+                settingToggle(
+                    "Allow Automation",
+                    description: "Let external tools (Claude Code, Puppeteer, Playwright) create browser sessions and control this profile remotely. When turned off, this profile is hidden from the automation API.",
+                    isOn: $draft.settings.allowAutomation
+                )
+
+                if draft.settings.allowAutomation && !automationEnabled {
+                    Label {
+                        Text("The automation server is currently disabled. Enable it in Bromure \u{2192} Settings \u{2192} Automation.")
+                            .font(.callout)
+                    } icon: {
+                        Image(systemName: "exclamationmark.triangle.fill")
+                            .foregroundStyle(.yellow)
+                    }
+                    .padding(10)
+                    .background(.orange.opacity(0.1), in: RoundedRectangle(cornerRadius: 8))
+                }
+            }
+
+            settingsDivider
+
+            // Session Recording
+            VStack(alignment: .leading, spacing: 6) {
+                Text("Session Recording").font(.headline)
+                Text("Record all HTTP requests made during this browsing session. Useful for analyzing what a suspicious link does behind the scenes. When the session ends, you can save or discard the recording.")
+                    .settingDescription()
+                Picker("Capture Level", selection: $draft.settings.traceLevel) {
+                    Text("Disabled").tag(TraceLevel.disabled)
+                    Text("Basic \u{2014} URLs only").tag(TraceLevel.basic)
+                    Text("Headers \u{2014} URLs + headers + POST data").tag(TraceLevel.headers)
+                    Text("Full \u{2014} URLs + headers + response bodies").tag(TraceLevel.full)
+                }
+                .labelsHidden()
+
+                if draft.settings.traceLevel == .headers {
+                    Label {
+                        Text("This level captures POST data which may include passwords, tokens, and form submissions in clear text.")
+                            .font(.callout)
+                    } icon: {
+                        Image(systemName: "exclamationmark.triangle.fill")
+                            .foregroundStyle(.yellow)
+                    }
+                    .padding(10)
+                    .background(.orange.opacity(0.1), in: RoundedRectangle(cornerRadius: 8))
+                }
+
+                if draft.settings.traceLevel == .full {
+                    Label {
+                        Text("Full capture records all request and response bodies including passwords, authentication tokens, personal data, and any sensitive content transmitted over the network. Use only for security analysis of untrusted links.")
+                            .font(.callout)
+                    } icon: {
+                        Image(systemName: "exclamationmark.triangle.fill")
+                            .foregroundStyle(.red)
+                    }
+                    .padding(10)
+                    .background(.red.opacity(0.1), in: RoundedRectangle(cornerRadius: 8))
+                }
+
+                if draft.settings.traceLevel != .disabled {
+                    settingsDivider
+
+                    settingToggle(
+                        "Start Recording Automatically",
+                        description: "Begin capturing requests as soon as the session opens. When off, recording starts only when you click the record button in the titlebar.",
+                        isOn: $draft.settings.traceAutoStart
+                    )
+                }
+            }
+
+            settingsDivider
+
+            // Encryption
             if draft.settings.persistent {
                 VStack(alignment: .leading, spacing: 6) {
                     settingToggle(

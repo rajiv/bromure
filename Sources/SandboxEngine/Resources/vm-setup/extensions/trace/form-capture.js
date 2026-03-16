@@ -1,14 +1,14 @@
 "use strict";
 
 /**
- * Bromure EDR — form field capture content script.
+ * Bromure Trace — form field capture content script.
  *
  * Maintains a live snapshot of all form fields on the page (including password
  * fields) so the background service worker can grab pre-submit values when a
  * POST/PUT request fires.
  */
 
-const fieldCache = new Map(); // element → {name, type, value}
+const fieldCache = new Map(); // element -> {name, type, value}
 
 function fieldKey(el) {
   if (el.name) return el.name;

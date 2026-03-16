@@ -86,8 +86,8 @@ public struct CustomRootCA: Codable, Equatable, Identifiable {
     }
 }
 
-/// EDR (Endpoint Detection & Response) trace verbosity level.
-public enum EDRLevel: Int, Codable, CaseIterable, Sendable {
+/// Trace verbosity level for HTTP session recording.
+public enum TraceLevel: Int, Codable, CaseIterable, Sendable {
     case disabled = 0
     case basic = 1     // timestamp, method, URL, status, duration
     case headers = 2   // basic + request/response headers + post data
@@ -151,6 +151,8 @@ public struct ProfileSettings: Codable, Equatable {
     public var homePage: String = "https://bromure.io/hello"
     public var enableGPU: Bool = true
     public var enableWebGL: Bool = false
+    public var enableZeroCopy: Bool = true
+    public var enableSmoothScrolling: Bool = true
 
     // Network
     public var enableAdBlocking: Bool = false
@@ -218,8 +220,9 @@ public struct ProfileSettings: Codable, Equatable {
     // Automation
     public var allowAutomation: Bool = false
 
-    // EDR
-    public var edrLevel: EDRLevel = .disabled
+    // Trace
+    public var traceLevel: TraceLevel = .disabled
+    public var traceAutoStart: Bool = true  // start tracing when session opens
 
     // Advanced
     public var persistent: Bool = false
@@ -234,6 +237,8 @@ public struct ProfileSettings: Codable, Equatable {
         homePage = try c.decodeIfPresent(String.self, forKey: .homePage) ?? defaults.homePage
         enableGPU = try c.decodeIfPresent(Bool.self, forKey: .enableGPU) ?? defaults.enableGPU
         enableWebGL = try c.decodeIfPresent(Bool.self, forKey: .enableWebGL) ?? defaults.enableWebGL
+        enableZeroCopy = try c.decodeIfPresent(Bool.self, forKey: .enableZeroCopy) ?? defaults.enableZeroCopy
+        enableSmoothScrolling = try c.decodeIfPresent(Bool.self, forKey: .enableSmoothScrolling) ?? defaults.enableSmoothScrolling
         enableAdBlocking = try c.decodeIfPresent(Bool.self, forKey: .enableAdBlocking) ?? defaults.enableAdBlocking
         enableWarp = try c.decodeIfPresent(Bool.self, forKey: .enableWarp) ?? defaults.enableWarp
         warpAutoConnect = try c.decodeIfPresent(Bool.self, forKey: .warpAutoConnect) ?? defaults.warpAutoConnect
@@ -267,7 +272,8 @@ public struct ProfileSettings: Codable, Equatable {
         rootCAs = try c.decodeIfPresent([CustomRootCA].self, forKey: .rootCAs) ?? defaults.rootCAs
         locale = try c.decodeIfPresent(String.self, forKey: .locale)
         allowAutomation = try c.decodeIfPresent(Bool.self, forKey: .allowAutomation) ?? defaults.allowAutomation
-        edrLevel = try c.decodeIfPresent(EDRLevel.self, forKey: .edrLevel) ?? defaults.edrLevel
+        traceLevel = try c.decodeIfPresent(TraceLevel.self, forKey: .traceLevel) ?? defaults.traceLevel
+        traceAutoStart = try c.decodeIfPresent(Bool.self, forKey: .traceAutoStart) ?? defaults.traceAutoStart
         persistent = try c.decodeIfPresent(Bool.self, forKey: .persistent) ?? defaults.persistent
         encryptOnDisk = try c.decodeIfPresent(Bool.self, forKey: .encryptOnDisk) ?? defaults.encryptOnDisk
     }
@@ -311,7 +317,9 @@ public struct ProfileSettings: Codable, Equatable {
             swapCmdCtrl: defaults.object(forKey: "vm.swapCmdCtrl") as? Bool ?? true,
             homePage: homePage,
             enableGPU: enableGPU,
-            enableWebGL: enableWebGL,
+            enableWebGL: enableGPU ? enableWebGL : false,  // WebGL requires GPU
+            enableZeroCopy: enableZeroCopy,
+            enableSmoothScrolling: enableSmoothScrolling,
             blockMalwareSites: blockMalwareSites,
             enableFileTransfer: canUpload || canDownload,
             phishingWarning: phishingWarning,
@@ -334,7 +342,7 @@ public struct ProfileSettings: Codable, Equatable {
             blockDownloads: !canDownload,
             enableAutomation: defaults.bool(forKey: "automation.enabled"),
             testSuite: isTestSuite,
-            edrLevel: edrLevel,
+            traceLevel: traceLevel,
             locale: locale
         )
     }

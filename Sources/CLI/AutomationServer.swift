@@ -43,8 +43,8 @@ final class AutomationServer {
     /// Callback to get app state (debug only).
     var onGetAppState: (() -> [String: Any])?
 
-    /// Callback to get EDR trace events for a session.
-    var onGetTrace: ((_ sessionID: String) -> [[String: Any]])?
+    /// Callback to get trace events for a session with optional filters.
+    var onGetTrace: ((_ sessionID: String, _ filters: [String: String]) -> [[String: Any]])?
 
     init(port: UInt16 = 9222, bindAddress: String = "127.0.0.1") {
         self.port = port
@@ -208,11 +208,25 @@ final class AutomationServer {
                 sendResponse(fd: fd, status: 500, body: ["error": "Failed to create session"])
             }
 
-        // EDR trace: get captured events for a session (must be before generic GET /sessions/:id)
-        case ("GET", _) where path.hasSuffix("/trace") && path.hasPrefix("/sessions/"):
-            let middle = path.dropFirst("/sessions/".count).dropLast("/trace".count)
-            let sessionID = String(middle)
-            let events = DispatchQueue.main.sync { self.onGetTrace?(sessionID) ?? [] }
+        // Trace: get captured events with optional query filters
+        case ("GET", _) where path.contains("/trace") && path.hasPrefix("/sessions/"):
+            // Parse: /sessions/UUID/trace?hostname=x&method=GET...
+            let afterSessions = path.dropFirst("/sessions/".count)
+            let pathAndQuery = String(afterSessions)
+            let components = pathAndQuery.components(separatedBy: "/trace")
+            let sessionID = components[0]
+            // Parse query parameters
+            var filters: [String: String] = [:]
+            if let queryPart = pathAndQuery.components(separatedBy: "?").last,
+               pathAndQuery.contains("?") {
+                for param in queryPart.components(separatedBy: "&") {
+                    let kv = param.components(separatedBy: "=")
+                    if kv.count == 2 {
+                        filters[kv[0]] = kv[1].removingPercentEncoding ?? kv[1]
+                    }
+                }
+            }
+            let events = DispatchQueue.main.sync { self.onGetTrace?(sessionID, filters) ?? [] }
             sendResponse(fd: fd, status: 200, body: ["events": events, "count": events.count])
 
         case ("GET", _) where path.hasPrefix("/sessions/"):

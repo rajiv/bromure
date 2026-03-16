@@ -342,3 +342,68 @@
 "Pink" = "粉紅色";
 "Teal" = "藍綠色";
 "Gray" = "灰色";
+
+/* ProfileSettingsView — Allow Automation */
+"Allow Automation" = "允許自動化";
+"Let external tools (Claude Code, Puppeteer, Playwright) create browser sessions and control this profile remotely. When turned off, this profile is hidden from the automation API." = "允許外部工具（Claude Code、Puppeteer、Playwright）建立瀏覽器工作階段並遠端控制此設定檔。關閉後，此設定檔將從自動化 API 中隱藏。";
+"The automation server is currently disabled. Enable it in Bromure \U2192 Settings \U2192 Automation." = "自動化伺服器目前已停用。請在 Bromure \U2192 設定 \U2192 自動化中啟用。";
+
+/* ProfileSettingsView — Session Recording */
+"Session Recording" = "工作階段錄製";
+"Record all HTTP requests made during this browsing session. Useful for analyzing what a suspicious link does behind the scenes. When the session ends, you can save or discard the recording." = "記錄此瀏覽工作階段期間的所有 HTTP 要求。有助於分析可疑連結在幕後做了什麼。工作階段結束時，您可以儲存或捨棄錄製內容。";
+"Capture Level" = "擷取級別";
+"Disabled" = "已停用";
+"Basic \U2014 URLs only" = "基本 \U2014 僅 URL";
+"Headers \U2014 URLs + headers + POST data" = "標頭 \U2014 URL + 標頭 + POST 資料";
+"Full \U2014 URLs + headers + response bodies" = "完整 \U2014 URL + 標頭 + 回應內容";
+"This level captures POST data which may include passwords, tokens, and form submissions in clear text." = "此級別會擷取 POST 資料，可能包含明文形式的密碼、權杖和表單提交內容。";
+"Full capture records all request and response bodies including passwords, authentication tokens, personal data, and any sensitive content transmitted over the network. Use only for security analysis of untrusted links." = "完整擷取會記錄所有要求和回應的內容，包括密碼、認證權杖、個人資料以及透過網路傳輸的任何敏感內容。僅用於不可信連結的安全分析。";
+
+/* SettingsView — Automation */
+"Remote browser control via HTTP API, CDP, and MCP" = "透過 HTTP API、CDP 和 MCP 遠端控制瀏覽器";
+"MCP Server" = "MCP 伺服器";
+"Bromure includes a built-in MCP server for Claude Code, Openclaws, and other MCP-compatible AI tools. Add this to your MCP configuration:" = "Bromure 內建了適用於 Claude Code、Openclaws 及其他 MCP 相容 AI 工具的 MCP 伺服器。請將以下內容加入您的 MCP 設定：";
+"Add --debug to the args to include VM shell access and app state tools." = "在參數中加入 --debug 以啟用虛擬機器 Shell 存取和應用狀態工具。";
+"Binding to all interfaces exposes the automation API to your entire network. Anyone on your LAN can create browser sessions, execute JavaScript, and take screenshots. Only use this on trusted networks." = "綁定到所有介面會將自動化 API 暴露到整個網路。區域網路上的任何人都可以建立瀏覽器工作階段、執行 JavaScript 和擷取螢幕截圖。僅在可信任的網路上使用。";
+
+/* Session Recording — Save Dialog */
+"Save session recording?" = "儲存工作階段錄製？";
+"This session captured %lld HTTP requests. Save the recording before closing?" = "此工作階段已擷取 %lld 個 HTTP 要求。關閉前要儲存錄製內容嗎？";
+"Save\U2026" = "儲存\U2026";
+"Discard" = "捨棄";
+"Invalid Trace File" = "無效的追蹤檔案";
+"The file could not be read as a Bromure session recording." = "無法將此檔案讀取為 Bromure 工作階段錄製。";
+"Open a saved session recording" = "開啟已儲存的工作階段錄製";
+
+/* Trace Viewer */
+"Time" = "時間";
+"Method" = "方法";
+"Host" = "主機";
+"URL" = "URL";
+"Status" = "狀態";
+"Waterfall" = "瀑布圖";
+"Duration" = "持續時間";
+"Type" = "類型";
+"Page" = "頁面";
+"Request" = "要求";
+"Response" = "回應";
+"Form Fields" = "表單欄位";
+"Navigation" = "導覽";
+"Timing" = "時序";
+"Copied" = "已拷貝";
+"Response body was truncated" = "回應內容已被截斷";
+"No form fields captured for this request." = "未擷取此要求的表單欄位。";
+"Form field snapshots are recorded when a form is submitted." = "表單欄位快照會在表單提交時記錄。";
+"Field Name" = "欄位名稱";
+"Value" = "值";
+"This section compares the form field values at capture time with the actual POST data sent. Differences may indicate client-side transformation (e.g., hashing, encoding)." = "此部分將擷取時的表單欄位值與實際傳送的 POST 資料進行對比。差異可能表示用戶端進行了轉換（如雜湊、編碼等）。";
+"Form:" = "表單：";
+"Sent:" = "已傳送：";
+
+/* Flow Graph */
+"Drag nodes \U2022 Click page to expand sub-resources" = "拖曳節點 \U2022 點按頁面展開子資源";
+"No navigation events captured" = "未擷取到導覽事件";
+"Freeze" = "凍結";
+"Resume" = "繼續";
+"Start" = "開始";
+"req" = "個";
