@@ -52,7 +52,7 @@ Create named profiles for different contexts -- Work, Personal, Banking, Shoppin
 Every profile carries its own independent settings -- home page, VPN, ad blocking, clipboard access, network rules, media devices -- so your banking profile can be locked down tight while your personal profile lets you copy-paste and download freely.
 
 - **Persistent storage** -- optionally keep bookmarks, history, and cookies between sessions, with LUKS encryption and keys stored in your macOS Keychain
-- **Language** -- set a different browser language per profile (English, French, German, Spanish, Portuguese, Japanese, Chinese, and more)
+- **Language** -- set a different browser language per profile, with 8 fully localized UI translations (English, French, German, Spanish, Portuguese, Japanese, Traditional Chinese, Simplified Chinese)
 - **iCloud sync** -- profiles sync across your Macs, so your setup follows you
 
 ## Built-in VPN
@@ -92,6 +92,24 @@ Lock down what the browser can reach on your network:
 - **LAN Isolation** -- prevent the browser from accessing devices on your local network (printers, NAS, internal servers) while keeping full internet access.
 - **Port Restriction** -- whitelist specific outgoing ports (e.g. 80, 443) to control exactly which services the browser can connect to.
 
+## Session Recording
+
+Bromure can record every HTTP request made during a browsing session -- URLs, headers, POST data, response bodies, form field snapshots, and redirect chains. Useful for investigating what a suspicious link does behind the scenes, or for auditing data exfiltration by a web app.
+
+<p align="center">
+  <img src="Resources/trace-list.png" width="720" alt="Session recording list view">
+</p>
+
+Three capture levels: **Basic** (URLs only), **Headers** (URLs + headers + POST data), or **Full** (everything including response bodies). Recordings are stored in an indexed SQLite database and can be saved as `.bromtrace` files for offline analysis.
+
+An isometric 3D flow view visualizes page navigations and sub-requests as a city of buildings, where each building represents a page and its height reflects the number of sub-resources loaded.
+
+<p align="center">
+  <img src="Resources/trace-isometric.png" width="480" alt="Isometric flow visualization">
+</p>
+
+Recording can start automatically or on demand via a record button in the titlebar. A pause/resume toggle lets you capture only the traffic you care about.
+
 ## Media
 
 Use Bromure for video calls and meetings:
@@ -118,6 +136,24 @@ Worried this could be used to deceive? A visible banner is overlaid on the video
 - **Network Controls** -- LAN isolation and port restriction for compliance with corporate security policies.
 - **Encrypted Persistent Storage** -- LUKS encryption with keys stored in macOS Keychain for profiles that need to retain data.
 
+## Automation & AI Integration
+
+Bromure is fully automatable. External tools can create browser sessions, navigate pages, extract content, and take screenshots -- all without touching the host machine.
+
+<p align="center">
+  <img src="Resources/automation.png" width="480" alt="Automation settings with API reference and MCP config">
+</p>
+
+Three layers of automation, each building on the one below:
+
+1. **HTTP API** -- a JSON REST API for session and profile management. Create sessions, list profiles, close sessions, query trace events.
+2. **Chrome DevTools Protocol (CDP)** -- Bromure proxies the full CDP to Chromium inside the VM. Connect with Puppeteer, Playwright, or any CDP client.
+3. **MCP Server** -- a built-in [Model Context Protocol](https://modelcontextprotocol.io) server that wraps everything into high-level tools for AI assistants like Claude Code, Openclaws, and other MCP-compatible tools.
+
+The automation server can be toggled on and off dynamically from Settings without restarting the app. Each profile has an "Allow Automation" toggle -- only opted-in profiles are visible to the API.
+
+See [Remote Control](REMOTE_CONTROL.md) for the full API reference and MCP tool list.
+
 ## Hardware & Display
 
 Fine-tune how the VM uses your Mac's resources:
@@ -126,9 +162,10 @@ Fine-tune how the VM uses your Mac's resources:
 - **CPU Cores** -- automatic scaling based on memory, or manual override
 - **GPU Acceleration** -- hardware-accelerated rendering for faster page loads
 - **WebGL** -- enable 3D graphics for games, maps, and data visualizations
+- **Zero-Copy Rasterization** -- reduces memory copies during rendering
 - **Display Scaling** -- 1x or 2x for Retina displays
 - **Dark Mode** -- follow system appearance, or force light/dark
-- **29 Keyboard Layouts** -- QWERTY, AZERTY, QWERTZ, Dvorak, Colemak, and international layouts including Japanese, Korean, Arabic, Hebrew, and more
+- **249 Keyboard Layouts** -- QWERTY, AZERTY, QWERTZ, Dvorak, Colemak, and international layouts covering every script macOS and Linux both support. Dynamic layout matching syncs your Mac's active keyboard to the VM in real time.
 - **Natural Scrolling** -- matches your macOS trackpad preference
 - **Command Key Swap** -- use Cmd instead of Ctrl for familiar macOS shortcuts
 
@@ -167,7 +204,8 @@ No Docker. No containers. Full hardware-level virtualization via Apple's Virtual
 
 ## Documentation
 
-See [Settings Reference](SETTINGS.md) for a detailed description of every settings panel.
+- [Settings Reference](SETTINGS.md) -- detailed description of every settings panel
+- [Remote Control](REMOTE_CONTROL.md) -- HTTP API, CDP proxy, MCP server, and AppleScript reference
 
 ## FAQ
 
