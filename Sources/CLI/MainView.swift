@@ -465,12 +465,17 @@ struct MainView: View {
         default: initialCat = .general
         }
 
+        let hasActiveSession: Bool = {
+            guard let delegate = NSApp.delegate as? GUIAppDelegate else { return false }
+            return delegate.sessions.contains { $0.profile?.id == profile.id }
+        }()
         let settingsView = ProfileSettingsView(
             draft: profile,
             usedColors: usedColors(excluding: profile.id),
             profileDiskExists: ProfileDisk.diskExists(
                 at: state.profileManager.profileDiskURL(for: profile.id)
             ),
+            hasActiveSession: hasActiveSession,
             onDeleteProfileDisk: {
                 let diskURL = state.profileManager.profileDiskURL(for: profile.id)
                 try? FileManager.default.removeItem(at: diskURL)

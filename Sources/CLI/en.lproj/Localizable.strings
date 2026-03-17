@@ -94,6 +94,9 @@
 "Choose which speaker to use for audio output." = "Choose which speaker to use for audio output.";
 "Default" = "Default";
 
+/* ProfileSettingsView — File Transfer */
+"Control file uploads and downloads between your Mac and this browser" = "Control file uploads and downloads between your Mac and this browser";
+
 /* ProfileSettingsView — Privacy & Safety */
 "Control what this browser can access and share" = "Control what this browser can access and share";
 "Shared Clipboard" = "Shared Clipboard";
@@ -155,6 +158,12 @@
 "Disable encryption?" = "Disable encryption?";
 "Delete data and continue" = "Delete data and continue";
 "Changing the encryption setting will delete all existing browsing data for this profile. This cannot be undone." = "Changing the encryption setting will delete all existing browsing data for this profile. This cannot be undone.";
+"Delete Browsing Data\U2026" = "Delete Browsing Data\U2026";
+"Close the session before deleting browsing data" = "Close the session before deleting browsing data";
+"Permanently delete all saved browsing data for this profile" = "Permanently delete all saved browsing data for this profile";
+"Delete browsing data?" = "Delete browsing data?";
+"Delete All Data" = "Delete All Data";
+"This will permanently delete all bookmarks, history, cookies, and passwords for this profile. This cannot be undone." = "This will permanently delete all bookmarks, history, cookies, and passwords for this profile. This cannot be undone.";
 
 /* SettingsView — Categories */
 "Hardware" = "Hardware";

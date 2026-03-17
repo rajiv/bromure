@@ -94,6 +94,9 @@
 "Choose which speaker to use for audio output." = "Elija qu\U00E9 altavoz usar para la salida de audio.";
 "Default" = "Predeterminado";
 
+/* ProfileSettingsView — File Transfer */
+"Control file uploads and downloads between your Mac and this browser" = "Gestione la carga y descarga de archivos entre su Mac y este navegador";
+
 /* ProfileSettingsView — Privacy & Safety */
 "Control what this browser can access and share" = "Controle a qu\U00E9 puede acceder y compartir este navegador";
 "Shared Clipboard" = "Portapapeles compartido";
@@ -155,6 +158,12 @@
 "Disable encryption?" = "\U00BFDesactivar cifrado?";
 "Delete data and continue" = "Eliminar datos y continuar";
 "Changing the encryption setting will delete all existing browsing data for this profile. This cannot be undone." = "Cambiar el ajuste de cifrado eliminar\U00E1 todos los datos de navegaci\U00F3n existentes de este perfil. Esta acci\U00F3n no se puede deshacer.";
+"Delete Browsing Data\U2026" = "Eliminar datos de navegaci\U00F3n\U2026";
+"Close the session before deleting browsing data" = "Cierre la sesi\U00F3n antes de eliminar los datos de navegaci\U00F3n";
+"Permanently delete all saved browsing data for this profile" = "Eliminar permanentemente todos los datos de navegaci\U00F3n guardados de este perfil";
+"Delete browsing data?" = "\U00BFEliminar datos de navegaci\U00F3n?";
+"Delete All Data" = "Eliminar todos los datos";
+"This will permanently delete all bookmarks, history, cookies, and passwords for this profile. This cannot be undone." = "Se eliminar\U00E1n permanentemente todos los marcadores, historial, cookies y contrase\U00F1as de este perfil. Esta acci\U00F3n no se puede deshacer.";
 
 /* SettingsView — Categories */
 "Hardware" = "Hardware";

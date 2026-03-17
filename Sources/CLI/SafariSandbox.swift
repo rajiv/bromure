@@ -1468,11 +1468,10 @@ final class BrowserSession {
             }
             self.traceBridge = bridge
 
-            // Record/pause button
+            // Record/pause button — uses a composed image with a red dot when recording
             let recording = autoStart
             let recordBtn = NSButton(
-                image: NSImage(systemSymbolName: recording ? "record.circle.fill" : "record.circle",
-                               accessibilityDescription: "Toggle Recording")!,
+                image: Self.traceButtonImage(recording: recording),
                 target: nil,
                 action: #selector(GUIAppDelegate.toggleTraceRecordingAction(_:))
             )
@@ -1586,10 +1585,7 @@ final class BrowserSession {
             bridge.isRecording.toggle()
             // Update button appearance
             if let btn = traceRecordButton {
-                btn.image = NSImage(
-                    systemSymbolName: bridge.isRecording ? "record.circle.fill" : "record.circle",
-                    accessibilityDescription: "Toggle Recording"
-                )
+                btn.image = Self.traceButtonImage(recording: bridge.isRecording)
                 btn.contentTintColor = bridge.isRecording ? .systemRed : .secondaryLabelColor
                 btn.toolTip = bridge.isRecording ? "Recording \u{2014} click to pause" : "Paused \u{2014} click to start recording"
             }
@@ -1599,6 +1595,27 @@ final class BrowserSession {
     /// Whether trace is currently recording.
     var isTraceRecording: Bool {
         MainActor.assumeIsolated { traceBridge?.isRecording ?? false }
+    }
+
+    /// Build the trace button image: the base symbol with a red recording dot overlay when active.
+    private static func traceButtonImage(recording: Bool) -> NSImage {
+        let symbolName = recording ? "record.circle.fill" : "record.circle"
+        let base = NSImage(systemSymbolName: symbolName, accessibilityDescription: "Toggle Recording")!
+        guard recording else { return base }
+
+        // Composite the base symbol with a small red dot in the top-right corner
+        let size = NSSize(width: 18, height: 18)
+        let composed = NSImage(size: size, flipped: false) { rect in
+            base.draw(in: rect)
+            let dotSize: CGFloat = 6
+            let dotRect = NSRect(x: rect.maxX - dotSize - 1, y: rect.maxY - dotSize - 1,
+                                 width: dotSize, height: dotSize)
+            NSColor.systemRed.setFill()
+            NSBezierPath(ovalIn: dotRect).fill()
+            return true
+        }
+        composed.isTemplate = false
+        return composed
     }
 
     /// Show the trace viewer window.

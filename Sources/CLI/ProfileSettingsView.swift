@@ -58,6 +58,7 @@ struct ProfileSettingsView: View {
     @State var draft: Profile
     let usedColors: Set<ProfileColor>
     let profileDiskExists: Bool
+    let hasActiveSession: Bool
     var onDeleteProfileDisk: (() -> Void)?
     var onSave: (Profile) -> Void
     var onCancel: () -> Void
@@ -68,12 +69,14 @@ struct ProfileSettingsView: View {
     @State private var selectedCategory: SettingsCategory
 
     init(draft: Profile, usedColors: Set<ProfileColor>, profileDiskExists: Bool,
+         hasActiveSession: Bool = false,
          onDeleteProfileDisk: (() -> Void)? = nil, onSave: @escaping (Profile) -> Void,
          onCancel: @escaping () -> Void, onShowWarpEULA: ((@escaping () -> Void) -> Void)? = nil,
          initialCategory: SettingsCategory = .general) {
         self._draft = State(initialValue: draft)
         self.usedColors = usedColors
         self.profileDiskExists = profileDiskExists
+        self.hasActiveSession = hasActiveSession
         self.onDeleteProfileDisk = onDeleteProfileDisk
         self.onSave = onSave
         self.onCancel = onCancel
@@ -88,6 +91,7 @@ struct ProfileSettingsView: View {
     @State private var caImportError: String?
     @State private var showWebcamEffects = false
     @State private var showPhishingPersistenceAlert = false
+    @State private var showDeleteDataConfirm = false
     @State private var showVirusTotalKeyError = false
     @State private var vtKeyVerifying = false
     @State private var vtKeyStatus: VTKeyStatus?
@@ -268,6 +272,34 @@ struct ProfileSettingsView: View {
                     draft.settings.encryptOnDisk = false
                     draft.settings.phishingWarning = false
                 }
+            }
+
+            if draft.settings.persistent && profileDiskExists {
+                HStack {
+                    Spacer()
+                    Button(role: .destructive) {
+                        showDeleteDataConfirm = true
+                    } label: {
+                        Label("Delete Browsing Data\u{2026}", systemImage: "trash")
+                            .font(.caption)
+                    }
+                    .buttonStyle(.borderless)
+                    .disabled(hasActiveSession)
+                    .help(hasActiveSession ? "Close the session before deleting browsing data" : "Permanently delete all saved browsing data for this profile")
+                    .confirmationDialog(
+                        "Delete browsing data?",
+                        isPresented: $showDeleteDataConfirm,
+                        titleVisibility: .visible
+                    ) {
+                        Button("Delete All Data", role: .destructive) {
+                            onDeleteProfileDisk?()
+                        }
+                        Button("Cancel", role: .cancel) { }
+                    } message: {
+                        Text("This will permanently delete all bookmarks, history, cookies, and passwords for this profile. This cannot be undone.")
+                    }
+                }
+                .padding(.top, 2)
             }
 
             settingsDivider

@@ -94,6 +94,9 @@
 "Choose which speaker to use for audio output." = "Choisissez le haut-parleur \U00E0 utiliser pour la sortie audio.";
 "Default" = "Par d\U00E9faut";
 
+/* ProfileSettingsView — File Transfer */
+"Control file uploads and downloads between your Mac and this browser" = "G\U00E9rez les envois et t\U00E9l\U00E9chargements de fichiers entre votre Mac et ce navigateur";
+
 /* ProfileSettingsView — Privacy & Safety */
 "Control what this browser can access and share" = "Contr\U00F4lez les acc\U00E8s et le partage de ce navigateur";
 "Shared Clipboard" = "Presse-papiers partag\U00E9";
@@ -155,6 +158,12 @@
 "Disable encryption?" = "D\U00E9sactiver le chiffrement\U00A0?";
 "Delete data and continue" = "Supprimer les donn\U00E9es et continuer";
 "Changing the encryption setting will delete all existing browsing data for this profile. This cannot be undone." = "La modification du r\U00E9glage de chiffrement supprimera toutes les donn\U00E9es de navigation existantes de ce profil. Cette action est irr\U00E9versible.";
+"Delete Browsing Data\U2026" = "Supprimer les donn\U00E9es de navigation\U2026";
+"Close the session before deleting browsing data" = "Fermez la session avant de supprimer les donn\U00E9es de navigation";
+"Permanently delete all saved browsing data for this profile" = "Supprimer d\U00E9finitivement toutes les donn\U00E9es de navigation de ce profil";
+"Delete browsing data?" = "Supprimer les donn\U00E9es de navigation\U00A0?";
+"Delete All Data" = "Tout supprimer";
+"This will permanently delete all bookmarks, history, cookies, and passwords for this profile. This cannot be undone." = "Tous les favoris, l\U2019historique, les cookies et les mots de passe de ce profil seront d\U00E9finitivement supprim\U00E9s. Cette action est irr\U00E9versible.";
 
 /* SettingsView — Categories */
 "Hardware" = "Mat\U00E9riel";

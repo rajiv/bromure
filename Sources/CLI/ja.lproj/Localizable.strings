@@ -94,6 +94,9 @@
 "Choose which speaker to use for audio output." = "オーディオ出力に使用するスピーカーを選択します。";
 "Default" = "デフォルト";
 
+/* ProfileSettingsView — File Transfer */
+"Control file uploads and downloads between your Mac and this browser" = "Macとこのブラウザ間のファイルのアップロードとダウンロードを管理します";
+
 /* ProfileSettingsView — Privacy & Safety */
 "Control what this browser can access and share" = "このブラウザがアクセス・共有できる内容を制御します";
 "Shared Clipboard" = "クリップボードの共有";
@@ -155,6 +158,12 @@
 "Disable encryption?" = "暗号化を無効にしますか？";
 "Delete data and continue" = "データを削除して続ける";
 "Changing the encryption setting will delete all existing browsing data for this profile. This cannot be undone." = "暗号化設定を変更すると、このプロファイルの既存のブラウジングデータがすべて削除されます。この操作は取り消せません。";
+"Delete Browsing Data\U2026" = "ブラウジングデータを削除\U2026";
+"Close the session before deleting browsing data" = "ブラウジングデータを削除する前にセッションを閉じてください";
+"Permanently delete all saved browsing data for this profile" = "このプロファイルの保存済みブラウジングデータをすべて完全に削除します";
+"Delete browsing data?" = "ブラウジングデータを削除しますか？";
+"Delete All Data" = "すべてのデータを削除";
+"This will permanently delete all bookmarks, history, cookies, and passwords for this profile. This cannot be undone." = "このプロファイルのブックマーク、履歴、Cookie、パスワードがすべて完全に削除されます。この操作は取り消せません。";
 
 /* SettingsView — Categories */
 "Hardware" = "ハードウェア";

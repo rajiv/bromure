@@ -94,6 +94,9 @@
 "Choose which speaker to use for audio output." = "\U9009\U62e9\U7528\U4e8e\U97f3\U9891\U8f93\U51fa\U7684\U626c\U58f0\U5668\U3002";
 "Default" = "\U9ed8\U8ba4";
 
+/* ProfileSettingsView — File Transfer */
+"Control file uploads and downloads between your Mac and this browser" = "\U7ba1\U7406 Mac \U4e0e\U6b64\U6d4f\U89c8\U5668\U4e4b\U95f4\U7684\U6587\U4ef6\U4e0a\U4f20\U548c\U4e0b\U8f7d";
+
 /* ProfileSettingsView — Privacy & Safety */
 "Control what this browser can access and share" = "\U63a7\U5236\U6b64\U6d4f\U89c8\U5668\U53ef\U4ee5\U8bbf\U95ee\U548c\U5171\U4eab\U7684\U5185\U5bb9";
 "Shared Clipboard" = "\U5171\U4eab\U526a\U8d34\U677f";
@@ -155,6 +158,12 @@
 "Disable encryption?" = "\U505c\U7528\U52a0\U5bc6\Uff1f";
 "Delete data and continue" = "\U5220\U9664\U6570\U636e\U5e76\U7ee7\U7eed";
 "Changing the encryption setting will delete all existing browsing data for this profile. This cannot be undone." = "\U66f4\U6539\U52a0\U5bc6\U8bbe\U7f6e\U5c06\U5220\U9664\U6b64\U914d\U7f6e\U6587\U4ef6\U7684\U6240\U6709\U73b0\U6709\U6d4f\U89c8\U6570\U636e\U3002\U6b64\U64cd\U4f5c\U4e0d\U53ef\U64a4\U9500\U3002";
+"Delete Browsing Data\U2026" = "\U5220\U9664\U6d4f\U89c8\U6570\U636e\U2026";
+"Close the session before deleting browsing data" = "\U8bf7\U5148\U5173\U95ed\U4f1a\U8bdd\U518d\U5220\U9664\U6d4f\U89c8\U6570\U636e";
+"Permanently delete all saved browsing data for this profile" = "\U6c38\U4e45\U5220\U9664\U6b64\U914d\U7f6e\U6587\U4ef6\U7684\U6240\U6709\U5df2\U4fdd\U5b58\U6d4f\U89c8\U6570\U636e";
+"Delete browsing data?" = "\U5220\U9664\U6d4f\U89c8\U6570\U636e\Uff1f";
+"Delete All Data" = "\U5220\U9664\U6240\U6709\U6570\U636e";
+"This will permanently delete all bookmarks, history, cookies, and passwords for this profile. This cannot be undone." = "\U8fd9\U5c06\U6c38\U4e45\U5220\U9664\U6b64\U914d\U7f6e\U6587\U4ef6\U7684\U6240\U6709\U4e66\U7b7e\U3001\U5386\U53f2\U8bb0\U5f55\U3001Cookie \U548c\U5bc6\U7801\U3002\U6b64\U64cd\U4f5c\U4e0d\U53ef\U64a4\U9500\U3002";
 
 /* SettingsView — Categories */
 "Hardware" = "\U786c\U4ef6";
