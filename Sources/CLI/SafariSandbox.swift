@@ -1981,9 +1981,9 @@ private final class SessionDelegateHelper: NSObject, VZVirtualMachineDelegate, N
     }
 
     private func handleVMStopped() {
-        guard let session, !session.closing else { return }
-        session.closing = true
-        Task { @MainActor in
+        Task { @MainActor [weak session] in
+            guard let session, !session.closing else { return }
+            session.closing = true
             session.detachView()
             session.window.delegate = nil
             await session.fullCleanup()
