@@ -526,22 +526,22 @@ struct SettingsView: View {
 
                     VStack(alignment: .leading, spacing: 4) {
                         Text("List profiles:").font(.callout.bold())
-                        Text("curl http://127.0.0.1:\(automationPort)/profiles")
+                        Text(verbatim: "curl http://127.0.0.1:\(automationPort)/profiles")
                             .font(.system(.caption, design: .monospaced))
                             .textSelection(.enabled)
 
                         Text("Create session:").font(.callout.bold()).padding(.top, 4)
-                        Text("curl -X POST http://127.0.0.1:\(automationPort)/sessions -d '{\"profile\":\"Private Browsing\"}'")
+                        Text(verbatim: "curl -X POST http://127.0.0.1:\(automationPort)/sessions -d '{\"profile\":\"Private Browsing\"}'")
                             .font(.system(.caption, design: .monospaced))
                             .textSelection(.enabled)
 
                         Text("List sessions:").font(.callout.bold()).padding(.top, 4)
-                        Text("curl http://127.0.0.1:\(automationPort)/sessions")
+                        Text(verbatim: "curl http://127.0.0.1:\(automationPort)/sessions")
                             .font(.system(.caption, design: .monospaced))
                             .textSelection(.enabled)
 
                         Text("Close session:").font(.callout.bold()).padding(.top, 4)
-                        Text("curl -X DELETE http://127.0.0.1:\(automationPort)/sessions/<id>")
+                        Text(verbatim: "curl -X DELETE http://127.0.0.1:\(automationPort)/sessions/<id>")
                             .font(.system(.caption, design: .monospaced))
                             .textSelection(.enabled)
                     }
