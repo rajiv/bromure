@@ -42,7 +42,17 @@ private actor MCPServerImpl {
     }
 
     func run() async {
-        while let line = readLine(strippingNewline: true) {
+        // Read stdin on a dedicated thread to avoid blocking the actor's executor,
+        // which would prevent async tool handlers from completing.
+        let lines = AsyncStream<String> { continuation in
+            DispatchQueue.global(qos: .userInitiated).async {
+                while let line = readLine(strippingNewline: true) {
+                    continuation.yield(line)
+                }
+                continuation.finish()
+            }
+        }
+        for await line in lines {
             guard !line.isEmpty else { continue }
             guard let data = line.data(using: .utf8),
                   let msg = try? JSONSerialization.jsonObject(with: data) as? [String: Any] else { continue }
@@ -306,49 +316,54 @@ private actor MCPServerImpl {
 
     // MARK: - HTTP API
 
+    /// Raw HTTP request on a background thread (avoids blocking the actor).
     private func apiCall(_ method: String, _ path: String, body: [String: Any]? = nil) async throws -> [String: Any] {
-        // Use a raw HTTP request to avoid URLSession's chunked transfer encoding,
-        // which our simple automation server can't parse.
-        guard let url = URL(string: "\(apiBase)\(path)"),
-              let host = url.host, let port = url.port else {
-            return ["error": "Invalid API URL"]
-        }
-
+        let base = apiBase
         let bodyData = body != nil ? try JSONSerialization.data(withJSONObject: body!) : nil
-        var request = "\(method) \(url.path) HTTP/1.1\r\n"
-        request += "Host: \(host):\(port)\r\n"
-        request += "Content-Type: application/json\r\n"
-        request += "Content-Length: \(bodyData?.count ?? 0)\r\n"
-        request += "Connection: close\r\n"
-        request += "\r\n"
+        return await withCheckedContinuation { continuation in
+            DispatchQueue.global(qos: .userInitiated).async {
+                continuation.resume(returning: Self.rawHTTP(base: base, method: method, path: path, bodyData: bodyData).json)
+            }
+        }
+    }
 
-        let fd = socket(AF_INET, SOCK_STREAM, 0)
-        guard fd >= 0 else { return ["error": "Socket creation failed"] }
+    /// Raw HTTP returning Data (for CDP /json/list which returns an array).
+    private func apiCallRaw(_ method: String, _ path: String) async -> Data? {
+        let base = apiBase
+        return await withCheckedContinuation { continuation in
+            DispatchQueue.global(qos: .userInitiated).async {
+                continuation.resume(returning: Self.rawHTTP(base: base, method: method, path: path, bodyData: nil).data)
+            }
+        }
+    }
+
+    /// Synchronous raw socket HTTP. Thread-safe, no actor.
+    nonisolated private static func rawHTTP(base: String, method: String, path: String, bodyData: Data?) -> (json: [String: Any], data: Data?) {
+        guard let url = URL(string: "\(base)\(path)"),
+              let host = url.host, let port = url.port else {
+            return (["error": "Invalid API URL"], nil)
+        }
+        var req = "\(method) \(url.path) HTTP/1.1\r\nHost: \(host):\(port)\r\nContent-Type: application/json\r\nContent-Length: \(bodyData?.count ?? 0)\r\nConnection: close\r\n\r\n"
+
+        let fd = Darwin.socket(AF_INET, SOCK_STREAM, 0)
+        guard fd >= 0 else { return (["error": "Socket failed"], nil) }
         defer { Darwin.close(fd) }
 
         var addr = sockaddr_in()
         addr.sin_family = sa_family_t(AF_INET)
         addr.sin_port = UInt16(port).bigEndian
-        addr.sin_addr.s_addr = inet_addr("127.0.0.1")
-        let connectResult = withUnsafePointer(to: &addr) {
+        addr.sin_addr.s_addr = inet_addr(host)
+        guard withUnsafePointer(to: &addr, {
             $0.withMemoryRebound(to: sockaddr.self, capacity: 1) {
                 Darwin.connect(fd, $0, socklen_t(MemoryLayout<sockaddr_in>.size))
             }
-        }
-        guard connectResult == 0 else { return ["error": "Connect failed"] }
+        }) == 0 else { return (["error": "Connect failed"], nil) }
 
-        // Send request
-        let headerBytes = Array(request.utf8)
-        _ = headerBytes.withUnsafeBufferPointer { ptr in
-            Darwin.write(fd, ptr.baseAddress!, ptr.count)
-        }
+        _ = req.withCString { Darwin.write(fd, $0, strlen($0)) }
         if let bodyData {
-            _ = bodyData.withUnsafeBytes { ptr in
-                Darwin.write(fd, ptr.baseAddress!, bodyData.count)
-            }
+            bodyData.withUnsafeBytes { _ = Darwin.write(fd, $0.baseAddress!, bodyData.count) }
         }
 
-        // Read response
         var response = Data()
         var buf = [UInt8](repeating: 0, count: 65536)
         while true {
@@ -357,16 +372,13 @@ private actor MCPServerImpl {
             response.append(contentsOf: buf[0..<n])
         }
 
-        // Parse HTTP response — find body after \r\n\r\n
-        guard let responseStr = String(data: response, encoding: .utf8),
-              let bodyRange = responseStr.range(of: "\r\n\r\n") else {
-            return ["error": "Invalid HTTP response"]
+        guard let str = String(data: response, encoding: .utf8),
+              let r = str.range(of: "\r\n\r\n") else {
+            return (["error": "Invalid HTTP response"], nil)
         }
-        let responseBody = Data(responseStr[bodyRange.upperBound...].utf8)
-        guard let json = try? JSONSerialization.jsonObject(with: responseBody) as? [String: Any] else {
-            return ["error": "Invalid JSON response"]
-        }
-        return json
+        let body = Data(str[r.upperBound...].utf8)
+        let json = (try? JSONSerialization.jsonObject(with: body) as? [String: Any]) ?? ["error": "Invalid JSON"]
+        return (json, body)
     }
 
     // MARK: - CDP Connection Management
@@ -377,11 +389,19 @@ private actor MCPServerImpl {
             return existing
         }
 
-        // Get page targets
-        let targetsURL = URL(string: "\(apiBase)/cdp/\(sessionId)/json/list")!
-        let (data, _) = try await URLSession.shared.data(from: targetsURL)
-        guard let targets = try? JSONSerialization.jsonObject(with: data) as? [[String: Any]] else {
-            throw MCPError.cdpFailed("Failed to list CDP targets")
+        // Get page targets — retry up to 30s while Chromium boots in the VM
+        var targets: [[String: Any]]?
+        for attempt in 0..<30 {
+            if attempt > 0 { try await Task.sleep(for: .seconds(1)) }
+            if let data = await apiCallRaw("GET", "/cdp/\(sessionId)/json/list"),
+               let arr = try? JSONSerialization.jsonObject(with: data) as? [[String: Any]],
+               !arr.isEmpty {
+                targets = arr
+                break
+            }
+        }
+        guard let targets else {
+            throw MCPError.cdpFailed("Failed to list CDP targets after 30s")
         }
         guard let pageTarget = targets.first(where: { $0["type"] as? String == "page" }),
               let _ = pageTarget["webSocketDebuggerUrl"] as? String else {
@@ -427,23 +447,10 @@ private actor MCPServerImpl {
         if let err = data["error"] as? String { throw MCPError.apiFailed(err) }
         let sessionId = data["id"] as? String ?? ""
 
-        // Wait for page to settle, then connect CDP
-        try await Task.sleep(for: .seconds(3))
-        let conn = try await cdp(for: sessionId)
-
-        // Wait for network idle
-        _ = try? await conn.evaluate("""
-            await new Promise(r => {
-                let t = setTimeout(r, 10000);
-                let idle = setTimeout(r, 500);
-                const obs = new PerformanceObserver(() => { clearTimeout(idle); idle = setTimeout(r, 500); });
-                obs.observe({type: 'resource', buffered: false});
-            })
-        """)
-
-        let title = try await conn.evaluate("document.title") as? String ?? ""
-        let url = try await conn.evaluate("window.location.href") as? String ?? ""
-        return text("Session \(sessionId) ready — \(url) \"\(title)\"")
+        // Return immediately — CDP connection happens lazily on first tool use.
+        // The VM needs a few seconds to boot Chromium; subsequent tools (navigate,
+        // evaluate, etc.) call cdp(for:) which retries up to 30s.
+        return text("Session \(sessionId) opened with profile \"\(profile)\". Use bromure_navigate or other tools to interact.")
     }
 
     private func toolCloseSession(_ args: [String: Any]) async throws -> [String: Any] {
