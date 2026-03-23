@@ -722,6 +722,25 @@ struct ProfileSettingsView: View {
         VStack(alignment: .leading, spacing: 20) {
             sectionHeader("Network Isolation", subtitle: "Restrict which networks and ports this browser can reach")
 
+            // Per-profile network interface
+            VStack(alignment: .leading, spacing: 6) {
+                Text("Network Interface").font(.headline)
+                Text("Override the global network setting for this profile. Use this to attach different profiles to different network adapters.")
+                    .settingDescription()
+                let interfaces = VMConfig.bridgedInterfaces()
+                Picker("", selection: $draft.settings.networkInterface) {
+                    Text("Default (use global setting)").tag("")
+                    Text("NAT").tag("nat")
+                    ForEach(interfaces) { iface in
+                        Text("Bridge \u{2014} \(iface.displayName)").tag(iface.id)
+                    }
+                }
+                .labelsHidden()
+                .frame(width: 300)
+            }
+
+            settingsDivider
+
             settingToggle(
                 "Isolate from Local Network",
                 description: "Prevents this browser from reaching devices on your home or office network, like printers, NAS drives, or internal servers. Internet access is not affected.",

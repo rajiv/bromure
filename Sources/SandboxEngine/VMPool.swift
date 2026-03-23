@@ -17,6 +17,8 @@ public final class VMPool {
         public let serialInput: Pipe
         public let serialOutput: Pipe
         /// Host-side network filter (must stay alive for the VM's lifetime).
+        /// nil when using Apple's native VZNATNetworkDeviceAttachment (default).
+        /// Created at claim time only when the profile needs filtering or a specific interface.
         public var networkFilter: NetworkFilter?
         /// Monitors serial output for completion markers (used by applyConfig).
         public let serialWaiter: SerialWaiter
@@ -24,6 +26,8 @@ public final class VMPool {
         public var macAddress: String?
         /// Whether the guest obtained an IP via DHCP during boot.
         public var networkReady: Bool = true
+        /// Network mode the VM was booted/swapped to: "nat" or an interface name for bridged.
+        public var bootedNetworkMode: String = "nat"
     }
 
     private var config: VMConfig
@@ -74,44 +78,33 @@ public final class VMPool {
         // Claim a recycled MAC address to avoid exhausting vmnet's DHCP lease pool
         let mac = MACAddressPool.shared.claim()
 
-        // Network mode: NAT (default, via vmnet shared) or Bridged (via vmnet bridged)
+        // Network mode: use Apple's native attachments by default (no vmnet proxy).
+        // NetworkFilter is only created at claim time if the profile needs filtering
+        // or a specific bridged interface.
         let defaults = UserDefaults.standard
         let networkMode = defaults.string(forKey: "vm.networkMode") ?? "nat"
 
         var networkFilter: NetworkFilter?
         var networkAttachment: VZNetworkDeviceAttachment?
+        var bootedNetworkMode = "nat"
 
-        // Read DNS override from preferences (e.g. "1.1.1.1,1.0.0.1")
-        let dnsOverride: [UInt32]
-        if let dnsString = defaults.string(forKey: "vm.dnsServers"),
-           !dnsString.trimmingCharacters(in: .whitespaces).isEmpty {
-            dnsOverride = dnsString.split(separator: ",")
-                .compactMap { HostNetworkInfo.parseIPv4(String($0).trimmingCharacters(in: .whitespaces)) }
-        } else {
-            dnsOverride = []
-        }
-
-        if let netInfo = HostNetworkInfo.detect() {
-            let bridgedIface: String? = (networkMode == "bridged")
-                ? defaults.string(forKey: "vm.bridgedInterface")
-                : nil
-
-            if let filter = NetworkFilter(
-                networkInfo: netInfo,
-                dnsOverrideServers: dnsOverride,
-                bridgedInterface: bridgedIface
-            ) {
+        if networkMode == "bridged",
+           let ifName = defaults.string(forKey: "vm.bridgedInterface"),
+           !ifName.isEmpty {
+            // Bridged mode requires vmnet (VZBridgedNetworkDeviceAttachment needs a
+            // restricted entitlement), so use NetworkFilter in pass-through mode.
+            if let netInfo = HostNetworkInfo.detect(),
+               let filter = NetworkFilter(networkInfo: netInfo, bridgedInterface: ifName) {
                 networkFilter = filter
                 networkAttachment = VZFileHandleNetworkDeviceAttachment(fileHandle: filter.vmFileHandle)
-                if bridgedIface != nil {
-                    print("[VMPool] Using bridged networking via vmnet on \(bridgedIface!)")
-                }
+                bootedNetworkMode = ifName
+                print("[VMPool] Using bridged networking via vmnet on \(ifName)")
             } else {
-                print("[VMPool] NetworkFilter unavailable (missing vmnet entitlement?), falling back to NAT")
+                print("[VMPool] Bridged mode failed, falling back to NAT")
             }
-        } else {
-            print("[VMPool] Could not detect host network info, falling back to NAT")
         }
+        // NAT mode: use VZNATNetworkDeviceAttachment (networkAttachment stays nil,
+        // buildLinuxVMConfig falls back to it). No vmnet proxy needed.
 
         let vzConfig = try imageManager.buildLinuxVMConfig(
             diskURL: ephDisk.ephemeralURL,
@@ -164,7 +157,8 @@ public final class VMPool {
             networkFilter: networkFilter,
             serialWaiter: waiter,
             macAddress: mac,
-            networkReady: networkReady
+            networkReady: networkReady,
+            bootedNetworkMode: bootedNetworkMode
         )
 
         // Inflate balloon to reclaim unused guest memory while VM is idle.
@@ -202,10 +196,14 @@ public final class VMPool {
                 try? await warmUp()
             }
         }
-        guard let warm = warmVM else { return nil }
+        guard var warm = warmVM else { return nil }
         warmVM = nil
         // Deflate balloon — give all memory back before running the browser
         deflateBalloon(vm: warm.vm)
+
+        // Hot-swap the network attachment if the profile requires a different
+        // interface or needs packet filtering (LAN isolation / port restriction).
+        warm = swapNetworkIfNeeded(warm: warm, config: config)
 
         // Point the virtio-fs share to the profile's image directory,
         // or disconnect it entirely for ephemeral sessions.
@@ -442,6 +440,77 @@ public final class VMPool {
         }
 
         print("[VMPool] applyConfig total: \(String(format: "%.1f", CFAbsoluteTimeGetCurrent() - t0))s")
+    }
+
+    // MARK: - Network hot-swap
+
+    /// Read DNS override servers from UserDefaults.
+    private static func readDNSOverride() -> [UInt32] {
+        guard let dnsString = UserDefaults.standard.string(forKey: "vm.dnsServers"),
+              !dnsString.trimmingCharacters(in: .whitespaces).isEmpty else { return [] }
+        return dnsString.split(separator: ",")
+            .compactMap { HostNetworkInfo.parseIPv4(String($0).trimmingCharacters(in: .whitespaces)) }
+    }
+
+    /// Hot-swap the VM's network attachment if the profile requires filtering
+    /// or a different bridged interface than what the VM was booted with.
+    ///
+    /// Uses `VZNetworkDevice.attachment` (read-write at runtime) to replace the
+    /// attachment without rebooting the VM.
+    private func swapNetworkIfNeeded(warm: WarmVM, config: VMConfig) -> WarmVM {
+        var warm = warm
+
+        // Determine the target network mode for this profile
+        let targetNetwork: String
+        if let profileIface = config.networkInterface {
+            targetNetwork = profileIface  // "nat" or interface name
+        } else {
+            targetNetwork = warm.bootedNetworkMode  // keep what warm VM has
+        }
+
+        let needsFilter = config.isolateFromLAN
+            || config.allowedPorts != nil
+            || !Self.readDNSOverride().isEmpty
+        let needsSwap = targetNetwork != warm.bootedNetworkMode
+
+        // If NAT with no filtering and no swap needed, keep the native attachment
+        guard needsFilter || needsSwap else { return warm }
+
+        let bridgedIface: String? = (targetNetwork != "nat") ? targetNetwork : nil
+        let dnsOverride = Self.readDNSOverride()
+
+        if let netInfo = HostNetworkInfo.detect(),
+           let filter = NetworkFilter(
+               networkInfo: netInfo,
+               dnsOverrideServers: dnsOverride,
+               bridgedInterface: bridgedIface
+           ) {
+            // Hot-swap the attachment on the running VM
+            if let device = warm.vm.networkDevices.first {
+                device.attachment = VZFileHandleNetworkDeviceAttachment(fileHandle: filter.vmFileHandle)
+                if bromureDebug { print("[VMPool] Hot-swapped network attachment") }
+            }
+            // Stop old filter (if any) and store the new one
+            warm.networkFilter?.stop()
+            warm.networkFilter = filter
+            warm.bootedNetworkMode = targetNetwork
+
+            // Trigger DHCP renewal on the new network
+            if needsSwap {
+                warm.serialInput.fileHandleForWriting.write(
+                    Data("udhcpc -i eth0 -t 5 -T 2 2>/dev/null &\n".utf8)
+                )
+                if bridgedIface != nil {
+                    print("[VMPool] Switched to bridged networking on \(bridgedIface!)")
+                } else {
+                    print("[VMPool] Switched to NAT networking via vmnet (filtering active)")
+                }
+            }
+        } else if needsSwap {
+            print("[VMPool] WARNING: could not create NetworkFilter for interface swap")
+        }
+
+        return warm
     }
 
     /// Shut down the pool and clean up.

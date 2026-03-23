@@ -201,6 +201,10 @@ public struct ProfileSettings: Codable, Equatable {
     public var restrictPorts: Bool = false
     public var allowedPorts: String = "80,443"
 
+    // Per-profile network interface override.
+    // "" = use global setting, "nat" = force NAT, interface name (e.g. "en0") = bridge on that interface.
+    public var networkInterface: String = ""
+
     // Media
     public var enableAudio: Bool = true
     public var audioVolume: Int = 100
@@ -267,6 +271,7 @@ public struct ProfileSettings: Codable, Equatable {
         isolateFromLAN = try c.decodeIfPresent(Bool.self, forKey: .isolateFromLAN) ?? defaults.isolateFromLAN
         restrictPorts = try c.decodeIfPresent(Bool.self, forKey: .restrictPorts) ?? defaults.restrictPorts
         allowedPorts = try c.decodeIfPresent(String.self, forKey: .allowedPorts) ?? defaults.allowedPorts
+        networkInterface = try c.decodeIfPresent(String.self, forKey: .networkInterface) ?? defaults.networkInterface
         enableAudio = try c.decodeIfPresent(Bool.self, forKey: .enableAudio) ?? defaults.enableAudio
         audioVolume = try c.decodeIfPresent(Int.self, forKey: .audioVolume) ?? defaults.audioVolume
         enableWebcam = try c.decodeIfPresent(Bool.self, forKey: .enableWebcam) ?? defaults.enableWebcam
@@ -344,6 +349,7 @@ public struct ProfileSettings: Codable, Equatable {
             rootCAs: rootCAs.map(\.pem),
             isolateFromLAN: isolateFromLAN,
             allowedPorts: restrictPorts ? allowedPorts : nil,
+            networkInterface: networkInterface.isEmpty ? nil : networkInterface,
             proxyHost: hasProxy ? proxyHost : nil,
             proxyPort: hasProxy ? proxyPort : nil,
             proxyUsername: hasProxy && !proxyUsername.isEmpty ? proxyUsername : nil,

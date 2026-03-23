@@ -141,6 +141,12 @@ public struct VMConfig {
     /// nil means all ports are allowed.
     public var allowedPorts: String?
 
+    /// Per-profile network interface override.
+    /// nil = use the global setting from UserDefaults.
+    /// "nat" = force NAT mode.
+    /// An interface name (e.g. "en0") = force bridged mode on that interface.
+    public var networkInterface: String?
+
     /// Custom HTTP proxy hostname (e.g. "proxy.example.com").
     public var proxyHost: String?
 
@@ -212,6 +218,7 @@ public struct VMConfig {
         rootCAs: [String] = [],
         isolateFromLAN: Bool = false,
         allowedPorts: String? = nil,
+        networkInterface: String? = nil,
         proxyHost: String? = nil,
         proxyPort: Int? = nil,
         proxyUsername: String? = nil,
@@ -260,6 +267,7 @@ public struct VMConfig {
         self.rootCAs = rootCAs
         self.isolateFromLAN = isolateFromLAN
         self.allowedPorts = allowedPorts
+        self.networkInterface = networkInterface
         self.proxyHost = proxyHost
         self.proxyPort = proxyPort
         self.proxyUsername = proxyUsername
