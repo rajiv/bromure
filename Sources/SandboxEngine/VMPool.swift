@@ -20,6 +20,10 @@ public final class VMPool {
         public var networkFilter: NetworkFilter?
         /// Monitors serial output for completion markers (used by applyConfig).
         public let serialWaiter: SerialWaiter
+        /// MAC address claimed from the pool (release on teardown).
+        public var macAddress: String?
+        /// Whether the guest obtained an IP via DHCP during boot.
+        public var networkReady: Bool = true
     }
 
     private var config: VMConfig
@@ -67,6 +71,9 @@ public final class VMPool {
         let ephDisk = EphemeralDisk(baseImageURL: imageManager.linuxDiskURL)
         try ephDisk.create()
 
+        // Claim a recycled MAC address to avoid exhausting vmnet's DHCP lease pool
+        let mac = MACAddressPool.shared.claim()
+
         // Network mode: NAT (default, via vmnet shared) or Bridged (via vmnet bridged)
         let defaults = UserDefaults.standard
         let networkMode = defaults.string(forKey: "vm.networkMode") ?? "nat"
@@ -109,7 +116,8 @@ public final class VMPool {
         let vzConfig = try imageManager.buildLinuxVMConfig(
             diskURL: ephDisk.ephemeralURL,
             config: config,
-            networkAttachment: networkAttachment
+            networkAttachment: networkAttachment,
+            macAddress: mac
         )
 
         let inputPipe = Pipe()
@@ -140,13 +148,23 @@ public final class VMPool {
         let onBoot = "/usr/local/bin/on-boot.sh"
         let waiter = await waitForBoot(outputPipe: outputPipe, inputPipe: inputPipe, onBootDetected: onBoot)
 
+        // Check if DHCP succeeded; if not, retry once before giving up
+        let netCmd = "ip -4 addr show eth0 scope global 2>/dev/null | grep -q 'inet ' && echo BROMURE_NET_OK || { udhcpc -i eth0 -t 3 -T 2 2>/dev/null; ip -4 addr show eth0 scope global 2>/dev/null | grep -q 'inet ' && echo BROMURE_NET_OK || echo BROMURE_NET_FAIL; }"
+        inputPipe.fileHandleForWriting.write(Data((netCmd + "\n").utf8))
+        let networkReady = await waiter.probe(for: "BROMURE_NET_OK", timeout: 15)
+        if !networkReady {
+            print("[VMPool] WARNING: VM failed to obtain DHCP lease on eth0")
+        }
+
         warmVM = WarmVM(
             vm: vm,
             ephemeralDisk: ephDisk,
             serialInput: inputPipe,
             serialOutput: outputPipe,
             networkFilter: networkFilter,
-            serialWaiter: waiter
+            serialWaiter: waiter,
+            macAddress: mac,
+            networkReady: networkReady
         )
 
         // Inflate balloon to reclaim unused guest memory while VM is idle.
@@ -429,6 +447,15 @@ public final class VMPool {
     /// Shut down the pool and clean up.
     public func shutdown() async {
         if let warm = warmVM {
+            // Release DHCP lease so vmnet reclaims the address
+            if warm.vm.state == .running {
+                warm.serialInput.fileHandleForWriting.write(Data("udhcpc -R -i eth0 2>/dev/null\n".utf8))
+                try? await Task.sleep(for: .milliseconds(500))
+            }
+            // Release MAC address back to the pool
+            if let mac = warm.macAddress {
+                MACAddressPool.shared.release(mac)
+            }
             if warm.vm.state == .running || warm.vm.state == .paused {
                 await withCheckedContinuation { (cont: CheckedContinuation<Void, Never>) in
                     DispatchQueue.main.async {
@@ -460,6 +487,7 @@ public final class VMPool {
         private let lock = NSLock()
         private var buffer = ""
         private var pending: [(marker: String, continuation: CheckedContinuation<Void, Never>)] = []
+        private var probes: [(marker: String, continuation: CheckedContinuation<Bool, Never>)] = []
 
         /// Optional observer callback — called with every chunk of text fed to the waiter.
         public var observer: ((String) -> Void)?
@@ -476,12 +504,21 @@ public final class VMPool {
                 }
                 return false
             }
+            var probeResolved: [CheckedContinuation<Bool, Never>] = []
+            probes.removeAll { entry in
+                if buffer.contains(entry.marker) {
+                    probeResolved.append(entry.continuation)
+                    return true
+                }
+                return false
+            }
             // Clear old data but keep the tail for partial marker matches
             if buffer.count > 4096 {
                 buffer = String(buffer.suffix(1024))
             }
             lock.unlock()
             for cont in resolved { cont.resume() }
+            for cont in probeResolved { cont.resume(returning: true) }
         }
 
         public func waitFor(_ marker: String, timeout: TimeInterval = 10) async {
@@ -504,6 +541,32 @@ public final class VMPool {
                         self.lock.unlock()
                         print("[VMPool] Marker wait timed out: \(marker)")
                         entry.continuation.resume()
+                    } else {
+                        self.lock.unlock()
+                    }
+                }
+            }
+        }
+
+        /// Wait for a marker, returning `true` if found within the timeout, `false` if timed out.
+        public func probe(for marker: String, timeout: TimeInterval) async -> Bool {
+            await withCheckedContinuation { (cont: CheckedContinuation<Bool, Never>) in
+                self.lock.lock()
+                if self.buffer.contains(marker) {
+                    self.lock.unlock()
+                    cont.resume(returning: true)
+                    return
+                }
+                self.probes.append((marker: marker, continuation: cont))
+                self.lock.unlock()
+
+                DispatchQueue.global().asyncAfter(deadline: .now() + timeout) { [weak self] in
+                    guard let self else { return }
+                    self.lock.lock()
+                    if let idx = self.probes.firstIndex(where: { $0.marker == marker }) {
+                        let entry = self.probes.remove(at: idx)
+                        self.lock.unlock()
+                        entry.continuation.resume(returning: false)
                     } else {
                         self.lock.unlock()
                     }

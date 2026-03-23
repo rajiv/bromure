@@ -692,6 +692,7 @@ final class GUIAppDelegate: NSObject, NSApplicationDelegate, NSWindowDelegate {
                 self.showMainWindow()
                 return
             }
+            let networkReady = warm.networkReady
             let session = BrowserSession(warmVM: warm, config: config)
             session.onClosed = { [weak self] session in
                 guard let self else { return }
@@ -705,6 +706,9 @@ final class GUIAppDelegate: NSObject, NSApplicationDelegate, NSWindowDelegate {
             self.sessions.append(session)
             self.state.sessionCount = self.sessions.count
             session.show()
+            if !networkReady {
+                Self.showNetworkWarning()
+            }
             if ProcessInfo.processInfo.environment["BROMURE_DEBUG"] == nil {
                 self.state.pool?.scheduleWarmUp()
             }
@@ -798,6 +802,7 @@ final class GUIAppDelegate: NSObject, NSApplicationDelegate, NSWindowDelegate {
                 self.showMainWindow()
                 return
             }
+            let networkReady = warm.networkReady
             let session = BrowserSession(
                 warmVM: warm, config: config,
                 profile: profile,
@@ -818,10 +823,33 @@ final class GUIAppDelegate: NSObject, NSApplicationDelegate, NSWindowDelegate {
             self.state.sessionCount = self.sessions.count
             session.show()
             self.state.isLaunching = false
+            if !networkReady {
+                Self.showNetworkWarning()
+            }
             if ProcessInfo.processInfo.environment["BROMURE_DEBUG"] == nil {
                 self.state.pool?.scheduleWarmUp()
             }
         }
+    }
+
+    // MARK: - Network Warning
+
+    private static func showNetworkWarning() {
+        let defaults = UserDefaults.standard
+        let networkMode = defaults.string(forKey: "vm.networkMode") ?? "nat"
+        if networkMode == "bridged" { return }
+
+        let alert = NSAlert()
+        alert.messageText = NSLocalizedString("Network Issue", comment: "")
+        alert.informativeText = NSLocalizedString(
+            "The VM could not obtain an IP address via DHCP. "
+            + "Browsing will not work in this session.\n\n"
+            + "Try switching to Bridge mode in Settings → Network for more reliable connectivity.",
+            comment: ""
+        )
+        alert.alertStyle = .warning
+        alert.addButton(withTitle: NSLocalizedString("OK", comment: ""))
+        alert.runModal()
     }
 
     // MARK: - Automation
@@ -1925,6 +1953,15 @@ final class BrowserSession {
             }
             // Give it a moment to flush
             try? await Task.sleep(for: .seconds(1))
+        }
+        // 0.5. Release DHCP lease so vmnet reclaims the address promptly
+        if let input = warmVM?.serialInput.fileHandleForWriting {
+            input.write(Data("doas udhcpc -R -i eth0 2>/dev/null\n".utf8))
+            try? await Task.sleep(for: .milliseconds(500))
+        }
+        // 0.6. Release MAC address back to the pool for reuse
+        if let mac = warmVM?.macAddress {
+            MACAddressPool.shared.release(mac)
         }
         // 1. Disconnect delegates so VZ doesn't call back into us
         warmVM?.vm.delegate = nil

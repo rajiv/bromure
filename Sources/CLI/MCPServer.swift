@@ -343,7 +343,7 @@ private actor MCPServerImpl {
               let host = url.host, let port = url.port else {
             return (["error": "Invalid API URL"], nil)
         }
-        var req = "\(method) \(url.path) HTTP/1.1\r\nHost: \(host):\(port)\r\nContent-Type: application/json\r\nContent-Length: \(bodyData?.count ?? 0)\r\nConnection: close\r\n\r\n"
+        let req = "\(method) \(url.path) HTTP/1.1\r\nHost: \(host):\(port)\r\nContent-Type: application/json\r\nContent-Length: \(bodyData?.count ?? 0)\r\nConnection: close\r\n\r\n"
 
         let fd = Darwin.socket(AF_INET, SOCK_STREAM, 0)
         guard fd >= 0 else { return (["error": "Socket failed"], nil) }

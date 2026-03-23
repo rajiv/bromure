@@ -141,13 +141,17 @@ public final class LinuxImageManager {
 
     /// Build a VZVirtualMachineConfiguration for a Linux VM.
     ///
-    /// - Parameter networkAttachment: Custom network attachment (e.g. from NetworkFilter).
-    ///   If nil, uses VZNATNetworkDeviceAttachment.
+    /// - Parameters:
+    ///   - networkAttachment: Custom network attachment (e.g. from NetworkFilter).
+    ///     If nil, uses VZNATNetworkDeviceAttachment.
+    ///   - macAddress: Specific MAC address to assign (from MACAddressPool).
+    ///     If nil, VZ generates a random locally-administered MAC.
     public func buildLinuxVMConfig(
         diskURL: URL,
         config: VMConfig,
         readOnlyDisk: Bool = false,
-        networkAttachment: VZNetworkDeviceAttachment? = nil
+        networkAttachment: VZNetworkDeviceAttachment? = nil,
+        macAddress: String? = nil
     ) throws -> VZVirtualMachineConfiguration {
         let vzConfig = VZVirtualMachineConfiguration()
 
@@ -181,6 +185,9 @@ public final class LinuxImageManager {
 
         // Network — use custom attachment (e.g. filtered vmnet) or fall back to NAT
         let net = VZVirtioNetworkDeviceConfiguration()
+        if let macAddress, let mac = VZMACAddress(string: macAddress) {
+            net.macAddress = mac
+        }
         net.attachment = networkAttachment ?? VZNATNetworkDeviceAttachment()
         vzConfig.networkDevices = [net]
 

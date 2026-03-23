@@ -193,7 +193,7 @@ final class SRPClient {
         ghashInput.append(Data(repeating: 0, count: 8))
         var lenBits = UInt64(16 * 8).bigEndian
         ghashInput.append(Data(bytes: &lenBits, count: 8))
-        var j0 = Array(Self.ghash(H: H, data: ghashInput))
+        let j0 = Array(Self.ghash(H: H, data: ghashInput))
 
         // Encrypt: CTR mode starting from inc32(J0)
         var ciphertext = Data()
@@ -248,7 +248,7 @@ final class SRPClient {
             ghashInput.append(contentsOf: [UInt8](repeating: 0, count: 8))
             var lenBits = UInt64(ivData.count * 8).bigEndian
             ghashInput.append(Data(bytes: &lenBits, count: 8))
-            let j0 = Self.ghash(H: H, data: ghashInput)
+            _ = Self.ghash(H: H, data: ghashInput)
             // Use first 12 bytes of J0 as nonce (the 13th-16th bytes form the counter)
             // Actually, J0 IS the full 16-byte initial counter. For CryptoKit we need a
             // 12-byte nonce where the counter starts at the value in bytes 12-15 of J0.
@@ -272,7 +272,7 @@ final class SRPClient {
         // Actually, just use the low-level: encrypt block = AES_ECB(key, block)
         var result = [UInt8](repeating: 0, count: block.count + 16)  // kCCBlockSizeAES128 padding
         var outLen = 0
-        block.withUnsafeBytes { blockPtr in
+        _ = block.withUnsafeBytes { blockPtr in
             key.withUnsafeBytes { keyPtr in
                 CCCrypt(CCOperation(kCCEncrypt), CCAlgorithm(kCCAlgorithmAES),
                         CCOptions(kCCOptionECBMode), keyPtr.baseAddress, key.count,
