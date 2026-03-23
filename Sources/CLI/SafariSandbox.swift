@@ -642,6 +642,7 @@ final class GUIAppDelegate: NSObject, NSApplicationDelegate, NSWindowDelegate {
             defer: false
         )
         win.title = NSLocalizedString("VM Services", comment: "")
+        win.isReleasedWhenClosed = false
         win.contentView = host
         win.center()
         win.makeKeyAndOrderFront(nil)
