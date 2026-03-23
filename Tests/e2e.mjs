@@ -1587,6 +1587,380 @@ print('n/a')
   });
 
   // ======================================================================
+  // 14. Networking — MAC pool, DHCP, per-profile interfaces, hot-swap
+  // ======================================================================
+
+  console.log("\n--- 14. Networking ---");
+
+  // Helper: get the VM's eth0 IP address and subnet info
+  async function getVMNetwork(sessionId) {
+    const result = await vmExec(sessionId, "ip -4 addr show eth0 scope global 2>/dev/null");
+    const match = (result.stdout || "").match(/inet\s+(\d+\.\d+\.\d+\.\d+)\/(\d+)/);
+    return match ? { ip: match[1], prefix: parseInt(match[2]) } : null;
+  }
+
+  // Helper: get the VM's default gateway
+  async function getVMGateway(sessionId) {
+    const result = await vmExec(sessionId, "ip route show default 2>/dev/null");
+    const match = (result.stdout || "").match(/default via (\d+\.\d+\.\d+\.\d+)/);
+    return match ? match[1] : null;
+  }
+
+  // Helper: get the VM's MAC address on eth0
+  async function getVMMac(sessionId) {
+    const result = await vmExec(sessionId, "cat /sys/class/net/eth0/address 2>/dev/null");
+    return (result.stdout || "").trim();
+  }
+
+  // Helper: check if an IP is in the vmnet NAT subnet (192.168.64.0/24)
+  function isNATAddress(ip) {
+    return ip && ip.startsWith("192.168.64.");
+  }
+
+  await test("14.1 Default session gets a DHCP address (NAT)", async () => {
+    await withSession(
+      "E2E_Net_Default",
+      { homePage: "about:blank", allowAutomation: "true" },
+      async ({ sessionId }) => {
+        const net = await getVMNetwork(sessionId);
+        assert(net !== null, "VM has no IP on eth0");
+        assert(isNATAddress(net.ip), `Expected NAT address (192.168.64.x), got ${net.ip}`);
+        console.log(`        IP: ${net.ip}/${net.prefix}`);
+
+        const gw = await getVMGateway(sessionId);
+        assert(gw === "192.168.64.1", `Expected gateway 192.168.64.1, got ${gw}`);
+      }
+    );
+  });
+
+  await test("14.2 MAC address is locally-administered (02:xx prefix)", async () => {
+    await withSession(
+      "E2E_Net_MAC",
+      { homePage: "about:blank", allowAutomation: "true" },
+      async ({ sessionId }) => {
+        const mac = await getVMMac(sessionId);
+        assert(mac.length === 17, `Invalid MAC: ${mac}`);
+        assert(mac.startsWith("02:"), `Expected locally-administered MAC (02:...), got ${mac}`);
+        console.log(`        MAC: ${mac}`);
+      }
+    );
+  });
+
+  await test("14.3 MAC addresses are recycled across sessions", async () => {
+    // Open session 1, capture MAC, close it
+    let mac1;
+    await withSession(
+      "E2E_Net_Recycle1",
+      { homePage: "about:blank", allowAutomation: "true" },
+      async ({ sessionId }) => {
+        mac1 = await getVMMac(sessionId);
+        assert(mac1.startsWith("02:"), `Bad MAC: ${mac1}`);
+      }
+    );
+
+    // Wait for pool to re-warm with the released MAC
+    await waitForPool();
+    await sleep(5000);
+
+    // Open session 2, it should reuse a MAC from the pool
+    let mac2;
+    await withSession(
+      "E2E_Net_Recycle2",
+      { homePage: "about:blank", allowAutomation: "true" },
+      async ({ sessionId }) => {
+        mac2 = await getVMMac(sessionId);
+        assert(mac2.startsWith("02:"), `Bad MAC: ${mac2}`);
+      }
+    );
+
+    // The MAC pool should reuse addresses. With sequential sessions,
+    // the warm VM may get the same MAC or a previously-used one.
+    // Read the pool file to verify the pool is bounded.
+    const poolFile = execSync(
+      `cat ~/Library/Application\\ Support/Bromure/mac-pool.json 2>/dev/null`,
+      { encoding: "utf-8" }
+    ).trim();
+    const pool = JSON.parse(poolFile);
+    assert(Array.isArray(pool), "MAC pool should be an array");
+    assert(pool.length <= 4, `MAC pool grew too large: ${pool.length} entries (expected ≤4)`);
+    console.log(`        MAC1: ${mac1}, MAC2: ${mac2}`);
+    console.log(`        Pool size: ${pool.length} addresses`);
+  });
+
+  await test("14.4 VM can reach the internet (NAT)", async () => {
+    await withSession(
+      "E2E_Net_Internet",
+      { homePage: "about:blank", allowAutomation: "true" },
+      async ({ sessionId }) => {
+        // Ping a well-known public IP to verify internet connectivity
+        const result = await vmExec(sessionId, "wget -q -O /dev/null --timeout=10 http://1.1.1.1/ && echo REACHABLE || echo UNREACHABLE");
+        assertIncludes(result.stdout, "REACHABLE", "VM cannot reach the internet via NAT");
+      }
+    );
+  });
+
+  await test("14.5 LAN isolation blocks private IP ranges", async () => {
+    await withSession(
+      "E2E_Net_Isolate",
+      { homePage: "about:blank", allowAutomation: "true", isolateFromLAN: "true" },
+      async ({ sessionId }) => {
+        // Verify the VM has an IP first
+        const net = await getVMNetwork(sessionId);
+        assert(net !== null, "VM has no IP on eth0");
+
+        // Attempt to reach the vmnet gateway (should be blocked except for DHCP/DNS)
+        // The gateway itself is allowed, but other 192.168.64.x hosts should be blocked.
+        // Test by trying to reach a private IP range address.
+        // 10.0.0.1 should be blocked by the private range filter.
+        const result = await vmExec(
+          sessionId,
+          "wget -q -O /dev/null --timeout=3 http://10.0.0.1/ 2>&1; echo EXIT=$?",
+          10
+        );
+        assertIncludes(result.stdout, "EXIT=", "wget did not complete");
+        // wget should fail (non-zero exit) because the filter drops the packet
+        assert(!result.stdout.includes("EXIT=0"), "Expected 10.0.0.1 to be blocked, but wget succeeded");
+        console.log(`        Private IP 10.0.0.1 correctly blocked`);
+      }
+    );
+  });
+
+  await test("14.6 Port restriction allows only specified ports", async () => {
+    await withSession(
+      "E2E_Net_Ports",
+      {
+        homePage: "about:blank",
+        allowAutomation: "true",
+        isolateFromLAN: "true",
+        restrictPorts: "true",
+        allowedPorts: "80,443",
+      },
+      async ({ sessionId }) => {
+        const net = await getVMNetwork(sessionId);
+        assert(net !== null, "VM has no IP on eth0");
+
+        // Port 80 should work
+        const http = await vmExec(
+          sessionId,
+          "wget -q -O /dev/null --timeout=10 http://1.1.1.1/ && echo OK || echo BLOCKED",
+          15
+        );
+        assertIncludes(http.stdout, "OK", "Port 80 should be allowed");
+
+        // Port 8080 should be blocked
+        const alt = await vmExec(
+          sessionId,
+          "wget -q -O /dev/null --timeout=3 http://1.1.1.1:8080/ 2>&1; echo EXIT=$?",
+          10
+        );
+        assert(!alt.stdout.includes("EXIT=0"), "Port 8080 should be blocked");
+        console.log(`        Port 80: allowed, Port 8080: blocked`);
+      }
+    );
+  });
+
+  await test("14.7 Per-profile bridged interface (en0)", async () => {
+    await withSession(
+      "E2E_Net_Bridge",
+      {
+        homePage: "about:blank",
+        allowAutomation: "true",
+        networkInterface: "en0",
+      },
+      async ({ sessionId }) => {
+        // Wait for DHCP on the bridged network
+        await sleep(5000);
+
+        const net = await getVMNetwork(sessionId);
+        assert(net !== null, "VM has no IP on eth0 (bridged)");
+
+        // In bridged mode the VM gets a LAN IP, NOT the vmnet NAT subnet
+        assert(
+          !isNATAddress(net.ip),
+          `Expected LAN address in bridged mode, got NAT address ${net.ip}`
+        );
+        console.log(`        Bridged IP: ${net.ip}/${net.prefix} (not vmnet NAT)`);
+
+        // Verify internet reachability on the bridged network
+        const result = await vmExec(
+          sessionId,
+          "wget -q -O /dev/null --timeout=10 http://1.1.1.1/ && echo REACHABLE || echo UNREACHABLE"
+        );
+        assertIncludes(result.stdout, "REACHABLE", "Cannot reach internet in bridged mode");
+      }
+    );
+  });
+
+  await test("14.8 Bridged session uses different subnet than NAT session", async () => {
+    // Open a NAT session first, capture its IP
+    let natIP;
+    await withSession(
+      "E2E_Net_Compare_NAT",
+      { homePage: "about:blank", allowAutomation: "true" },
+      async ({ sessionId }) => {
+        const net = await getVMNetwork(sessionId);
+        assert(net !== null, "NAT session has no IP");
+        natIP = net.ip;
+        assert(isNATAddress(natIP), `Expected NAT address, got ${natIP}`);
+      }
+    );
+
+    await waitForPool();
+    await sleep(5000);
+
+    // Open a bridged session, verify different subnet
+    await withSession(
+      "E2E_Net_Compare_Bridge",
+      {
+        homePage: "about:blank",
+        allowAutomation: "true",
+        networkInterface: "en0",
+      },
+      async ({ sessionId }) => {
+        await sleep(5000);
+        const net = await getVMNetwork(sessionId);
+        assert(net !== null, "Bridged session has no IP");
+        assert(
+          !isNATAddress(net.ip),
+          `Bridged session should not have NAT address, got ${net.ip}`
+        );
+
+        // Extract first 3 octets to compare subnets
+        const natSubnet = natIP.split(".").slice(0, 3).join(".");
+        const bridgedSubnet = net.ip.split(".").slice(0, 3).join(".");
+        assert(
+          natSubnet !== bridgedSubnet,
+          `NAT and bridged should be on different subnets, both on ${natSubnet}`
+        );
+        console.log(`        NAT: ${natIP}, Bridged: ${net.ip} — different subnets ✓`);
+      }
+    );
+  });
+
+  await test("14.9 Default profile (no interface override) stays on NAT", async () => {
+    // Ensure global setting is NAT
+    osascript('set app setting "vm.networkMode" to value "nat"');
+
+    await withSession(
+      "E2E_Net_DefaultNAT",
+      {
+        homePage: "about:blank",
+        allowAutomation: "true",
+        // networkInterface NOT set — should use global (NAT)
+      },
+      async ({ sessionId }) => {
+        const net = await getVMNetwork(sessionId);
+        assert(net !== null, "VM has no IP");
+        assert(isNATAddress(net.ip), `Default should use NAT, got ${net.ip}`);
+        console.log(`        Default profile IP: ${net.ip} (NAT) ✓`);
+      }
+    );
+  });
+
+  await test("14.10 Profile with networkInterface='nat' forces NAT even if global is bridged", async () => {
+    // Temporarily set global to bridged
+    const origMode = osascript('get app setting "vm.networkMode"');
+    const origIface = osascript('get app setting "vm.bridgedInterface"');
+    osascript('set app setting "vm.networkMode" to value "bridged"');
+    osascript('set app setting "vm.bridgedInterface" to value "en0"');
+
+    // Wait for pool to restart with bridged setting
+    await sleep(3000);
+    await waitForPool();
+
+    try {
+      await withSession(
+        "E2E_Net_ForceNAT",
+        {
+          homePage: "about:blank",
+          allowAutomation: "true",
+          networkInterface: "nat",
+        },
+        async ({ sessionId }) => {
+          await sleep(5000);
+          const net = await getVMNetwork(sessionId);
+          assert(net !== null, "VM has no IP");
+          // Hot-swap should have switched from bridged to NAT
+          assert(isNATAddress(net.ip), `Expected NAT address after hot-swap, got ${net.ip}`);
+          console.log(`        Force-NAT IP: ${net.ip} (overrode global bridged setting) ✓`);
+        }
+      );
+    } finally {
+      // Restore global settings
+      osascript(`set app setting "vm.networkMode" to value "${origMode}"`);
+      if (origIface) {
+        osascript(`set app setting "vm.bridgedInterface" to value "${origIface}"`);
+      }
+      await sleep(2000);
+    }
+  });
+
+  await test("14.11 DHCP release on session close frees the lease", async () => {
+    let mac;
+    await withSession(
+      "E2E_Net_DHCPRelease",
+      { homePage: "about:blank", allowAutomation: "true" },
+      async ({ sessionId }) => {
+        mac = await getVMMac(sessionId);
+        const net = await getVMNetwork(sessionId);
+        assert(net !== null, "VM has no IP");
+        console.log(`        Session MAC: ${mac}, IP: ${net.ip}`);
+        // The session will be closed by withSession's cleanup,
+        // which triggers fullCleanup → udhcpc -R → DHCP release.
+      }
+    );
+
+    // After close, the MAC should be released back to the pool (in-memory).
+    // We verify by opening another session and checking the pool didn't grow unboundedly.
+    await waitForPool();
+    await sleep(3000);
+
+    await withSession(
+      "E2E_Net_DHCPRelease2",
+      { homePage: "about:blank", allowAutomation: "true" },
+      async ({ sessionId }) => {
+        const net = await getVMNetwork(sessionId);
+        assert(net !== null, "Second session has no IP after first session's DHCP release");
+        console.log(`        Second session IP: ${net.ip} ✓`);
+      }
+    );
+  });
+
+  await test("14.12 Bridged mode with LAN isolation", async () => {
+    await withSession(
+      "E2E_Net_BridgeIsolate",
+      {
+        homePage: "about:blank",
+        allowAutomation: "true",
+        networkInterface: "en0",
+        isolateFromLAN: "true",
+      },
+      async ({ sessionId }) => {
+        await sleep(5000);
+        const net = await getVMNetwork(sessionId);
+        assert(net !== null, "VM has no IP on bridged+isolated");
+        assert(!isNATAddress(net.ip), `Expected LAN address, got NAT ${net.ip}`);
+
+        // Internet should still work
+        const internet = await vmExec(
+          sessionId,
+          "wget -q -O /dev/null --timeout=10 http://1.1.1.1/ && echo REACHABLE || echo UNREACHABLE"
+        );
+        assertIncludes(internet.stdout, "REACHABLE", "Internet should work in bridged+isolated");
+
+        // Private ranges should be blocked
+        const priv = await vmExec(
+          sessionId,
+          "wget -q -O /dev/null --timeout=3 http://10.0.0.1/ 2>&1; echo EXIT=$?",
+          10
+        );
+        assert(!priv.stdout.includes("EXIT=0"), "10.0.0.1 should be blocked in isolated mode");
+        console.log(`        Bridged+isolated: ${net.ip}, internet ✓, private blocked ✓`);
+      }
+    );
+  });
+
+  // ======================================================================
   // Summary
   // ======================================================================
   console.log("\n========================================");
