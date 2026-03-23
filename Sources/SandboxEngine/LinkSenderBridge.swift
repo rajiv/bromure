@@ -18,6 +18,9 @@ public final class LinkSenderBridge: NSObject, @unchecked Sendable {
     private var connection: VZVirtioSocketConnection?
     private var readSource: DispatchSourceRead?
 
+    /// Whether the guest link sender agent is connected.
+    public var isConnected: Bool { connection != nil }
+
     /// Called when the guest requests opening a URL in another profile.
     public var onOpenInProfile: ((URL) -> Void)?
 

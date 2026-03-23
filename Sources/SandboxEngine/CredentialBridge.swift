@@ -48,6 +48,9 @@ public final class CredentialBridge: NSObject, @unchecked Sendable {
     private var activeProvider: PasskeyProvider?
     private var requestInFlight = false
 
+    /// Whether the guest credential agent is connected.
+    public var isConnected: Bool { connection != nil }
+
     /// Called when the user declines a credential request and chooses to kill the VM.
     /// The host (BrowserSession) should close the window and tear down.
     public var onKillSession: (() -> Void)?

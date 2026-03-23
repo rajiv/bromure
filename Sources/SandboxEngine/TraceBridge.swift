@@ -101,6 +101,9 @@ public final class TraceBridge: NSObject, @unchecked Sendable {
     private var connection: VZVirtioSocketConnection?
     private var readSource: DispatchSourceRead?
 
+    /// Whether the guest trace agent is connected.
+    public var isConnected: Bool { connection != nil }
+
     /// SQLite-backed event storage.
     public private(set) var store: TraceStore
 

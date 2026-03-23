@@ -36,6 +36,9 @@ public final class WarpBridge: NSObject, @unchecked Sendable {
     private var pendingData = Data()
     private var connectionGeneration: UInt64 = 0
 
+    /// Whether the guest WARP agent is connected over vsock.
+    public var isAgentConnected: Bool { connection != nil }
+
     /// Current WARP state — observe this from the UI layer.
     public private(set) var state: WarpState = .unknown {
         didSet {

@@ -22,6 +22,9 @@ public final class WebcamBridge: NSObject, @unchecked Sendable {
     private static let defaultWidth = 640
     private static let defaultHeight = 480
 
+    /// Whether the guest webcam agent is connected.
+    public var isConnected: Bool { connection != nil }
+
     private weak var socketDevice: VZVirtioSocketDevice?
     private var listenerDelegate: WebcamListenerDelegate?
     private var connection: VZVirtioSocketConnection?

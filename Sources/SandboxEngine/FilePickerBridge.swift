@@ -28,6 +28,9 @@ public final class FilePickerBridge: NSObject, @unchecked Sendable {
     private var connectionGeneration: UInt64 = 0
     private var pendingData = Data()
 
+    /// Whether the guest file picker agent is connected.
+    public var isConnected: Bool { connection != nil }
+
     /// Whether an NSOpenPanel is currently being shown.
     private var panelOpen = false
 

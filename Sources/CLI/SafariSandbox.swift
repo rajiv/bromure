@@ -108,6 +108,7 @@ final class GUIAppDelegate: NSObject, NSApplicationDelegate, NSWindowDelegate {
     private var retiredSessions: [BrowserSession] = []
     private var mainWindow: NSWindow?
     private var settingsWindow: NSWindow?
+    private var diagnosticWindow: NSWindow?
     private var eulaWindow: NSWindow?
     private var isTerminating = false
     private var pendingURL: URL?
@@ -516,6 +517,10 @@ final class GUIAppDelegate: NSObject, NSApplicationDelegate, NSWindowDelegate {
         viewMenu.addItem(withTitle: NSLocalizedString("Toggle File Drawer", comment: ""),
                          action: #selector(toggleFileDrawerAction(_:)),
                          keyEquivalent: "d")
+        viewMenu.addItem(NSMenuItem.separator())
+        viewMenu.addItem(withTitle: NSLocalizedString("VM Services", comment: ""),
+                         action: #selector(showVsockDiagnosticAction(_:)),
+                         keyEquivalent: "")
         let viewItem = NSMenuItem()
         viewItem.submenu = viewMenu
         mainMenu.addItem(viewItem)
@@ -619,6 +624,28 @@ final class GUIAppDelegate: NSObject, NSApplicationDelegate, NSWindowDelegate {
               let session = sessions.first(where: { $0.window === keyWindow }),
               session.hasWebcam else { return }
         session.showEffectsPanel()
+    }
+
+    @MainActor @objc func showVsockDiagnosticAction(_ sender: Any?) {
+        if let existing = diagnosticWindow, existing.isVisible {
+            existing.makeKeyAndOrderFront(nil)
+            return
+        }
+        let view = VsockDiagnosticView { [weak self] in
+            self?.sessions.map { $0.vsockDiagnostic() } ?? []
+        }
+        let host = NSHostingView(rootView: view)
+        let win = NSWindow(
+            contentRect: NSRect(x: 0, y: 0, width: 420, height: 400),
+            styleMask: [.titled, .closable, .resizable],
+            backing: .buffered,
+            defer: false
+        )
+        win.title = NSLocalizedString("VM Services", comment: "")
+        win.contentView = host
+        win.center()
+        win.makeKeyAndOrderFront(nil)
+        diagnosticWindow = win
     }
 
     @MainActor @objc func recreateBaseImageAction(_ sender: Any?) {
@@ -2002,6 +2029,88 @@ final class BrowserSession {
         detachView()
         delegateHelper = nil
         await fullCleanup()
+    }
+
+    // MARK: - Vsock Diagnostics
+
+    /// Returns the current vsock service status for this session.
+    @MainActor func vsockDiagnostic() -> SessionDiagnostic {
+        let name = profile?.name ?? "Ephemeral"
+        var services: [VsockServiceStatus] = []
+
+        // Config agent (port 5000) — transient during claim, not tracked here.
+
+        services.append(VsockServiceStatus(
+            id: "\(id)-filetransfer",
+            name: "File Transfer",
+            port: 5100,
+            state: fileTransferBridge.map { $0.isConnected ? .connected : .listening } ?? .disabled
+        ))
+
+        services.append(VsockServiceStatus(
+            id: "\(id)-credentials",
+            name: "Credentials",
+            port: 5201,
+            state: credentialBridge.map { $0.isConnected ? .connected : .listening } ?? .disabled
+        ))
+
+        services.append(VsockServiceStatus(
+            id: "\(id)-linksender",
+            name: "Link Sender",
+            port: 5300,
+            state: linkSenderBridge.map { $0.isConnected ? .connected : .listening } ?? .disabled
+        ))
+
+        services.append(VsockServiceStatus(
+            id: "\(id)-webcam",
+            name: "Webcam",
+            port: 5400,
+            state: webcamBridge.map { $0.isConnected ? .connected : .listening } ?? .disabled
+        ))
+
+        services.append(VsockServiceStatus(
+            id: "\(id)-keyboard",
+            name: "Keyboard Layout",
+            port: 5006,
+            state: keyboardBridge != nil ? .connected : .disabled
+        ))
+
+        services.append(VsockServiceStatus(
+            id: "\(id)-cdp",
+            name: "CDP Automation",
+            port: 5200,
+            state: cdpBridge.map { $0.isReady ? .connected : .listening } ?? .disabled
+        ))
+
+        services.append(VsockServiceStatus(
+            id: "\(id)-filepicker",
+            name: "File Picker",
+            port: 5600,
+            state: filePickerBridge.map { $0.isConnected ? .connected : .listening } ?? .disabled
+        ))
+
+        services.append(VsockServiceStatus(
+            id: "\(id)-warp",
+            name: "WARP VPN",
+            port: 5700,
+            state: warpBridge.map { $0.isAgentConnected ? .connected : .listening } ?? .disabled
+        ))
+
+        services.append(VsockServiceStatus(
+            id: "\(id)-shell",
+            name: "Shell",
+            port: 5800,
+            state: shellBridge.map { $0.isReady ? .connected : .listening } ?? .disabled
+        ))
+
+        services.append(VsockServiceStatus(
+            id: "\(id)-trace",
+            name: "HTTP Trace",
+            port: 5900,
+            state: traceBridge.map { $0.isConnected ? .connected : .listening } ?? .disabled
+        ))
+
+        return SessionDiagnostic(id: id, name: name, services: services)
     }
 }
 
