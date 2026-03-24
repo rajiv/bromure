@@ -1052,9 +1052,9 @@ print('n/a')
   // ======================================================================
   // 12. Language / Locale
   // ======================================================================
-  console.log("\n--- 11. Language ---");
+  console.log("\n--- 12. Language ---");
 
-  await test("11.1 Chrome language flag present", async () => {
+  await test("12.1 Chrome language flag present", async () => {
     await withSession("E2E_Locale", { locale: "fr_FR" },
       async ({ browser }) => {
         const flags = await getChromeFlags(browser);
@@ -1067,9 +1067,9 @@ print('n/a')
   // 13. VM Internals (requires debug shell)
   // ======================================================================
   if (hasDebugShell) {
-    console.log("\n--- 12. VM Internals ---");
+    console.log("\n--- 13. VM Internals ---");
 
-    await test("12.1 chrome-env written correctly", async () => {
+    await test("13.1 chrome-env written correctly", async () => {
       await withSession("E2E_ChromeEnv", { gpu: "false", adBlocking: "true" },
         async ({ sessionId }) => {
           const r = await vmExec(sessionId, "cat /tmp/bromure/chrome-env");
@@ -1079,7 +1079,7 @@ print('n/a')
       );
     });
 
-    await test("12.2 Chromium running as user chrome", async () => {
+    await test("13.2 Chromium running as user chrome", async () => {
       await withSession("E2E_ChromeUser", {},
         async ({ sessionId }) => {
           // Chromium may take a moment to fully start
@@ -1092,7 +1092,7 @@ print('n/a')
       );
     });
 
-    await test("12.3 Shell exec returns exit code", async () => {
+    await test("13.3 Shell exec returns exit code", async () => {
       await withSession("E2E_ExitCode", {},
         async ({ sessionId }) => {
           const ok = await vmExec(sessionId, "true");
@@ -1103,7 +1103,7 @@ print('n/a')
       );
     });
 
-    await test("12.4 Automation flag in chrome-env", async () => {
+    await test("13.4 Automation flag in chrome-env", async () => {
       await withSession("E2E_AutoFlag", {},
         async ({ sessionId }) => {
           const r = await vmExec(sessionId, "cat /tmp/bromure/chrome-env");
@@ -1117,9 +1117,9 @@ print('n/a')
   // ======================================================================
   // 14. Session Lifecycle
   // ======================================================================
-  console.log("\n--- 13. Session Lifecycle ---");
+  console.log("\n--- 14. Session Lifecycle ---");
 
-  await test("13.1 Multiple sessions simultaneously", async () => {
+  await test("14.1 Multiple sessions simultaneously", async () => {
     const id1 = osascript('create profile "E2E_Multi_A"');
     osascript('set profile setting "E2E_Multi_A" key "allowAutomation" to value "true"');
     const id2 = osascript('create profile "E2E_Multi_B"');
@@ -1145,7 +1145,7 @@ print('n/a')
     osascript('delete profile "E2E_Multi_B"');
   });
 
-  await test("13.2 Persistent profile — single session enforced", async () => {
+  await test("14.2 Persistent profile — single session enforced", async () => {
     osascript('create profile "E2E_Persist" persistent true');
     osascript('set profile setting "E2E_Persist" key "allowAutomation" to value "true"');
     await waitForPool();
@@ -1161,7 +1161,7 @@ print('n/a')
     osascript('delete profile "E2E_Persist"');
   });
 
-  await test("13.3 Persistent storage — tabs restored after restart", async () => {
+  await test("14.3 Persistent storage — tabs restored after restart", async () => {
     const profileName = "E2E_Restore";
     const sites = [
       "https://example.com",
@@ -1226,16 +1226,16 @@ print('n/a')
   // ======================================================================
   // 15. Automation API
   // ======================================================================
-  console.log("\n--- 14. Automation API ---");
+  console.log("\n--- 15. Automation API ---");
 
-  await test("14.1 GET /profiles returns profile list", async () => {
+  await test("15.1 GET /profiles returns profile list", async () => {
     const data = await api("GET", "/profiles");
     assert(Array.isArray(data.profiles), "profiles not array");
     assert(data.profiles.length > 0, "no profiles");
     assert(data.profiles[0].name, "missing name");
   });
 
-  await test("14.2 AppleScript get app state", async () => {
+  await test("15.2 AppleScript get app state", async () => {
     const state = JSON.parse(osascript("get app state"));
     assert(state.phase === "ready");
     assert(typeof state.poolReady === "boolean");
@@ -1243,7 +1243,7 @@ print('n/a')
   });
 
   if (hasDebugShell) {
-    await test("14.3 Debug GET /app/state", async () => {
+    await test("15.3 Debug GET /app/state", async () => {
       const state = await api("GET", "/app/state");
       assert(state.phase === "ready", `Phase: ${state.phase}`);
       assert(state.debugEnabled === true);
@@ -1253,16 +1253,16 @@ print('n/a')
   // ======================================================================
   // 15. Allow Automation Flag
   // ======================================================================
-  console.log("\n--- 15. Allow Automation Flag ---");
+  console.log("\n--- 16. Allow Automation Flag ---");
 
-  await test("15.1 New profiles default to allowAutomation=false", async () => {
+  await test("16.1 New profiles default to allowAutomation=false", async () => {
     const id = osascript('create profile "E2E_AutoOff"');
     const val = osascript('get profile setting "E2E_AutoOff" key "allowAutomation"');
     assert(val === "false", `Expected false, got: ${val}`);
     osascript('delete profile "E2E_AutoOff"');
   });
 
-  await test("15.2 Profile with allowAutomation=false hidden from API", async () => {
+  await test("16.2 Profile with allowAutomation=false hidden from API", async () => {
     const id = osascript('create profile "E2E_Hidden"');
     // allowAutomation defaults to false — profile should not appear in /profiles
     const data = await api("GET", "/profiles");
@@ -1271,7 +1271,7 @@ print('n/a')
     osascript('delete profile "E2E_Hidden"');
   });
 
-  await test("15.3 Profile with allowAutomation=false rejects session creation", async () => {
+  await test("16.3 Profile with allowAutomation=false rejects session creation", async () => {
     const id = osascript('create profile "E2E_Reject"');
     // Try to create a session by UUID (brute force)
     const sess = await api("POST", "/sessions", { profileId: id });
@@ -1282,7 +1282,7 @@ print('n/a')
     osascript('delete profile "E2E_Reject"');
   });
 
-  await test("15.4 Profile with allowAutomation=true visible and usable", async () => {
+  await test("16.4 Profile with allowAutomation=true visible and usable", async () => {
     const id = osascript('create profile "E2E_Allowed"');
     osascript('set profile setting "E2E_Allowed" key "allowAutomation" to value "true"');
 
@@ -1302,9 +1302,9 @@ print('n/a')
   // ======================================================================
   // 16. Session Recording (Trace)
   // ======================================================================
-  console.log("\n--- 16. Session Recording (Trace) ---");
+  console.log("\n--- 17. Session Recording (Trace) ---");
 
-  await test("16.1 Trace disabled — no trace events", async () => {
+  await test("17.1 Trace disabled — no trace events", async () => {
     await withSession("E2E_Trace_Off", {},
       async ({ sessionId, browser }) => {
         // traceLevel defaults to 0 (disabled) — no trace data should exist
@@ -1320,7 +1320,7 @@ print('n/a')
     );
   });
 
-  await test("16.2 Trace Level 1 — captures URLs and status codes", async () => {
+  await test("17.2 Trace Level 1 — captures URLs and status codes", async () => {
     await withSession("E2E_Trace_Basic", { traceLevel: "1" },
       async ({ sessionId, browser }) => {
         // Navigate to generate traffic after extension has initialized
@@ -1340,7 +1340,7 @@ print('n/a')
   });
 
   if (hasDebugShell) {
-    await test("16.3 Trace extension loaded in chrome-env", async () => {
+    await test("17.3 Trace extension loaded in chrome-env", async () => {
       await withSession("E2E_Trace_Env", { traceLevel: "2" },
         async ({ sessionId }) => {
           const r = await vmExec(sessionId, "cat /tmp/bromure/chrome-env");
@@ -1351,7 +1351,7 @@ print('n/a')
     });
   }
 
-  await test("16.4 Trace accessible via automation API", async () => {
+  await test("17.4 Trace accessible via automation API", async () => {
     await withSession("E2E_Trace_API", { traceLevel: "1" },
       async ({ sessionId, browser }) => {
         await sleep(3000);
@@ -1365,7 +1365,7 @@ print('n/a')
     );
   });
 
-  await test("16.5 Trace events include hostname", async () => {
+  await test("17.5 Trace events include hostname", async () => {
     await withSession("E2E_Trace_Host", { traceLevel: "1" },
       async ({ sessionId, browser }) => {
         await sleep(3000);
@@ -1380,7 +1380,7 @@ print('n/a')
   });
 
   if (hasDebugShell) {
-    await test("16.6 Form field capture at Level 2", async () => {
+    await test("17.6 Form field capture at Level 2", async () => {
       await withSession("E2E_Trace_Forms", { traceLevel: "2" },
         async ({ sessionId, browser }) => {
           await sleep(3000);
@@ -1409,7 +1409,7 @@ print('n/a')
     });
   }
 
-  await test("16.7 Redirect tracking", async () => {
+  await test("17.7 Redirect tracking", async () => {
     await withSession("E2E_Trace_Redir", { traceLevel: "1" },
       async ({ sessionId, browser }) => {
         await sleep(3000);
@@ -1424,7 +1424,7 @@ print('n/a')
     );
   });
 
-  await test("16.8 traceAutoStart=false — no events until manually started", async () => {
+  await test("17.8 traceAutoStart=false — no events until manually started", async () => {
     // Create profile with trace enabled but autostart OFF
     osascript('create profile "E2E_Trace_Manual"');
     osascript('set profile setting "E2E_Trace_Manual" key "allowAutomation" to value "true"');
@@ -1468,7 +1468,7 @@ print('n/a')
     }
   });
 
-  await test("16.9 Toggle trace pauses and resumes", async () => {
+  await test("17.9 Toggle trace pauses and resumes", async () => {
     await withSession("E2E_Trace_Toggle", { traceLevel: "1" },
       async ({ sessionId, browser }) => {
         await sleep(3000);
@@ -1499,11 +1499,11 @@ print('n/a')
   });
 
   // ======================================================================
-  // 12. Heavy Page Regression (M4 SME crash)
+  // 17. Heavy Page Regression (M4 SME crash)
   // ======================================================================
-  console.log("\n--- 12. Heavy Page Regression ---");
+  console.log("\n--- 18. Heavy Page Regression ---");
 
-  await test("12.1 CNN.com loads without renderer crash", async () => {
+  await test("18.1 CNN.com loads without renderer crash", async () => {
     await withSession(
       "E2E_CNN",
       { homePage: "about:blank", allowAutomation: "true" },
@@ -1534,11 +1534,11 @@ print('n/a')
   });
 
   // ======================================================================
-  // 13. Keyboard Layout Matching
+  // 18. Keyboard Layout Matching
   // ======================================================================
-  console.log("\n--- 13. Keyboard Layout Matching ---");
+  console.log("\n--- 19. Keyboard Layout Matching ---");
 
-  await test("13.1 Keyboard layout syncs to VM (US → FR → US)", async () => {
+  await test("19.1 Keyboard layout syncs to VM (US → FR → US)", async () => {
     await withSession(
       "E2E_Keyboard",
       { homePage: "about:blank", allowAutomation: "true" },
@@ -1572,7 +1572,7 @@ print('n/a')
     );
   });
 
-  await test("13.2 Keyboard agent vsock listener active", async () => {
+  await test("19.2 Keyboard agent vsock listener active", async () => {
     await withSession(
       "E2E_KBAgent",
       { homePage: "about:blank", allowAutomation: "true" },
@@ -1587,10 +1587,10 @@ print('n/a')
   });
 
   // ======================================================================
-  // 14. Networking — MAC pool, DHCP, per-profile interfaces, hot-swap
+  // 20. Networking — MAC pool, DHCP, per-profile interfaces, hot-swap
   // ======================================================================
 
-  console.log("\n--- 14. Networking ---");
+  console.log("\n--- 20. Networking ---");
 
   // Helper: get the VM's eth0 IP address and subnet info
   async function getVMNetwork(sessionId) {
@@ -1617,7 +1617,7 @@ print('n/a')
     return ip && ip.startsWith("192.168.64.");
   }
 
-  await test("14.1 Default session gets a DHCP address (NAT)", async () => {
+  await test("20.1 Default session gets a DHCP address (NAT)", async () => {
     await withSession(
       "E2E_Net_Default",
       { homePage: "about:blank", allowAutomation: "true" },
@@ -1633,7 +1633,7 @@ print('n/a')
     );
   });
 
-  await test("14.2 MAC address is locally-administered (02:xx prefix)", async () => {
+  await test("20.2 MAC address is locally-administered (02:xx prefix)", async () => {
     await withSession(
       "E2E_Net_MAC",
       { homePage: "about:blank", allowAutomation: "true" },
@@ -1646,7 +1646,7 @@ print('n/a')
     );
   });
 
-  await test("14.3 MAC addresses are recycled across sessions", async () => {
+  await test("20.3 MAC addresses are recycled across sessions", async () => {
     // Open session 1, capture MAC, close it
     let mac1;
     await withSession(
@@ -1687,7 +1687,7 @@ print('n/a')
     console.log(`        Pool size: ${pool.length} addresses`);
   });
 
-  await test("14.4 VM can reach the internet (NAT)", async () => {
+  await test("20.4 VM can reach the internet (NAT)", async () => {
     await withSession(
       "E2E_Net_Internet",
       { homePage: "about:blank", allowAutomation: "true" },
@@ -1699,7 +1699,7 @@ print('n/a')
     );
   });
 
-  await test("14.5 LAN isolation blocks private IP ranges", async () => {
+  await test("20.5 LAN isolation blocks private IP ranges", async () => {
     await withSession(
       "E2E_Net_Isolate",
       { homePage: "about:blank", allowAutomation: "true", isolateFromLAN: "true" },
@@ -1725,7 +1725,7 @@ print('n/a')
     );
   });
 
-  await test("14.6 Port restriction allows only specified ports", async () => {
+  await test("20.6 Port restriction allows only specified ports", async () => {
     await withSession(
       "E2E_Net_Ports",
       {
@@ -1759,7 +1759,7 @@ print('n/a')
     );
   });
 
-  await test("14.7 Per-profile bridged interface (en0)", async () => {
+  await test("20.7 Per-profile bridged interface (en0)", async () => {
     await withSession(
       "E2E_Net_Bridge",
       {
@@ -1791,7 +1791,7 @@ print('n/a')
     );
   });
 
-  await test("14.8 Bridged session uses different subnet than NAT session", async () => {
+  await test("20.8 Bridged session uses different subnet than NAT session", async () => {
     // Open a NAT session first, capture its IP
     let natIP;
     await withSession(
@@ -1837,7 +1837,7 @@ print('n/a')
     );
   });
 
-  await test("14.9 Default profile (no interface override) stays on NAT", async () => {
+  await test("20.9 Default profile (no interface override) stays on NAT", async () => {
     // Ensure global setting is NAT
     osascript('set app setting "vm.networkMode" to value "nat"');
 
@@ -1857,7 +1857,7 @@ print('n/a')
     );
   });
 
-  await test("14.10 Profile with networkInterface='nat' forces NAT even if global is bridged", async () => {
+  await test("20.10 Profile with networkInterface='nat' forces NAT even if global is bridged", async () => {
     // Temporarily set global to bridged
     const origMode = osascript('get app setting "vm.networkMode"');
     const origIface = osascript('get app setting "vm.bridgedInterface"');
@@ -1895,7 +1895,7 @@ print('n/a')
     }
   });
 
-  await test("14.11 DHCP release on session close frees the lease", async () => {
+  await test("20.11 DHCP release on session close frees the lease", async () => {
     let mac;
     await withSession(
       "E2E_Net_DHCPRelease",
@@ -1926,7 +1926,7 @@ print('n/a')
     );
   });
 
-  await test("14.12 Bridged mode with LAN isolation", async () => {
+  await test("20.12 Bridged mode with LAN isolation", async () => {
     await withSession(
       "E2E_Net_BridgeIsolate",
       {

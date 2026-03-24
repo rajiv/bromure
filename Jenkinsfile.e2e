@@ -172,7 +172,7 @@ pipeline {
             }
         }
 
-        stage('13. Session Lifecycle') {
+        stage('13. VM Internals') {
             steps {
                 catchError(buildResult: 'UNSTABLE', stageResult: 'FAILURE') {
                     sh 'cd Tests && node e2e.mjs --filter "^13\\."'
@@ -180,7 +180,7 @@ pipeline {
             }
         }
 
-        stage('14. Automation API') {
+        stage('14. Session Lifecycle') {
             steps {
                 catchError(buildResult: 'UNSTABLE', stageResult: 'FAILURE') {
                     sh 'cd Tests && node e2e.mjs --filter "^14\\."'
@@ -188,7 +188,7 @@ pipeline {
             }
         }
 
-        stage('15. Allow Automation Flag') {
+        stage('15. Automation API') {
             steps {
                 catchError(buildResult: 'UNSTABLE', stageResult: 'FAILURE') {
                     sh 'cd Tests && node e2e.mjs --filter "^15\\."'
@@ -196,10 +196,42 @@ pipeline {
             }
         }
 
-        stage('16. Session Recording (Trace)') {
+        stage('16. Allow Automation Flag') {
             steps {
                 catchError(buildResult: 'UNSTABLE', stageResult: 'FAILURE') {
                     sh 'cd Tests && node e2e.mjs --filter "^16\\."'
+                }
+            }
+        }
+
+        stage('17. Session Recording (Trace)') {
+            steps {
+                catchError(buildResult: 'UNSTABLE', stageResult: 'FAILURE') {
+                    sh 'cd Tests && node e2e.mjs --filter "^17\\."'
+                }
+            }
+        }
+
+        stage('18. Heavy Page Regression') {
+            steps {
+                catchError(buildResult: 'UNSTABLE', stageResult: 'FAILURE') {
+                    sh 'cd Tests && node e2e.mjs --filter "^18\\."'
+                }
+            }
+        }
+
+        stage('19. Keyboard Layout') {
+            steps {
+                catchError(buildResult: 'UNSTABLE', stageResult: 'FAILURE') {
+                    sh 'cd Tests && node e2e.mjs --filter "^19\\."'
+                }
+            }
+        }
+
+        stage('20. Networking') {
+            steps {
+                catchError(buildResult: 'UNSTABLE', stageResult: 'FAILURE') {
+                    sh 'cd Tests && node e2e.mjs --filter "^20\\."'
                 }
             }
         }
