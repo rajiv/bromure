@@ -2200,10 +2200,10 @@ private final class SessionDelegateHelper: NSObject, VZVirtualMachineDelegate, N
         Task { @MainActor [weak session] in
             guard let session, !session.closing else { return }
             session.closing = true
+            session.window.orderOut(nil)
             session.detachView()
             session.window.delegate = nil
             await session.fullCleanup()
-            session.window.orderOut(nil)
             session.onClosed?(session)
         }
     }
@@ -2233,6 +2233,8 @@ private final class SessionDelegateHelper: NSObject, VZVirtualMachineDelegate, N
     func windowWillClose(_ notification: Notification) {
         guard let session, !session.closing else { return }
         session.closing = true
+        // Hide immediately so the user doesn't see a blank window during cleanup.
+        session.window.orderOut(nil)
         session.detachView()
         session.window.delegate = nil
         Task { @MainActor in
