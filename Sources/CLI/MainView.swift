@@ -366,6 +366,8 @@ struct MainView: View {
                         settings.persistent = true
                         settings.enableClipboardSharing = true
                         settings.enableLinkSender = true
+                        settings.keychainPasskeys = true
+                        settings.keychainPasswords = true
                         let profile = state.profileManager.createProfile(
                             name: trimmed,
                             color: newProfileColor,
