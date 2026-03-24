@@ -30,7 +30,8 @@ pipeline {
                 ]) {
                     sh '''
                         cp "$PROVISION_PROFILE" bromure.provisionprofile
-                        ./build.sh
+                        ./build.sh 2>&1 | tee build.log
+                        grep "^App bundle:" build.log | sed 's/App bundle: //' > .app_bundle_path
                     '''
                 }
             }
@@ -39,7 +40,7 @@ pipeline {
         stage('Init Base Image') {
             steps {
                 sh '''
-                    APP_BUNDLE="$(swift build -c release --arch arm64 --show-bin-path 2>/dev/null)/Bromure.app"
+                    APP_BUNDLE=$(cat .app_bundle_path)
                     "$APP_BUNDLE/Contents/MacOS/bromure" init
                 '''
             }
@@ -48,7 +49,7 @@ pipeline {
         stage('Start App') {
             steps {
                 sh '''
-                    APP_BUNDLE="$(swift build -c release --arch arm64 --show-bin-path 2>/dev/null)/Bromure.app"
+                    APP_BUNDLE=$(cat .app_bundle_path)
                     open "$APP_BUNDLE"
                     for i in $(seq 1 60); do
                         curl -s http://127.0.0.1:9222/ > /dev/null 2>&1 && break
