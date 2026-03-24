@@ -643,6 +643,20 @@ struct LocaleDetectionTests {
     }
 }
 
+// MARK: - CJKInputBridge Tests
+
+@Suite("CJKInputBridge")
+struct CJKInputBridgeTests {
+    @Test("detectCJKInputSource returns a Boolean")
+    func detectReturnsBoolean() {
+        // We can't control the active input source in tests, but we can verify
+        // the detection function doesn't crash and returns a deterministic result.
+        let result1 = CJKInputBridge.detectCJKInputSource()
+        let result2 = CJKInputBridge.detectCJKInputSource()
+        #expect(result1 == result2)
+    }
+}
+
 // MARK: - BaseImageMetadata Tests
 
 @Suite("BaseImageMetadata")
@@ -1407,5 +1421,82 @@ struct E2ETests {
         #expect(result.exitCode != 0)
         let combined = result.stdout + result.stderr
         #expect(combined.contains("No base image found") || combined.contains("bromure init"))
+    }
+}
+
+// MARK: - E2E Integration Tests (node Tests/e2e.mjs)
+
+@Suite("E2E Integration", .enabled(if: ProcessInfo.processInfo.environment["BROMURE_E2E"] != nil))
+struct E2EIntegrationTests {
+    private static let projectRoot: URL = {
+        URL(fileURLWithPath: #filePath)
+            .deletingLastPathComponent()
+            .deletingLastPathComponent()
+            .deletingLastPathComponent()
+    }()
+
+    private func runNode(
+        _ script: String,
+        filter: String? = nil,
+        timeout: TimeInterval = 600
+    ) throws -> (stdout: String, stderr: String, exitCode: Int32) {
+        let process = Process()
+        process.executableURL = URL(fileURLWithPath: "/usr/bin/env")
+        var args = ["node", script]
+        if let filter {
+            args += ["--filter", filter]
+        }
+        process.arguments = args
+        process.currentDirectoryURL = Self.projectRoot
+
+        // Forward BROMURE_* env vars to the subprocess
+        var env = ProcessInfo.processInfo.environment
+        env["PATH"] = (env["PATH"] ?? "") + ":/usr/local/bin:/opt/homebrew/bin"
+        process.environment = env
+
+        let stdoutPipe = Pipe()
+        let stderrPipe = Pipe()
+        process.standardOutput = stdoutPipe
+        process.standardError = stderrPipe
+
+        try process.run()
+
+        let deadline = Date().addingTimeInterval(timeout)
+        while process.isRunning && Date() < deadline {
+            Thread.sleep(forTimeInterval: 0.5)
+        }
+        if process.isRunning { process.terminate() }
+        process.waitUntilExit()
+
+        return (
+            stdout: String(data: stdoutPipe.fileHandleForReading.readDataToEndOfFile(), encoding: .utf8) ?? "",
+            stderr: String(data: stderrPipe.fileHandleForReading.readDataToEndOfFile(), encoding: .utf8) ?? "",
+            exitCode: process.terminationStatus
+        )
+    }
+
+    @Test("e2e.mjs passes")
+    func e2eTestSuite() throws {
+        let filter = ProcessInfo.processInfo.environment["BROMURE_E2E_FILTER"]
+        let result = try runNode("Tests/e2e.mjs", filter: filter)
+        if result.exitCode != 0 {
+            print("=== e2e.mjs stdout ===")
+            print(result.stdout)
+            print("=== e2e.mjs stderr ===")
+            print(result.stderr)
+        }
+        #expect(result.exitCode == 0, "e2e.mjs failed with exit code \(result.exitCode)")
+    }
+
+    @Test("stress.mjs passes", .enabled(if: ProcessInfo.processInfo.environment["BROMURE_STRESS"] != nil))
+    func stressTestSuite() throws {
+        let result = try runNode("Tests/stress.mjs", timeout: 300)
+        if result.exitCode != 0 {
+            print("=== stress.mjs stdout ===")
+            print(result.stdout)
+            print("=== stress.mjs stderr ===")
+            print(result.stderr)
+        }
+        #expect(result.exitCode == 0, "stress.mjs failed with exit code \(result.exitCode)")
     }
 }

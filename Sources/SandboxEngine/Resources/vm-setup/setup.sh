@@ -242,6 +242,7 @@ echo '::once:/usr/local/bin/resilient-launch.sh su -s /bin/sh chrome -c /usr/loc
 echo '::once:/usr/local/bin/resilient-launch.sh /usr/local/bin/webcam-agent.py' >> /mnt/etc/inittab
 echo '::once:/usr/local/bin/resilient-launch.sh /usr/local/bin/warp-agent.py' >> /mnt/etc/inittab
 echo '::once:/usr/local/bin/resilient-launch.sh su -s /bin/sh chrome -c /usr/local/bin/keyboard-agent.py' >> /mnt/etc/inittab
+echo '::once:/usr/local/bin/resilient-launch.sh su -s /bin/sh chrome -c /usr/local/bin/cjk-input-agent.py' >> /mnt/etc/inittab
 
 install_config scripts/debug.sh        /mnt/root/debug.sh          755
 install_config scripts/root-profile.sh /mnt/root/.profile
@@ -321,6 +322,7 @@ install_config scripts/link-agent.py        /mnt/usr/local/bin/link-agent.py    
 install_config scripts/webcam-agent.py      /mnt/usr/local/bin/webcam-agent.py      755
 install_config scripts/warp-agent.py        /mnt/usr/local/bin/warp-agent.py        755
 install_config scripts/keyboard-agent.py    /mnt/usr/local/bin/keyboard-agent.py    755
+install_config scripts/cjk-input-agent.py  /mnt/usr/local/bin/cjk-input-agent.py  755
 install_config scripts/routing-socks.py     /mnt/usr/local/bin/routing-socks.py     755
 install_config scripts/config-agent.py      /mnt/usr/local/bin/config-agent.py      755
 install_config scripts/cdp-agent.py         /mnt/usr/local/bin/cdp-agent.py         755

@@ -38,6 +38,7 @@ public final class VMPool {
     private var configListenerDelegate: ConfigListenerDelegate?
     private var configListenerCleanup: (() -> Void)?
     private var rejectListenerDelegate: RejectListenerDelegate?
+    private var suspendTimer: Timer?
 
     public var hasWarmVM: Bool { warmVM != nil }
 
@@ -164,6 +165,23 @@ public final class VMPool {
         // Inflate balloon to reclaim unused guest memory while VM is idle.
         // The idle Alpine shell uses ~80-100 MB; reclaim the rest.
         inflateBalloon(vm: vm)
+
+        // Suspend the pre-warmed VM after 10s to save CPU while it waits.
+        // It will be resumed in claim() before applying config.
+        suspendTimer?.invalidate()
+        suspendTimer = Timer.scheduledTimer(withTimeInterval: 10, repeats: false) { [weak self] _ in
+            MainActor.assumeIsolated {
+                guard let self, let warm = self.warmVM, warm.vm.state == .running else { return }
+                Task { @MainActor in
+                    do {
+                        try await warm.vm.pause()
+                        print("[VMPool] Pre-warmed VM suspended to save CPU")
+                    } catch {
+                        print("[VMPool] Pre-warmed VM suspend failed: \(error)")
+                    }
+                }
+            }
+        }
     }
 
     /// Claim the pre-warmed VM with a specific config applied at claim time.
@@ -198,6 +216,20 @@ public final class VMPool {
         }
         guard var warm = warmVM else { return nil }
         warmVM = nil
+        suspendTimer?.invalidate()
+        suspendTimer = nil
+
+        // Resume if the pre-warmed VM was suspended to save CPU
+        if warm.vm.state == .paused {
+            do {
+                try await warm.vm.resume()
+                print("[VMPool] Resumed pre-warmed VM for claim")
+            } catch {
+                print("[VMPool] Failed to resume pre-warmed VM: \(error)")
+                return nil
+            }
+        }
+
         // Deflate balloon — give all memory back before running the browser
         deflateBalloon(vm: warm.vm)
 
@@ -515,7 +547,13 @@ public final class VMPool {
 
     /// Shut down the pool and clean up.
     public func shutdown() async {
+        suspendTimer?.invalidate()
+        suspendTimer = nil
         if let warm = warmVM {
+            // Resume if suspended so we can release DHCP lease cleanly
+            if warm.vm.state == .paused {
+                try? await warm.vm.resume()
+            }
             // Release DHCP lease so vmnet reclaims the address
             if warm.vm.state == .running {
                 warm.serialInput.fileHandleForWriting.write(Data("udhcpc -R -i eth0 2>/dev/null\n".utf8))

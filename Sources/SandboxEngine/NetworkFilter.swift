@@ -1,5 +1,6 @@
 import CVmnet
 import Foundation
+import os
 import Virtualization
 
 private let fwDebug = ProcessInfo.processInfo.environment["BROMURE_FW_DEBUG"] != nil
@@ -37,6 +38,11 @@ public final class NetworkFilter: @unchecked Sendable {
     /// UDP/53 is always allowed regardless.
     private var portBitmap = [UInt64](repeating: 0, count: 1024)  // 1024 × 64 = 65536 bits
     private var portFilteringActive = false
+
+    /// Monotonically increasing packet counter (both directions).
+    /// Used by VMAutoSuspend to detect network idle periods.
+    private let _packetCount = OSAllocatedUnfairLock(initialState: UInt64(0))
+    public var packetCount: UInt64 { _packetCount.withLock { $0 } }
 
     // Filter rules (all IPs in host byte order)
     private let lanSubnet: UInt32
@@ -281,6 +287,7 @@ public final class NetworkFilter: @unchecked Sendable {
             guard ret == vmnet_return_t(rawValue: kVmnetSuccess), count > 0 else { break }
 
             let size = pktSize
+            _packetCount.withLock { $0 += 1 }
 
             // Rewrite DNS servers in DHCP responses if override is configured
             if !dnsOverrideServers.isEmpty,
@@ -312,6 +319,8 @@ public final class NetworkFilter: @unchecked Sendable {
                 if fwDebug { logDropped(rawBuf) }
                 continue
             }
+
+            _packetCount.withLock { $0 += 1 }
 
             guard let iface = vmnetInterface, !stopped else { break }
             var iov = iovec(iov_base: buf, iov_len: n)

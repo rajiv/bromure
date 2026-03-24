@@ -904,6 +904,7 @@ final class GUIAppDelegate: NSObject, NSApplicationDelegate, NSWindowDelegate {
             guard let self else { return nil }
             guard let session = self.sessions.first(where: { $0.id.uuidString == sessionID }),
                   let conn = session.cdpBridge?.dequeueConnection() else { return nil }
+            session.autoSuspend?.resumeForAPIRequest()
             return CDPProxyConnection(fd: conn.fileDescriptor, conn: conn)
         }
 
@@ -911,6 +912,7 @@ final class GUIAppDelegate: NSObject, NSApplicationDelegate, NSWindowDelegate {
             guard let self else { return nil }
             guard let session = self.sessions.first(where: { $0.id.uuidString == sessionID }),
                   let conn = session.shellBridge?.dequeueConnection() else { return nil }
+            session.autoSuspend?.resumeForAPIRequest()
             return ShellProxyConnection(fd: conn.fileDescriptor, conn: conn)
         }
 
@@ -1290,6 +1292,8 @@ final class BrowserSession {
     private(set) var shellBridge: ShellBridge?
     private(set) var traceBridge: TraceBridge?
     private var keyboardBridge: KeyboardBridge?
+    private var cjkInputBridge: CJKInputBridge?
+    private(set) var autoSuspend: VMAutoSuspend?
     private var traceWindow: NSWindow?
     private var traceRecordButton: NSButton?
     private var warpButton: NSButton?
@@ -1601,6 +1605,16 @@ final class BrowserSession {
             self.keyboardBridge = MainActor.assumeIsolated { KeyboardBridge(socketDevice: dev) }
         }
 
+        // Set up CJK input bridge for native macOS IME composition.
+        if let dev = linkSocketDevice, let vmView = self.vmView {
+            let bridge = MainActor.assumeIsolated { CJKInputBridge(socketDevice: dev) }
+            MainActor.assumeIsolated { bridge.install(in: window, vmView: vmView) }
+            self.cjkInputBridge = bridge
+        }
+
+        // Auto-suspend disabled: the idle heuristic (no network traffic + unfocused)
+        // can't detect passive viewing (animations, videos) and incorrectly suspends
+        // active sessions. Pre-warmed VMs are suspended by VMPool instead.
 
         let helper = SessionDelegateHelper(session: self)
         self.delegateHelper = helper
@@ -2059,6 +2073,10 @@ final class BrowserSession {
             traceBridge = nil
             keyboardBridge?.stop()
             keyboardBridge = nil
+            cjkInputBridge?.stop()
+            cjkInputBridge = nil
+            autoSuspend?.stop()
+            autoSuspend = nil
             traceWindow?.orderOut(nil)
             traceWindow = nil
             effectsPanel?.orderOut(nil)
@@ -2111,6 +2129,13 @@ final class BrowserSession {
             name: "Keyboard Layout",
             port: 5006,
             state: keyboardBridge != nil ? .connected : .disabled
+        ))
+
+        services.append(VsockServiceStatus(
+            id: "\(id)-cjkinput",
+            name: "CJK Input",
+            port: 5007,
+            state: cjkInputBridge.map { $0.isCJKActive ? .connected : .listening } ?? .disabled
         ))
 
         services.append(VsockServiceStatus(

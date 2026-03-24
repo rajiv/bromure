@@ -167,10 +167,10 @@ def write_chrome_env(cfg):
     if cfg.get("microphone"):
         disable_features.append("AudioServiceOutOfProcess")
 
-    # Automation: enable Chrome DevTools Protocol for Puppeteer/Playwright
-    if cfg.get("automation"):
-        extra_flags.append("--remote-debugging-port=9222")
-        extra_flags.append("--remote-debugging-address=127.0.0.1")
+    # Always enable Chrome DevTools Protocol on localhost — used by the CJK
+    # input agent for inline IME composition, and by the CDP automation bridge.
+    extra_flags.append("--remote-debugging-port=9222")
+    extra_flags.append("--remote-debugging-address=127.0.0.1")
 
     # Disable WebRTC when both webcam and microphone are off
     if not cfg.get("webcam") and not cfg.get("microphone"):
