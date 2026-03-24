@@ -482,3 +482,9 @@
 /* ProfileSettingsView — General (additional) */
 "Match Keyboard Layout" = "Match Keyboard Layout";
 "Automatically switch the browser\U2019s keyboard layout when you change it on your Mac. Turn this off to always use the layout set in Bromure \U2192 Settings \U2192 Input." = "Automatically switch the browser\U2019s keyboard layout when you change it on your Mac. Turn this off to always use the layout set in Bromure \U2192 Settings \U2192 Input.";
+
+/* ProfileSettingsView — Privacy & Safety (Keychain) */
+"Use macOS Passkeys" = "Use macOS Passkeys";
+"Sign in to websites using passkeys stored on your Mac. Each request requires Touch ID or password approval." = "Sign in to websites using passkeys stored on your Mac. Each request requires Touch ID or password approval.";
+"Use macOS Passwords" = "Use macOS Passwords";
+"Autofill usernames and passwords from your Mac\U2019s saved passwords and iCloud Keychain. Disables Chromium\U2019s built-in password manager." = "Autofill usernames and passwords from your Mac\U2019s saved passwords and iCloud Keychain. Disables Chromium\U2019s built-in password manager.";

@@ -226,6 +226,9 @@
   // Track whether we've offered autofill for a given form
   const autofillOffered = new WeakSet();
 
+  // Track credentials we autofilled so we don't offer to save them back
+  const autofilledCredentials = new WeakMap();
+
   function findPasswordForms() {
     const pwFields = document.querySelectorAll('input[type="password"]');
     for (const pw of pwFields) {
@@ -237,6 +240,9 @@
   }
 
   function offerAutofill(form, passwordField) {
+    // Only offer autofill on visible password fields to prevent hidden-field attacks
+    if (!isVisible(passwordField)) return;
+
     const domain = window.location.hostname;
     const requestId = crypto.randomUUID();
 
@@ -245,52 +251,57 @@
       type: "password_get",
       origin: window.location.origin,
       domain: domain,
-    }).then((response) => {
-      if (
-        !response.success ||
-        !response.credentials ||
-        response.credentials.length === 0
-      )
-        return;
+    })
+      .then((response) => {
+        if (
+          !response.success ||
+          !response.credentials ||
+          response.credentials.length === 0
+        )
+          return;
 
-      // Find username field (input before the password field, or common selectors)
-      const usernameField = findUsernameField(form, passwordField);
+        const usernameField = findUsernameField(form, passwordField);
 
-      if (response.credentials.length === 1) {
-        // Single credential — autofill directly
-        fillCredential(
-          usernameField,
-          passwordField,
-          response.credentials[0]
-        );
-      } else {
-        // Multiple credentials — show picker
-        showCredentialPicker(
-          usernameField,
-          passwordField,
-          response.credentials
-        );
-      }
-    }).catch(() => {
-      // Silently ignore — host may not be connected yet
-    });
+        // Never auto-fill — always show a picker requiring user interaction.
+        // This prevents malicious pages with hidden password fields from
+        // silently capturing credentials.
+        showCredentialPicker(usernameField, passwordField, response.credentials);
+      })
+      .catch(() => {
+        // Silently ignore — host may not be connected yet
+      });
   }
 
   function findUsernameField(form, passwordField) {
     // Look for common username/email field patterns
     const selectors = [
+      'input[autocomplete="username"]',
+      'input[autocomplete="email"]',
       'input[type="email"]',
-      'input[type="text"][name*="user"]',
-      'input[type="text"][name*="email"]',
-      'input[type="text"][name*="login"]',
+      'input[type="text"][name*="user" i]',
+      'input[type="text"][name*="email" i]',
+      'input[type="text"][name*="login" i]',
+      'input[type="tel"][name*="user" i]',
       'input[type="text"][autocomplete*="user"]',
       'input[type="text"]',
+      'input:not([type])',
     ];
     for (const sel of selectors) {
       const field = form.querySelector(sel);
-      if (field && field !== passwordField) return field;
+      if (field && field !== passwordField && isVisible(field)) return field;
+    }
+    // Fallback: find the closest visible input before the password field
+    const allInputs = Array.from(form.querySelectorAll("input"));
+    const pwIdx = allInputs.indexOf(passwordField);
+    for (let i = pwIdx - 1; i >= 0; i--) {
+      const f = allInputs[i];
+      if (f.type !== "hidden" && f.type !== "submit" && isVisible(f)) return f;
     }
     return null;
+  }
+
+  function isVisible(el) {
+    return el.offsetParent !== null || el.getClientRects().length > 0;
   }
 
   function fillCredential(usernameField, passwordField, credential) {
@@ -298,6 +309,14 @@
       setNativeValue(usernameField, credential.username);
     }
     setNativeValue(passwordField, credential.password);
+    // Remember what we filled so we don't offer to save it back
+    const form = passwordField.closest("form") || passwordField.parentElement;
+    if (form) {
+      autofilledCredentials.set(form, {
+        username: credential.username,
+        password: credential.password,
+      });
+    }
   }
 
   function setNativeValue(element, value) {
@@ -321,29 +340,80 @@
     }
   }
 
+  // Currently visible credential picker (only one at a time)
+  let activeDropdown = null;
+
   function showCredentialPicker(usernameField, passwordField, credentials) {
-    // Show a simple dropdown below the password field
+    // Remove any existing picker
+    if (activeDropdown) {
+      activeDropdown.remove();
+      activeDropdown = null;
+    }
+
+    const isDark =
+      window.matchMedia &&
+      window.matchMedia("(prefers-color-scheme: dark)").matches;
+    const bg = isDark ? "#2a2a2c" : "#fff";
+    const border = isDark ? "#48484a" : "#c8c8c8";
+    const hoverBg = isDark ? "#3a3a3c" : "#e8e8ed";
+    const textColor = isDark ? "#f5f5f7" : "#1d1d1f";
+    const subColor = isDark ? "#98989d" : "#86868b";
+    const iconBg = isDark ? "#48484a" : "#e8e8ed";
+
     const dropdown = document.createElement("div");
     dropdown.style.cssText =
-      "position:absolute;z-index:999999;background:#fff;border:1px solid #ccc;" +
-      "border-radius:6px;box-shadow:0 4px 12px rgba(0,0,0,0.15);padding:4px 0;" +
-      "font-family:-apple-system,BlinkMacSystemFont,sans-serif;font-size:13px;" +
-      "max-height:200px;overflow-y:auto;min-width:200px;";
+      "position:absolute;z-index:999999;background:" + bg + ";" +
+      "border:1px solid " + border + ";border-radius:8px;" +
+      "box-shadow:0 4px 16px rgba(0,0,0," + (isDark ? "0.4" : "0.15") + ");" +
+      "padding:4px 0;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;" +
+      "font-size:13px;max-height:240px;overflow-y:auto;min-width:240px;" +
+      "color:" + textColor + ";";
+    activeDropdown = dropdown;
 
     for (const cred of credentials) {
       const item = document.createElement("div");
-      item.textContent = cred.username;
       item.style.cssText =
-        "padding:8px 12px;cursor:pointer;white-space:nowrap;";
+        "padding:8px 12px;cursor:pointer;display:flex;align-items:center;gap:10px;";
+
+      // Key icon
+      const icon = document.createElement("div");
+      icon.textContent = "\uD83D\uDD11";
+      icon.style.cssText =
+        "width:28px;height:28px;border-radius:6px;background:" + iconBg + ";" +
+        "display:flex;align-items:center;justify-content:center;font-size:15px;" +
+        "flex-shrink:0;";
+
+      // Text container
+      const text = document.createElement("div");
+      text.style.cssText = "overflow:hidden;min-width:0;";
+
+      const username = document.createElement("div");
+      username.textContent = cred.username;
+      username.style.cssText =
+        "font-weight:500;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;";
+
+      const maskedPw = document.createElement("div");
+      maskedPw.textContent = "\u2022\u2022\u2022\u2022\u2022\u2022\u2022\u2022";
+      maskedPw.style.cssText =
+        "font-size:11px;color:" + subColor + ";letter-spacing:1px;";
+
+      text.appendChild(username);
+      text.appendChild(maskedPw);
+      item.appendChild(icon);
+      item.appendChild(text);
+
       item.addEventListener("mouseenter", () => {
-        item.style.background = "#f0f0f0";
+        item.style.background = hoverBg;
+        item.style.borderRadius = "4px";
       });
       item.addEventListener("mouseleave", () => {
         item.style.background = "transparent";
       });
-      item.addEventListener("click", () => {
+      item.addEventListener("click", (e) => {
+        e.stopPropagation();
         fillCredential(usernameField, passwordField, cred);
         dropdown.remove();
+        activeDropdown = null;
       });
       dropdown.appendChild(item);
     }
@@ -355,16 +425,38 @@
     dropdown.style.top = rect.bottom + window.scrollY + 2 + "px";
     document.body.appendChild(dropdown);
 
-    // Remove on click outside
-    const removeDropdown = (e) => {
+    // Remove on click outside or Escape
+    const dismiss = (e) => {
       if (!dropdown.contains(e.target)) {
         dropdown.remove();
-        document.removeEventListener("click", removeDropdown, true);
+        activeDropdown = null;
+        document.removeEventListener("click", dismiss, true);
+        document.removeEventListener("keydown", dismissKey, true);
+      }
+    };
+    const dismissKey = (e) => {
+      if (e.key === "Escape") {
+        dropdown.remove();
+        activeDropdown = null;
+        document.removeEventListener("click", dismiss, true);
+        document.removeEventListener("keydown", dismissKey, true);
       }
     };
     setTimeout(() => {
-      document.addEventListener("click", removeDropdown, true);
+      document.addEventListener("click", dismiss, true);
+      document.addEventListener("keydown", dismissKey, true);
     }, 100);
+
+    // Re-show picker when the user focuses the field again
+    const refocus = () => {
+      if (!document.body.contains(dropdown) && document.body.contains(targetField)) {
+        showCredentialPicker(usernameField, passwordField, credentials);
+      }
+    };
+    targetField.addEventListener("focus", refocus, { once: true });
+    if (usernameField && usernameField !== targetField) {
+      usernameField.addEventListener("focus", refocus, { once: true });
+    }
   }
 
   // -----------------------------------------------------------------------
@@ -410,6 +502,10 @@
     const domain = window.location.hostname;
     const username = usernameField.value;
     const password = pwField.value;
+
+    // Don't offer to save credentials we just autofilled
+    const filled = autofilledCredentials.get(form);
+    if (filled && filled.username === username && filled.password === password) return;
 
     // Save via the bridge
     const requestId = crypto.randomUUID();

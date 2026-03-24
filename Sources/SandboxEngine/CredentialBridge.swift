@@ -37,6 +37,12 @@ public final class CredentialBridge: NSObject, @unchecked Sendable {
     private var readSource: DispatchSourceRead?
     private weak var window: NSWindow?
 
+    /// Whether passkey (WebAuthn) requests are enabled.
+    public var enablePasskeys: Bool = true
+
+    /// Whether password autofill/save requests are enabled.
+    public var enablePasswords: Bool = true
+
     /// Shared iCloud Passwords bridge for password autofill.
     public var icloudBridge: ICloudPasswordsBridge?
 
@@ -173,12 +179,28 @@ public final class CredentialBridge: NSObject, @unchecked Sendable {
 
         switch type {
         case "passkey_create":
+            guard enablePasskeys else {
+                sendError(requestId: requestId, type: "passkey_create_response", error: "disabled")
+                return
+            }
             handlePasskeyCreate(json, requestId: requestId)
         case "passkey_get":
+            guard enablePasskeys else {
+                sendError(requestId: requestId, type: "passkey_get_response", error: "disabled")
+                return
+            }
             handlePasskeyGet(json, requestId: requestId)
         case "password_get":
+            guard enablePasswords else {
+                sendError(requestId: requestId, type: "password_get_response", error: "disabled")
+                return
+            }
             handlePasswordGet(json, requestId: requestId)
         case "password_save":
+            guard enablePasswords else {
+                sendError(requestId: requestId, type: "password_save_response", error: "disabled")
+                return
+            }
             handlePasswordSave(json, requestId: requestId)
         default:
             if cbDebug { print("[CredentialBridge] unknown type: \(type)") }
@@ -352,10 +374,28 @@ public final class CredentialBridge: NSObject, @unchecked Sendable {
         }
     }
 
+    // MARK: - Domain validation
+
+    /// Validate that a domain from the untrusted VM is a plausible hostname.
+    /// Rejects paths, ports, wildcards, IP-like patterns, and whitespace tricks.
+    private static func isValidDomain(_ domain: String) -> Bool {
+        // Must be pure hostname: no slashes, colons, whitespace, wildcards
+        let forbidden = CharacterSet(charactersIn: "/:@?#\\* \t\n\r")
+        guard domain.rangeOfCharacter(from: forbidden) == nil else { return false }
+        // Must have at least one dot (no bare TLDs / localhost)
+        guard domain.contains(".") else { return false }
+        // No leading/trailing dots
+        guard !domain.hasPrefix(".") && !domain.hasSuffix(".") else { return false }
+        // Reasonable length
+        guard domain.count <= 253 else { return false }
+        return true
+    }
+
     // MARK: - Password Get (via iCloud Passwords bridge)
 
     private func handlePasswordGet(_ json: [String: Any], requestId: String) {
-        guard let domain = json["domain"] as? String, !domain.isEmpty else {
+        guard let domain = json["domain"] as? String, !domain.isEmpty,
+              Self.isValidDomain(domain) else {
             sendError(requestId: requestId, type: "password_get_response", error: "invalid_params")
             return
         }
@@ -458,6 +498,7 @@ public final class CredentialBridge: NSObject, @unchecked Sendable {
             return
         }
         guard let domain = json["domain"] as? String, !domain.isEmpty,
+              Self.isValidDomain(domain),
               let username = json["username"] as? String, !username.isEmpty,
               let password = json["password"] as? String, !password.isEmpty else {
             sendError(requestId: requestId, type: "password_save_response", error: "invalid_params")

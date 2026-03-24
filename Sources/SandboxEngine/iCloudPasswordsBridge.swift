@@ -679,12 +679,24 @@ public final class ICloudPasswordsBridge {
 
             let response = try await host.receive()
 
-            guard let respPayload = response["payload"] as? [String: Any],
-                  let respSMSG = respPayload["SMSG"] as? String else {
+            guard let respPayload = response["payload"] as? [String: Any] else {
+                return []
+            }
+
+            // SMSG may arrive as a JSON string or as an already-parsed dictionary
+            let respSMSG: String
+            if let s = respPayload["SMSG"] as? String {
+                respSMSG = s
+            } else if let dict = respPayload["SMSG"] as? [String: Any],
+                      let data = try? JSONSerialization.data(withJSONObject: dict),
+                      let s = String(data: data, encoding: .utf8) {
+                respSMSG = s
+            } else {
                 return []
             }
 
             let decrypted = try srp.parseSMSG(respSMSG)
+            if icpDebug { print("[iCloudPasswords] getLoginNames decrypted: \(decrypted)") }
             guard let parsed = try? JSONSerialization.jsonObject(with: Data(decrypted.utf8)) as? [String: Any] else {
                 return []
             }
@@ -746,12 +758,24 @@ public final class ICloudPasswordsBridge {
 
             let response = try await host.receive()
 
-            guard let respPayload = response["payload"] as? [String: Any],
-                  let respSMSG = respPayload["SMSG"] as? String else {
+            guard let respPayload = response["payload"] as? [String: Any] else {
+                return nil
+            }
+
+            // SMSG may arrive as a JSON string or as an already-parsed dictionary
+            let respSMSG: String
+            if let s = respPayload["SMSG"] as? String {
+                respSMSG = s
+            } else if let dict = respPayload["SMSG"] as? [String: Any],
+                      let data = try? JSONSerialization.data(withJSONObject: dict),
+                      let s = String(data: data, encoding: .utf8) {
+                respSMSG = s
+            } else {
                 return nil
             }
 
             let decrypted = try srp.parseSMSG(respSMSG)
+            if icpDebug { print("[iCloudPasswords] getPassword decrypted: \(decrypted)") }
             guard let parsed = try? JSONSerialization.jsonObject(with: Data(decrypted.utf8)) as? [String: Any],
                   let status = parsed["STATUS"] as? Int, status == 0 else {
                 return nil

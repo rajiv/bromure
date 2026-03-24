@@ -386,7 +386,8 @@ public final class VMPool {
         if config.swapCmdCtrl { cfg["swapCmdCtrl"] = true }
         if config.enableFileTransfer { cfg["fileTransfer"] = true }
         if config.enableClipboardSharing { cfg["clipboard"] = true }
-        if config.enableKeychainIntegration { cfg["keychain"] = true }
+        if config.enablePasskeys { cfg["passkeys"] = true }
+        if config.enablePasswords { cfg["passwords"] = true }
         if config.blockMalwareSites { cfg["blockMalware"] = true }
         if config.enableAdBlocking { cfg["adBlocking"] = true }
         if config.enableWarp { cfg["enableWarp"] = true }

@@ -145,8 +145,9 @@ def write_chrome_env(cfg):
         # Level 3 (full) needs debugger API without the infobar
         if trace_level >= 3 and not cfg.get("fileTransfer"):
             extra_flags.append("--silent-debugger-extension-api")
-    if cfg.get("keychain"):
+    if cfg.get("passkeys") or cfg.get("passwords"):
         extensions.append("/opt/bromure/extensions/credential-bridge")
+    if cfg.get("passkeys"):
         # Disable Chromium's built-in WebAuthn UI so passkey requests go through our extension
         disable_features.append("WebAuthenticationConditionalUI")
         extra_flags.append("--webauthn-remote-desktop-support")
@@ -268,6 +269,12 @@ def write_dynamic_policy(cfg):
     # Block all downloads at the browser level
     if cfg.get("blockDownloads"):
         policy["DownloadRestrictions"] = 3  # Block all downloads
+
+    # Disable Chrome's built-in password manager when our credential bridge handles passwords
+    if cfg.get("passwords"):
+        policy["PasswordManagerEnabled"] = False
+        policy["AutofillCreditCardEnabled"] = False
+        policy["CredentialProviderPromoEnabled"] = False
 
     policy_path = "/etc/chromium/policies/managed/session.json"
     os.makedirs(os.path.dirname(policy_path), exist_ok=True)

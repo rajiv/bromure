@@ -102,8 +102,11 @@ public struct VMConfig {
     /// Whether to share the clipboard between host and guest via SPICE agent.
     public var enableClipboardSharing: Bool
 
-    /// Whether to enable Keychain integration (passkeys + password autofill via macOS Keychain).
-    public var enableKeychainIntegration: Bool
+    /// Whether to enable passkey (WebAuthn) support via macOS platform authenticator.
+    public var enablePasskeys: Bool
+
+    /// Whether to enable password autofill via iCloud Passwords / macOS Keychain.
+    public var enablePasswords: Bool
 
     /// Whether to enable the "Send link to other session" Chrome extension.
     public var enableLinkSender: Bool
@@ -206,7 +209,8 @@ public struct VMConfig {
         enableFileTransfer: Bool = false,
         phishingWarning: Bool = false,
         enableClipboardSharing: Bool = false,
-        enableKeychainIntegration: Bool = false,
+        enablePasskeys: Bool = false,
+        enablePasswords: Bool = false,
         enableLinkSender: Bool = false,
         enableWebcam: Bool = false,
         webcamQuality: WebcamQuality = .high,
@@ -255,7 +259,8 @@ public struct VMConfig {
         self.enableFileTransfer = enableFileTransfer
         self.phishingWarning = phishingWarning
         self.enableClipboardSharing = enableClipboardSharing
-        self.enableKeychainIntegration = enableKeychainIntegration
+        self.enablePasskeys = enablePasskeys
+        self.enablePasswords = enablePasswords
         self.enableLinkSender = enableLinkSender
         self.enableWebcam = enableWebcam
         self.webcamQuality = webcamQuality

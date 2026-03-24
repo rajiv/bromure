@@ -482,3 +482,9 @@
 /* ProfileSettingsView — General (additional) */
 "Match Keyboard Layout" = "\U8DDF\U968F\U952E\U76D8\U5E03\U5C40";
 "Automatically switch the browser\U2019s keyboard layout when you change it on your Mac. Turn this off to always use the layout set in Bromure \U2192 Settings \U2192 Input." = "\U5F53\U60A8\U5728 Mac \U4E0A\U66F4\U6539\U952E\U76D8\U5E03\U5C40\U65F6\UFF0C\U6D4F\U89C8\U5668\U4F1A\U81EA\U52A8\U5207\U6362\U3002\U5173\U95ED\U6B64\U9009\U9879\U540E\U5C06\U59CB\U7EC8\U4F7F\U7528 Bromure \U2192 \U8BBE\U7F6E \U2192 \U8F93\U5165\U4E2D\U8BBE\U5B9A\U7684\U5E03\U5C40\U3002";
+
+/* ProfileSettingsView — Privacy & Safety (Keychain) */
+"Use macOS Passkeys" = "\U4F7F\U7528 macOS \U901A\U884C\U5BC6\U94A5";
+"Sign in to websites using passkeys stored on your Mac. Each request requires Touch ID or password approval." = "\U4F7F\U7528\U50A8\U5B58\U5728 Mac \U4E0A\U7684\U901A\U884C\U5BC6\U94A5\U767B\U5F55\U7F51\U7AD9\U3002\U6BCF\U6B21\U8BF7\U6C42\U9700\U8981 Touch ID \U6216\U5BC6\U7801\U786E\U8BA4\U3002";
+"Use macOS Passwords" = "\U4F7F\U7528 macOS \U5BC6\U7801";
+"Autofill usernames and passwords from your Mac\U2019s saved passwords and iCloud Keychain. Disables Chromium\U2019s built-in password manager." = "\U4ECE Mac \U4FDD\U5B58\U7684\U5BC6\U7801\U548C iCloud \U94A5\U5319\U4E32\U81EA\U52A8\U586B\U5145\U7528\U6237\U540D\U548C\U5BC6\U7801\U3002\U7981\U7528 Chromium \U5185\U7F6E\U7684\U5BC6\U7801\U7BA1\U7406\U5668\U3002";

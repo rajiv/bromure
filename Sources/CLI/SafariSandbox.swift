@@ -1442,18 +1442,22 @@ final class BrowserSession {
             return nil
         }()
 
-        // Credential bridge — only when Keychain integration is enabled
-        if config.enableKeychainIntegration, let dev = linkSocketDevice {
+        // Credential bridge — when passkeys or passwords are enabled
+        if (config.enablePasskeys || config.enablePasswords), let dev = linkSocketDevice {
             let credBridge = MainActor.assumeIsolated {
                 let bridge = CredentialBridge(socketDevice: dev, window: window)
+                bridge.enablePasskeys = config.enablePasskeys
+                bridge.enablePasswords = config.enablePasswords
                 bridge.onKillSession = { [weak self] in
                     guard let self else { return }
                     self.confirmed = true
                     self.window.close()
                 }
-                bridge.onConnectICloudPasswords = { [weak self] in
-                    let delegate = NSApp.delegate as? GUIAppDelegate
-                    return await delegate?.getOrConnectICloudPasswords(window: self?.window)
+                if config.enablePasswords {
+                    bridge.onConnectICloudPasswords = { [weak self] in
+                        let delegate = NSApp.delegate as? GUIAppDelegate
+                        return await delegate?.getOrConnectICloudPasswords(window: self?.window)
+                    }
                 }
                 return bridge
             }

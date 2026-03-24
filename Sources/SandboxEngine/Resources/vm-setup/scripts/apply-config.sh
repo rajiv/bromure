@@ -258,16 +258,7 @@ if [ -n "$PROFILE_DIR" ]; then
     fi
 fi
 
-# --- Disable Chromium's built-in password manager when Keychain integration is active ---
-# The credential bridge extension handles passwords; the built-in manager would conflict.
-
-if [ "$KEYCHAIN" = "1" ]; then
-    POLICY="/etc/chromium/policies/managed/bromure.json"
-    if [ -f "$POLICY" ]; then
-        # Add PasswordManagerEnabled:false and AutofillCreditCardEnabled:false
-        sed -i 's/}$/,"PasswordManagerEnabled":false,"AutofillCreditCardEnabled":false}/' "$POLICY"
-    fi
-fi
+# Password manager policy is handled by config-agent.py (write_dynamic_policy)
 
 # --- Wait for background tasks, then signal xinitrc ---
 

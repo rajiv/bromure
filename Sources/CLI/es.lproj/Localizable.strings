@@ -482,3 +482,9 @@
 /* ProfileSettingsView — General (additional) */
 "Match Keyboard Layout" = "Seguir disposici\U00F3n del teclado";
 "Automatically switch the browser\U2019s keyboard layout when you change it on your Mac. Turn this off to always use the layout set in Bromure \U2192 Settings \U2192 Input." = "Cambia autom\U00E1ticamente la disposici\U00F3n del teclado del navegador cuando la cambia en su Mac. Desactive esto para usar siempre la disposici\U00F3n establecida en Bromure \U2192 Ajustes \U2192 Entrada.";
+
+/* ProfileSettingsView — Privacy & Safety (Keychain) */
+"Use macOS Passkeys" = "Usar llaves de acceso de macOS";
+"Sign in to websites using passkeys stored on your Mac. Each request requires Touch ID or password approval." = "Inicia sesi\U00F3n en sitios web con las llaves de acceso almacenadas en tu Mac. Cada solicitud requiere Touch ID o confirmaci\U00F3n con contrase\U00F1a.";
+"Use macOS Passwords" = "Usar contrase\U00F1as de macOS";
+"Autofill usernames and passwords from your Mac\U2019s saved passwords and iCloud Keychain. Disables Chromium\U2019s built-in password manager." = "Rellena autom\U00E1ticamente nombres de usuario y contrase\U00F1as de las contrase\U00F1as guardadas en tu Mac y el llavero de iCloud. Desactiva el gestor de contrase\U00F1as integrado de Chromium.";

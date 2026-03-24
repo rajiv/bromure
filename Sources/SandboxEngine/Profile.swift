@@ -187,8 +187,9 @@ public struct ProfileSettings: Codable, Equatable {
     // Security — phishing
     public var phishingWarning: Bool = false
 
-    // Integration
-    public var keychainIntegration: Bool = false
+    // Integration — Keychain
+    public var keychainPasskeys: Bool = false
+    public var keychainPasswords: Bool = false
 
     // Security — screen capture
     public var blockScreenCapture: Bool = false
@@ -240,6 +241,23 @@ public struct ProfileSettings: Codable, Equatable {
 
     public init() {}
 
+    enum CodingKeys: String, CodingKey {
+        case homePage, enableGPU, enableWebGL, enableZeroCopy, enableSmoothScrolling
+        case enableAdBlocking, enableWarp, warpAutoConnect
+        case proxyHost, proxyPort, proxyUsername, proxyPassword
+        case enableClipboardSharing
+        case canUpload, canDownload, virusTotalEnabled, virusTotalAPIKey, blockThreats, blockUnscannable
+        case blockMalwareSites, phishingWarning
+        case keychainPasskeys, keychainPasswords
+        case keychainIntegration  // legacy: migrated to keychainPasskeys + keychainPasswords
+        case blockScreenCapture, enableLinkSender
+        case isolateFromLAN, restrictPorts, allowedPorts, networkInterface
+        case enableAudio, audioVolume, enableWebcam, webcamQuality, enableMicrophone
+        case webcamDeviceID, microphoneDeviceID, speakerDeviceID, webcamEffects
+        case rootCAs, matchKeyboardLayout, locale, allowAutomation
+        case traceLevel, traceAutoStart, persistent, encryptOnDisk
+    }
+
     // Custom decoder so that adding new fields doesn't break existing profiles.
     public init(from decoder: Decoder) throws {
         let c = try decoder.container(keyedBy: CodingKeys.self)
@@ -265,7 +283,13 @@ public struct ProfileSettings: Codable, Equatable {
         blockUnscannable = try c.decodeIfPresent(Bool.self, forKey: .blockUnscannable) ?? defaults.blockUnscannable
         blockMalwareSites = try c.decodeIfPresent(Bool.self, forKey: .blockMalwareSites) ?? defaults.blockMalwareSites
         phishingWarning = try c.decodeIfPresent(Bool.self, forKey: .phishingWarning) ?? defaults.phishingWarning
-        keychainIntegration = try c.decodeIfPresent(Bool.self, forKey: .keychainIntegration) ?? defaults.keychainIntegration
+        keychainPasskeys = try c.decodeIfPresent(Bool.self, forKey: .keychainPasskeys) ?? defaults.keychainPasskeys
+        keychainPasswords = try c.decodeIfPresent(Bool.self, forKey: .keychainPasswords) ?? defaults.keychainPasswords
+        // Migrate legacy keychainIntegration → both passkeys + passwords
+        if let legacy = try c.decodeIfPresent(Bool.self, forKey: .keychainIntegration), legacy {
+            keychainPasskeys = true
+            keychainPasswords = true
+        }
         blockScreenCapture = try c.decodeIfPresent(Bool.self, forKey: .blockScreenCapture) ?? defaults.blockScreenCapture
         enableLinkSender = try c.decodeIfPresent(Bool.self, forKey: .enableLinkSender) ?? defaults.enableLinkSender
         isolateFromLAN = try c.decodeIfPresent(Bool.self, forKey: .isolateFromLAN) ?? defaults.isolateFromLAN
@@ -289,6 +313,57 @@ public struct ProfileSettings: Codable, Equatable {
         traceAutoStart = try c.decodeIfPresent(Bool.self, forKey: .traceAutoStart) ?? defaults.traceAutoStart
         persistent = try c.decodeIfPresent(Bool.self, forKey: .persistent) ?? defaults.persistent
         encryptOnDisk = try c.decodeIfPresent(Bool.self, forKey: .encryptOnDisk) ?? defaults.encryptOnDisk
+    }
+
+    public func encode(to encoder: Encoder) throws {
+        var c = encoder.container(keyedBy: CodingKeys.self)
+        try c.encode(homePage, forKey: .homePage)
+        try c.encode(enableGPU, forKey: .enableGPU)
+        try c.encode(enableWebGL, forKey: .enableWebGL)
+        try c.encode(enableZeroCopy, forKey: .enableZeroCopy)
+        try c.encode(enableSmoothScrolling, forKey: .enableSmoothScrolling)
+        try c.encode(enableAdBlocking, forKey: .enableAdBlocking)
+        try c.encode(enableWarp, forKey: .enableWarp)
+        try c.encode(warpAutoConnect, forKey: .warpAutoConnect)
+        try c.encode(proxyHost, forKey: .proxyHost)
+        try c.encode(proxyPort, forKey: .proxyPort)
+        try c.encode(proxyUsername, forKey: .proxyUsername)
+        try c.encode(proxyPassword, forKey: .proxyPassword)
+        try c.encode(enableClipboardSharing, forKey: .enableClipboardSharing)
+        try c.encode(canUpload, forKey: .canUpload)
+        try c.encode(canDownload, forKey: .canDownload)
+        try c.encode(virusTotalEnabled, forKey: .virusTotalEnabled)
+        try c.encodeIfPresent(virusTotalAPIKey, forKey: .virusTotalAPIKey)
+        try c.encode(blockThreats, forKey: .blockThreats)
+        try c.encode(blockUnscannable, forKey: .blockUnscannable)
+        try c.encode(blockMalwareSites, forKey: .blockMalwareSites)
+        try c.encode(phishingWarning, forKey: .phishingWarning)
+        try c.encode(keychainPasskeys, forKey: .keychainPasskeys)
+        try c.encode(keychainPasswords, forKey: .keychainPasswords)
+        // Don't encode legacy keychainIntegration
+        try c.encode(blockScreenCapture, forKey: .blockScreenCapture)
+        try c.encode(enableLinkSender, forKey: .enableLinkSender)
+        try c.encode(isolateFromLAN, forKey: .isolateFromLAN)
+        try c.encode(restrictPorts, forKey: .restrictPorts)
+        try c.encode(allowedPorts, forKey: .allowedPorts)
+        try c.encode(networkInterface, forKey: .networkInterface)
+        try c.encode(enableAudio, forKey: .enableAudio)
+        try c.encode(audioVolume, forKey: .audioVolume)
+        try c.encode(enableWebcam, forKey: .enableWebcam)
+        try c.encode(webcamQuality, forKey: .webcamQuality)
+        try c.encode(enableMicrophone, forKey: .enableMicrophone)
+        try c.encodeIfPresent(webcamDeviceID, forKey: .webcamDeviceID)
+        try c.encodeIfPresent(microphoneDeviceID, forKey: .microphoneDeviceID)
+        try c.encodeIfPresent(speakerDeviceID, forKey: .speakerDeviceID)
+        try c.encode(webcamEffects, forKey: .webcamEffects)
+        try c.encode(rootCAs, forKey: .rootCAs)
+        try c.encode(matchKeyboardLayout, forKey: .matchKeyboardLayout)
+        try c.encodeIfPresent(locale, forKey: .locale)
+        try c.encode(allowAutomation, forKey: .allowAutomation)
+        try c.encode(traceLevel, forKey: .traceLevel)
+        try c.encode(traceAutoStart, forKey: .traceAutoStart)
+        try c.encode(persistent, forKey: .persistent)
+        try c.encode(encryptOnDisk, forKey: .encryptOnDisk)
     }
 
     /// Convert to a VMConfig for VM creation.
@@ -337,7 +412,8 @@ public struct ProfileSettings: Codable, Equatable {
             enableFileTransfer: canUpload || canDownload,
             phishingWarning: phishingWarning,
             enableClipboardSharing: enableClipboardSharing,
-            enableKeychainIntegration: keychainIntegration,
+            enablePasskeys: keychainPasskeys,
+            enablePasswords: keychainPasswords,
             enableLinkSender: enableLinkSender,
             enableWebcam: enableWebcam,
             webcamQuality: webcamQuality,

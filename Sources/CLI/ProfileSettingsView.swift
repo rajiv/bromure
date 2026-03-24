@@ -693,9 +693,17 @@ struct ProfileSettingsView: View {
             settingsDivider
 
             settingToggle(
-                "Keychain Integration",
-                description: "Use macOS Keychain for passkeys and password autofill. Disables Chromium\u{2019}s built-in password manager.",
-                isOn: $draft.settings.keychainIntegration
+                "Use macOS Passkeys",
+                description: "Sign in to websites using passkeys stored on your Mac. Each request requires Touch ID or password approval.",
+                isOn: $draft.settings.keychainPasskeys
+            )
+
+            settingsDivider
+
+            settingToggle(
+                "Use macOS Passwords",
+                description: "Autofill usernames and passwords from your Mac\u{2019}s saved passwords and iCloud Keychain. Disables Chromium\u{2019}s built-in password manager.",
+                isOn: $draft.settings.keychainPasswords
             )
 
             settingsDivider
