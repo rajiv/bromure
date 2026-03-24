@@ -31,7 +31,7 @@ public final class MACAddressPool: @unchecked Sendable {
     /// preventing vmnet DHCP lease pool exhaustion.
     /// Maximum number of MAC addresses to keep. Caps the vmnet DHCP lease table.
     /// Typical usage: 2 active sessions + 1 warm = 3, with headroom for transient claims.
-    private static let maxAddresses = 8
+    private static let maxAddresses = 32
 
     public func claim() -> String {
         lock.lock()
