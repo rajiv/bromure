@@ -12,3 +12,4 @@ xcuserdata/
 *.xcscmblueprint
 Package.resolved
 *.provisionprofile
+Tests/node_modules/
