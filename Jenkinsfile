@@ -18,8 +18,11 @@ pipeline {
         }
 
         stage('Test') {
+            options {
+                timeout(time: 10, unit: 'MINUTES')
+            }
             steps {
-                sh 'swift test'
+                sh 'swift test -c release'
             }
         }
 
