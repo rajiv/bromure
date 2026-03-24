@@ -52,7 +52,8 @@ pipeline {
             steps {
                 sh '''
                     APP_BUNDLE=$(cat .app_bundle_path)
-                    open "$APP_BUNDLE"
+                    BROMURE_DEBUG_CLAUDE=y "$APP_BUNDLE/Contents/MacOS/bromure" &
+                    echo $! > .bromure_pid
                     for i in $(seq 1 60); do
                         curl -s http://127.0.0.1:9222/ > /dev/null 2>&1 && break
                         sleep 2
@@ -173,7 +174,10 @@ pipeline {
     post {
         always {
             sh '''
-                osascript -e 'tell application "Bromure" to quit' || true
+                if [ -f .bromure_pid ]; then
+                    kill "$(cat .bromure_pid)" 2>/dev/null || true
+                    rm -f .bromure_pid
+                fi
                 security default-keychain -s login.keychain-db || true
             '''
         }
