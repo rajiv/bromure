@@ -142,14 +142,6 @@ public final class VMPool {
         let onBoot = "/usr/local/bin/on-boot.sh"
         let waiter = await waitForBoot(outputPipe: outputPipe, inputPipe: inputPipe, onBootDetected: onBoot)
 
-        // Check if DHCP succeeded; if not, retry once before giving up
-        let netCmd = "ip -4 addr show eth0 scope global 2>/dev/null | grep -q 'inet ' && echo BROMURE_NET_OK || { udhcpc -i eth0 -t 3 -T 2 2>/dev/null; ip -4 addr show eth0 scope global 2>/dev/null | grep -q 'inet ' && echo BROMURE_NET_OK || echo BROMURE_NET_FAIL; }"
-        inputPipe.fileHandleForWriting.write(Data((netCmd + "\n").utf8))
-        let networkReady = await waiter.probe(for: "BROMURE_NET_OK", timeout: 15)
-        if !networkReady {
-            print("[VMPool] WARNING: VM failed to obtain DHCP lease on eth0")
-        }
-
         warmVM = WarmVM(
             vm: vm,
             ephemeralDisk: ephDisk,
@@ -158,7 +150,7 @@ public final class VMPool {
             networkFilter: networkFilter,
             serialWaiter: waiter,
             macAddress: mac,
-            networkReady: networkReady,
+            networkReady: true,
             bootedNetworkMode: bootedNetworkMode
         )
 
@@ -537,11 +529,7 @@ public final class VMPool {
             warm.networkFilter = filter
             warm.bootedNetworkMode = targetNetwork
 
-            // Trigger DHCP renewal on the new network
             if needsSwap {
-                warm.serialInput.fileHandleForWriting.write(
-                    Data("udhcpc -i eth0 -t 5 -T 2 2>/dev/null &\n".utf8)
-                )
                 if bridgedIface != nil {
                     print("[VMPool] Switched to bridged networking on \(bridgedIface!)")
                 } else {
