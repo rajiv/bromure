@@ -1959,24 +1959,46 @@ final class BrowserSession {
 
     /// Stop the VM, close pipes, destroy disk — in that order.
     /// VZVirtualMachine.stop() requires the real main dispatch queue (not @MainActor).
+    /// Write a command to the VM's serial pipe. Returns false if the VM is
+    /// already dead (pipe broken). Guards against the ObjC NSFileHandle exception
+    /// that crashes when writing to a closed pipe.
+    private func serialWrite(_ cmd: String) -> Bool {
+        guard let vm = warmVM?.vm, vm.state == .running || vm.state == .paused,
+              let input = warmVM?.serialInput.fileHandleForWriting else {
+            print("[BrowserSession] serialWrite skipped — VM not running")
+            return false
+        }
+        let fd = input.fileDescriptor
+        let data = Array((cmd + "\n").utf8)
+        let written = data.withUnsafeBufferPointer { buf -> Int in
+            guard let base = buf.baseAddress else { return -1 }
+            return Darwin.write(fd, base, buf.count)
+        }
+        if written < 0 {
+            print("[BrowserSession] serialWrite failed — pipe broken")
+            return false
+        }
+        return true
+    }
+
     fileprivate func fullCleanup() async {
         // 0. Sync and unmount persistent profile disk before killing the VM
-        if let profile, profile.isPersistent, let input = warmVM?.serialInput.fileHandleForWriting {
+        if let profile, profile.isPersistent {
             let mountPoint = "/home/chrome/.\(profile.id.uuidString)"
             let syncCmd = "sync && umount \(mountPoint) 2>/dev/null"
             if profile.isEncrypted {
-                // Close LUKS volume after unmounting
                 let cmd = syncCmd + " && cryptsetup close profile_data 2>/dev/null"
-                input.write(Data((cmd + "\n").utf8))
+                if serialWrite(cmd) {
+                    try? await Task.sleep(for: .seconds(1))
+                }
             } else {
-                input.write(Data((syncCmd + "\n").utf8))
+                if serialWrite(syncCmd) {
+                    try? await Task.sleep(for: .seconds(1))
+                }
             }
-            // Give it a moment to flush
-            try? await Task.sleep(for: .seconds(1))
         }
         // 0.5. Release DHCP lease so vmnet reclaims the address promptly
-        if let input = warmVM?.serialInput.fileHandleForWriting {
-            input.write(Data("doas udhcpc -R -i eth0 2>/dev/null\n".utf8))
+        if serialWrite("doas udhcpc -R -i eth0 2>/dev/null") {
             try? await Task.sleep(for: .milliseconds(500))
         }
         // 0.6. Release MAC address back to the pool for reuse

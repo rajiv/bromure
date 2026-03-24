@@ -38,7 +38,10 @@ public final class VMPool {
     private var configListenerDelegate: ConfigListenerDelegate?
     private var configListenerCleanup: (() -> Void)?
     private var rejectListenerDelegate: RejectListenerDelegate?
-    private var suspendTimer: Timer?
+    private var poolVMDelegate: PoolVMDelegate?
+    /// MAC address claimed by an in-flight warmUp() that hasn't set warmVM yet.
+    /// Ensures shutdown() can release it even if warmUp is interrupted.
+    private var warmingMAC: String?
 
     public var hasWarmVM: Bool { warmVM != nil }
 
@@ -78,6 +81,7 @@ public final class VMPool {
 
         // Claim a recycled MAC address to avoid exhausting vmnet's DHCP lease pool
         let mac = MACAddressPool.shared.claim()
+        warmingMAC = mac
 
         // Network mode: use Apple's native attachments by default (no vmnet proxy).
         // NetworkFilter is only created at claim time if the profile needs filtering
@@ -142,6 +146,10 @@ public final class VMPool {
         let onBoot = "/usr/local/bin/on-boot.sh"
         let waiter = await waitForBoot(outputPipe: outputPipe, inputPipe: inputPipe, onBootDetected: onBoot)
 
+        // Monitor the warm VM for unexpected stops/crashes
+        let poolDelegate = PoolVMDelegate()
+        vm.delegate = poolDelegate
+
         warmVM = WarmVM(
             vm: vm,
             ephemeralDisk: ephDisk,
@@ -153,27 +161,15 @@ public final class VMPool {
             networkReady: true,
             bootedNetworkMode: bootedNetworkMode
         )
+        self.poolVMDelegate = poolDelegate
+        warmingMAC = nil  // Now tracked by warmVM.macAddress
 
         // Inflate balloon to reclaim unused guest memory while VM is idle.
         // The idle Alpine shell uses ~80-100 MB; reclaim the rest.
         inflateBalloon(vm: vm)
-
-        // Suspend the pre-warmed VM after 10s to save CPU while it waits.
-        // It will be resumed in claim() before applying config.
-        suspendTimer?.invalidate()
-        suspendTimer = Timer.scheduledTimer(withTimeInterval: 10, repeats: false) { [weak self] _ in
-            MainActor.assumeIsolated {
-                guard let self, let warm = self.warmVM, warm.vm.state == .running else { return }
-                Task { @MainActor in
-                    do {
-                        try await warm.vm.pause()
-                        print("[VMPool] Pre-warmed VM suspended to save CPU")
-                    } catch {
-                        print("[VMPool] Pre-warmed VM suspend failed: \(error)")
-                    }
-                }
-            }
-        }
+        // Note: we intentionally do NOT suspend pre-warmed VMs. Pausing breaks
+        // VZVirtualMachineView rendering (black screen after resume) because the
+        // framebuffer disconnects during pause. The balloon already saves memory.
     }
 
     /// Claim the pre-warmed VM with a specific config applied at claim time.
@@ -206,40 +202,30 @@ public final class VMPool {
                 try? await warmUp()
             }
         }
-        guard var warm = warmVM else { return nil }
-        warmVM = nil
-        suspendTimer?.invalidate()
-        suspendTimer = nil
-
-        // Resume if the pre-warmed VM was suspended to save CPU
-        if warm.vm.state == .paused {
-            do {
-                try await warm.vm.resume()
-                print("[VMPool] Resumed pre-warmed VM for claim")
-            } catch {
-                print("[VMPool] Failed to resume pre-warmed VM: \(error)")
-                return nil
-            }
+        // If the warm VM died (e.g. pool was restarted), discard and warm a fresh one.
+        if let warm = warmVM, warm.vm.state != .running {
+            print("[VMPool] claim: discarding dead warm VM (state=\(warm.vm.state.rawValue))")
+            if let mac = warm.macAddress { MACAddressPool.shared.release(mac) }
+            try? warm.ephemeralDisk.destroy()
+            warmVM = nil
+            try? await warmUp()
         }
+
+        guard var warm = warmVM else {
+            print("[VMPool] claim: no warm VM available")
+            return nil
+        }
+        warmVM = nil
+        print("[VMPool] claim: got warm VM (state=\(warm.vm.state.rawValue))")
 
         // Deflate balloon — give all memory back before running the browser
         deflateBalloon(vm: warm.vm)
+        print("[VMPool] claim: balloon deflated")
 
         // Hot-swap the network attachment if the profile requires a different
         // interface or needs packet filtering (LAN isolation / port restriction).
         warm = swapNetworkIfNeeded(warm: warm, config: config)
-
-        // A suspend/resume cycle nudges the guest kernel to re-probe the
-        // virtual network device, avoiding stale routing state.
-        if warm.vm.state == .running {
-            do {
-                try await warm.vm.pause()
-                try await warm.vm.resume()
-                if bromureDebug { print("[VMPool] Suspend/resume cycle completed") }
-            } catch {
-                print("[VMPool] Suspend/resume cycle failed: \(error)")
-            }
-        }
+        print("[VMPool] claim: network swap done")
 
         // Point the virtio-fs share to the profile's image directory,
         // or disconnect it entirely for ephemeral sessions.
@@ -252,8 +238,10 @@ public final class VMPool {
                 fsDevice.share = nil
             }
         }
+        print("[VMPool] claim: fs share configured, applying config...")
 
         await applyConfig(config, to: warm, profileID: profileID, hasProfileDisk: profileImageDir != nil, profileDiskKey: profileDiskKey, restoreSession: restoreSession)
+        print("[VMPool] claim: config applied, returning VM")
         return warm
     }
 
@@ -547,13 +535,13 @@ public final class VMPool {
 
     /// Shut down the pool and clean up.
     public func shutdown() async {
-        suspendTimer?.invalidate()
-        suspendTimer = nil
+        // Release any in-flight MAC from a warmUp() that hasn't finished yet.
+        if let mac = warmingMAC {
+            MACAddressPool.shared.release(mac)
+            warmingMAC = nil
+        }
+
         if let warm = warmVM {
-            // Resume if suspended so we can release DHCP lease cleanly
-            if warm.vm.state == .paused {
-                try? await warm.vm.resume()
-            }
             // Release DHCP lease so vmnet reclaims the address
             if warm.vm.state == .running {
                 warm.serialInput.fileHandleForWriting.write(Data("udhcpc -R -i eth0 2>/dev/null\n".utf8))
@@ -762,6 +750,17 @@ public final class VMPool {
         if bromureDebug {
             print("[VMPool] Balloon deflated: guest has full \(config.memorySize / 1024 / 1024) MB")
         }
+    }
+}
+
+/// Delegate that logs when a pre-warmed VM stops unexpectedly.
+private final class PoolVMDelegate: NSObject, VZVirtualMachineDelegate {
+    func guestDidStop(_ virtualMachine: VZVirtualMachine) {
+        print("[VMPool] WARNING: pre-warmed VM stopped unexpectedly (guestDidStop)")
+    }
+
+    func virtualMachine(_ virtualMachine: VZVirtualMachine, didStopWithError error: Error) {
+        print("[VMPool] WARNING: pre-warmed VM crashed: \(error)")
     }
 }
 

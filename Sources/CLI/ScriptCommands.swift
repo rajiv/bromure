@@ -312,7 +312,10 @@ final class SetAppSettingCommand: NSScriptCommand {
                 return nil
             }
 
-            let poolKeys = ["vm.memoryGB", "vm.cpuCount", "vm.swapCmdCtrl", "vm.appearance",
+            // Only restart the pool for settings that affect VM hardware config.
+            // vm.appearance and vm.swapCmdCtrl are applied at claim time and don't
+            // need a pool restart.
+            let poolKeys = ["vm.memoryGB", "vm.cpuCount",
                             "vm.networkMode", "vm.bridgedInterface", "vm.dnsServers"]
             if poolKeys.contains(key) {
                 if let delegate = NSApp.delegate as? GUIAppDelegate {

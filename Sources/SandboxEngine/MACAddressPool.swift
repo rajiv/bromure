@@ -36,6 +36,7 @@ public final class MACAddressPool: @unchecked Sendable {
         // Reuse an existing unclaimed address
         if let available = addresses.first(where: { !claimed.contains($0) }) {
             claimed.insert(available)
+            print("[MACPool] claimed (reused): \(available) (\(claimed.count)/\(addresses.count) in use)")
             return available
         }
 
@@ -44,6 +45,7 @@ public final class MACAddressPool: @unchecked Sendable {
         addresses.append(mac)
         claimed.insert(mac)
         save()
+        print("[MACPool] claimed (new): \(mac) (\(claimed.count)/\(addresses.count) in use)")
         return mac
     }
 
@@ -52,6 +54,7 @@ public final class MACAddressPool: @unchecked Sendable {
         lock.lock()
         defer { lock.unlock() }
         claimed.remove(mac)
+        print("[MACPool] released: \(mac) (\(claimed.count)/\(addresses.count) in use)")
     }
 
     // MARK: - Private
