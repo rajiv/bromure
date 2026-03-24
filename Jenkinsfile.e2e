@@ -70,103 +70,137 @@ pipeline {
 
         stage('0. Automation Server') {
             steps {
-                sh 'cd Tests && node e2e.mjs --filter "^0\\."'
+                catchError(buildResult: 'UNSTABLE', stageResult: 'FAILURE') {
+                    sh 'cd Tests && node e2e.mjs --filter "^0\\."'
+                }
             }
         }
 
         stage('1. Profile Management') {
             steps {
-                sh 'cd Tests && node e2e.mjs --filter "^1\\."'
+                catchError(buildResult: 'UNSTABLE', stageResult: 'FAILURE') {
+                    sh 'cd Tests && node e2e.mjs --filter "^1\\."'
+                }
             }
         }
 
         stage('2. App Settings') {
             steps {
-                sh 'cd Tests && node e2e.mjs --filter "^2\\."'
+                catchError(buildResult: 'UNSTABLE', stageResult: 'FAILURE') {
+                    sh 'cd Tests && node e2e.mjs --filter "^2\\."'
+                }
             }
         }
 
         stage('3. Home Page') {
             steps {
-                sh 'cd Tests && node e2e.mjs --filter "^3\\."'
+                catchError(buildResult: 'UNSTABLE', stageResult: 'FAILURE') {
+                    sh 'cd Tests && node e2e.mjs --filter "^3\\."'
+                }
             }
         }
 
         stage('4. Performance (GPU/WebGL)') {
             steps {
-                sh 'cd Tests && node e2e.mjs --filter "^4\\."'
+                catchError(buildResult: 'UNSTABLE', stageResult: 'FAILURE') {
+                    sh 'cd Tests && node e2e.mjs --filter "^4\\."'
+                }
             }
         }
 
         stage('5. Appearance') {
             steps {
-                sh 'cd Tests && node e2e.mjs --filter "^5\\."'
+                catchError(buildResult: 'UNSTABLE', stageResult: 'FAILURE') {
+                    sh 'cd Tests && node e2e.mjs --filter "^5\\."'
+                }
             }
         }
 
         stage('6. Media (Audio/Webcam)') {
             steps {
-                sh 'cd Tests && node e2e.mjs --filter "^6\\."'
+                catchError(buildResult: 'UNSTABLE', stageResult: 'FAILURE') {
+                    sh 'cd Tests && node e2e.mjs --filter "^6\\."'
+                }
             }
         }
 
         stage('7. Clipboard') {
             steps {
-                sh 'cd Tests && node e2e.mjs --filter "^7\\."'
+                catchError(buildResult: 'UNSTABLE', stageResult: 'FAILURE') {
+                    sh 'cd Tests && node e2e.mjs --filter "^7\\."'
+                }
             }
         }
 
         stage('8. Privacy & Safety') {
             steps {
-                sh 'cd Tests && node e2e.mjs --filter "^8\\."'
+                catchError(buildResult: 'UNSTABLE', stageResult: 'FAILURE') {
+                    sh 'cd Tests && node e2e.mjs --filter "^8\\."'
+                }
             }
         }
 
         stage('9. File Transfer') {
             steps {
-                sh 'cd Tests && node e2e.mjs --filter "^9\\."'
+                catchError(buildResult: 'UNSTABLE', stageResult: 'FAILURE') {
+                    sh 'cd Tests && node e2e.mjs --filter "^9\\."'
+                }
             }
         }
 
         stage('10. WARP VPN') {
             steps {
-                sh 'cd Tests && node e2e.mjs --filter "^10\\."'
+                catchError(buildResult: 'UNSTABLE', stageResult: 'FAILURE') {
+                    sh 'cd Tests && node e2e.mjs --filter "^10\\."'
+                }
             }
         }
 
         stage('11. Enterprise (Proxy/Certs)') {
             steps {
-                sh 'cd Tests && node e2e.mjs --filter "^11\\."'
+                catchError(buildResult: 'UNSTABLE', stageResult: 'FAILURE') {
+                    sh 'cd Tests && node e2e.mjs --filter "^11\\."'
+                }
             }
         }
 
         stage('12. Language/Locale') {
             steps {
-                sh 'cd Tests && node e2e.mjs --filter "^12\\."'
+                catchError(buildResult: 'UNSTABLE', stageResult: 'FAILURE') {
+                    sh 'cd Tests && node e2e.mjs --filter "^12\\."'
+                }
             }
         }
 
         stage('13. Session Lifecycle') {
             steps {
-                sh 'cd Tests && node e2e.mjs --filter "^13\\."'
+                catchError(buildResult: 'UNSTABLE', stageResult: 'FAILURE') {
+                    sh 'cd Tests && node e2e.mjs --filter "^13\\."'
+                }
             }
         }
 
         stage('14. Automation API') {
             steps {
-                sh 'cd Tests && node e2e.mjs --filter "^14\\."'
+                catchError(buildResult: 'UNSTABLE', stageResult: 'FAILURE') {
+                    sh 'cd Tests && node e2e.mjs --filter "^14\\."'
+                }
             }
         }
 
         stage('15. Allow Automation Flag') {
             steps {
-                sh 'cd Tests && node e2e.mjs --filter "^15\\."'
+                catchError(buildResult: 'UNSTABLE', stageResult: 'FAILURE') {
+                    sh 'cd Tests && node e2e.mjs --filter "^15\\."'
+                }
             }
         }
 
         stage('16. Session Recording (Trace)') {
             steps {
-                sh 'cd Tests && node e2e.mjs --filter "^16\\."'
+                catchError(buildResult: 'UNSTABLE', stageResult: 'FAILURE') {
+                    sh 'cd Tests && node e2e.mjs --filter "^16\\."'
+                }
             }
         }
     }
