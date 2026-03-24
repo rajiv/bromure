@@ -39,6 +39,7 @@ public final class VMPool {
     private var configListenerCleanup: (() -> Void)?
     private var rejectListenerDelegate: RejectListenerDelegate?
     private var poolVMDelegate: PoolVMDelegate?
+    private var suspendTimer: Timer?
     /// MAC address claimed by an in-flight warmUp() that hasn't set warmVM yet.
     /// Ensures shutdown() can release it even if warmUp is interrupted.
     private var warmingMAC: String?
@@ -167,9 +168,24 @@ public final class VMPool {
         // Inflate balloon to reclaim unused guest memory while VM is idle.
         // The idle Alpine shell uses ~80-100 MB; reclaim the rest.
         inflateBalloon(vm: vm)
-        // Note: we intentionally do NOT suspend pre-warmed VMs. Pausing breaks
-        // VZVirtualMachineView rendering (black screen after resume) because the
-        // framebuffer disconnects during pause. The balloon already saves memory.
+
+        // Suspend the pre-warmed VM after 30s to save CPU while it waits.
+        // VZVirtualMachineView is created at claim time (after resume), so there's
+        // no black-screen issue — the view connects to an already-running framebuffer.
+        suspendTimer?.invalidate()
+        suspendTimer = Timer.scheduledTimer(withTimeInterval: 30, repeats: false) { [weak self] _ in
+            MainActor.assumeIsolated {
+                guard let self, let warm = self.warmVM, warm.vm.state == .running else { return }
+                Task { @MainActor in
+                    do {
+                        try await warm.vm.pause()
+                        print("[VMPool] Pre-warmed VM suspended to save CPU")
+                    } catch {
+                        print("[VMPool] Pre-warmed VM suspend failed: \(error)")
+                    }
+                }
+            }
+        }
     }
 
     /// Claim the pre-warmed VM with a specific config applied at claim time.
@@ -216,7 +232,22 @@ public final class VMPool {
             return nil
         }
         warmVM = nil
+        suspendTimer?.invalidate()
+        suspendTimer = nil
         print("[VMPool] claim: got warm VM (state=\(warm.vm.state.rawValue))")
+
+        // Resume if the pre-warmed VM was suspended to save CPU
+        if warm.vm.state == .paused {
+            do {
+                try await warm.vm.resume()
+                print("[VMPool] Resumed pre-warmed VM for claim")
+            } catch {
+                print("[VMPool] Failed to resume pre-warmed VM: \(error)")
+                if let mac = warm.macAddress { MACAddressPool.shared.release(mac) }
+                try? warm.ephemeralDisk.destroy()
+                return nil
+            }
+        }
 
         // Deflate balloon — give all memory back before running the browser
         deflateBalloon(vm: warm.vm)
@@ -226,6 +257,18 @@ public final class VMPool {
         // interface or needs packet filtering (LAN isolation / port restriction).
         warm = swapNetworkIfNeeded(warm: warm, config: config)
         print("[VMPool] claim: network swap done")
+
+        // Suspend/resume cycle after network swap to work around a VZ API bug
+        // where the guest kernel doesn't re-probe the virtual NIC after hot-swap.
+        if warm.vm.state == .running {
+            do {
+                try await warm.vm.pause()
+                try await warm.vm.resume()
+                if bromureDebug { print("[VMPool] Suspend/resume after network swap") }
+            } catch {
+                print("[VMPool] Suspend/resume after network swap failed: \(error)")
+            }
+        }
 
         // Point the virtio-fs share to the profile's image directory,
         // or disconnect it entirely for ephemeral sessions.
@@ -535,6 +578,9 @@ public final class VMPool {
 
     /// Shut down the pool and clean up.
     public func shutdown() async {
+        suspendTimer?.invalidate()
+        suspendTimer = nil
+
         // Release any in-flight MAC from a warmUp() that hasn't finished yet.
         if let mac = warmingMAC {
             MACAddressPool.shared.release(mac)
