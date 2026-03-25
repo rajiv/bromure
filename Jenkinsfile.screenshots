@@ -3,7 +3,7 @@ pipeline {
 
 
     environment {
-        PATH               = "/opt/homebrew/bin:${env.PATH}"
+        PATH               = "/opt/homebrew/bin:/Users/jenkins/.local/bin:${env.PATH}"
         KEYCHAIN_PASSWORD   = credentials('KEYCHAIN_PASSWORD')
         BUILD_KEYCHAIN      = "${HOME}/build.keychain"
         ANTHROPIC_API_KEY   = credentials('ANTHROPIC_API_KEY')
