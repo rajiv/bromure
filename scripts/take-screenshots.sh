@@ -59,13 +59,13 @@ for locale_idx in "${!LOCALES[@]}"; do
 
     pkill -x bromure 2>/dev/null || true
     sleep 3
-    open -a "$(pwd)/.build/arm64-apple-macosx/release/Bromure.app" --args -AppleLanguages "($locale)"
+    APP_BUNDLE="$(pwd)/.build/arm64-apple-macosx/release/Bromure.app"
+    "$APP_BUNDLE/Contents/MacOS/bromure" -AppleLanguages "($locale)" &
 
-    # Wait for ready
-    for i in $(seq 1 30); do
-        state=$(osascript -e 'tell application "Bromure" to get app state' 2>/dev/null || echo '{}')
-        if echo "$state" | grep -q '"ready"'; then break; fi
-        sleep 1
+    # Wait for ready via automation API
+    for i in $(seq 1 60); do
+        if curl -s http://127.0.0.1:9222/health 2>/dev/null | grep -q '"ok"'; then break; fi
+        sleep 2
     done
     sleep 1
 
@@ -100,7 +100,7 @@ done
 # Restore English
 pkill -x bromure 2>/dev/null || true
 sleep 2
-open -a "$(pwd)/.build/arm64-apple-macosx/release/Bromure.app"
+"$(pwd)/.build/arm64-apple-macosx/release/Bromure.app/Contents/MacOS/bromure" &
 
 echo "=== Done ==="
 ls -1 "$OUTPUT_DIR"/prefs_*_*.jpg 2>/dev/null | wc -l | xargs -I{} echo "{} screenshots captured"

@@ -35,6 +35,15 @@ pipeline {
             }
         }
 
+        stage('Init Base Image') {
+            steps {
+                sh '''
+                    BUILD_DIR=$(swift build -c release --arch arm64 --show-bin-path 2>/dev/null)
+                    "$BUILD_DIR/Bromure.app/Contents/MacOS/bromure" init
+                '''
+            }
+        }
+
         stage('Take Screenshots') {
             steps {
                 sh './scripts/take-screenshots.sh'
