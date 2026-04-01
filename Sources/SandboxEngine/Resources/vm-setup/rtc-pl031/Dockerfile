@@ -1,4 +1,4 @@
-FROM arm64v8/alpine:3.22.3
+FROM arm64v8/alpine:3.22
 
 RUN apk add --no-cache linux-lts-dev make gcc musl-dev
 
@@ -16,7 +16,7 @@ RUN KVER=$(ls /lib/modules/) && \
     echo "$KVER" > /out/KVER
 
 # Usage:
-#   docker build --platform linux/arm64 -t rtc-pl031-builder .
+#   docker build --no-cache --platform linux/arm64 -t rtc-pl031-builder .
 #   docker create --name rtcbuild rtc-pl031-builder
 #   docker cp rtcbuild:/out/rtc-pl031.ko .
 #   docker cp rtcbuild:/out/KVER .

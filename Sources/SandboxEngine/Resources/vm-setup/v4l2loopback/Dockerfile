@@ -1,4 +1,4 @@
-FROM arm64v8/alpine:3.22.3
+FROM arm64v8/alpine:3.22
 
 RUN apk add --no-cache linux-lts-dev make gcc musl-dev
 
@@ -14,7 +14,7 @@ RUN KVER=$(ls /lib/modules/) && \
     echo "$KVER" > /out/KVER
 
 # Usage:
-#   docker build --platform linux/arm64 -t v4l2loopback-builder .
+#   docker build --no-cache --platform linux/arm64 -t v4l2loopback-builder .
 #   docker create --name v4l2lb v4l2loopback-builder
 #   docker cp v4l2lb:/out/v4l2loopback.ko .
 #   docker cp v4l2lb:/out/KVER .
