@@ -114,7 +114,7 @@ mount --bind /dev /mnt/dev
 # ---------------------------------------------------------------------------
 
 retry chroot /mnt apk update
-retry chroot /mnt apk add openrc linux-lts=6.12.77-r0 linux-firmware-none mkinitfs e2fsprogs
+retry chroot /mnt apk add openrc linux-lts linux-firmware-none mkinitfs e2fsprogs
 retry chroot /mnt apk add \
     chromium chromium-lang xorg-server xinit mesa-dri-gallium mesa-egl mesa-gl mesa-gles \
     mesa-gbm eudev dbus dbus-x11 ttf-freefont ttf-dejavu font-noto-emoji font-liberation \
@@ -431,45 +431,70 @@ fi
 echo "SANDBOX_STEP_DONE:Downloading popular domains list"
 
 # ---------------------------------------------------------------------------
-# v4l2loopback (virtual webcam device, pre-built for linux-lts)
+# Out-of-tree kernel modules (v4l2loopback, rtc-pl031)
+#
+# Pre-built .ko.gz files are bundled in the app for the kernel version they
+# were compiled against (recorded in KVER).  If the installed kernel is
+# newer, fetch matching modules from bromure.io/downloads/<kver>/ instead.
 # ---------------------------------------------------------------------------
 
 KVER=$(ls /mnt/lib/modules/)
-if [ -f "$SCRIPT_DIR/v4l2loopback/v4l2loopback.ko.gz" ]; then
-    mkdir -p "/mnt/lib/modules/$KVER/extra"
-    cp "$SCRIPT_DIR/v4l2loopback/v4l2loopback.ko.gz" "/mnt/lib/modules/$KVER/extra/"
-    gunzip "/mnt/lib/modules/$KVER/extra/v4l2loopback.ko.gz"
-    chroot /mnt depmod "$KVER"
-    echo "V4L2LOOPBACK_INSTALLED_OK"
+BUNDLED_KVER=""
+[ -f "$SCRIPT_DIR/v4l2loopback/KVER" ] && BUNDLED_KVER=$(cat "$SCRIPT_DIR/v4l2loopback/KVER" | tr -d '[:space:]')
+mkdir -p "/mnt/lib/modules/$KVER/extra"
+
+if [ "$KVER" = "$BUNDLED_KVER" ]; then
+    echo "Kernel $KVER matches bundled modules"
+
+    # v4l2loopback
+    if [ -f "$SCRIPT_DIR/v4l2loopback/v4l2loopback.ko.gz" ]; then
+        cp "$SCRIPT_DIR/v4l2loopback/v4l2loopback.ko.gz" "/mnt/lib/modules/$KVER/extra/"
+        gunzip "/mnt/lib/modules/$KVER/extra/v4l2loopback.ko.gz"
+        echo "V4L2LOOPBACK_INSTALLED_OK"
+    else
+        echo "Warning: v4l2loopback.ko.gz not found in bundle"
+    fi
+
+    # rtc-pl031
+    if [ -f "$SCRIPT_DIR/rtc-pl031/rtc-pl031.ko.gz" ]; then
+        cp "$SCRIPT_DIR/rtc-pl031/rtc-pl031.ko.gz" "/mnt/lib/modules/$KVER/extra/"
+        gunzip "/mnt/lib/modules/$KVER/extra/rtc-pl031.ko.gz"
+        echo "RTC_PL031_INSTALLED_OK"
+    elif [ -f "$SCRIPT_DIR/rtc-pl031/rtc-pl031.ko" ]; then
+        cp "$SCRIPT_DIR/rtc-pl031/rtc-pl031.ko" "/mnt/lib/modules/$KVER/extra/"
+        echo "RTC_PL031_INSTALLED_OK"
+    else
+        echo "Warning: rtc-pl031.ko not found in bundle"
+    fi
 else
-    echo "Warning: v4l2loopback.ko not found — webcam sharing will not work"
+    echo "Kernel $KVER differs from bundled $BUNDLED_KVER — downloading modules from bromure.io"
+    DOWNLOAD_BASE="https://bromure.io/downloads/${KVER}"
+    DL_OK=true
+
+    if wget -q -O "/mnt/lib/modules/$KVER/extra/v4l2loopback.ko" "$DOWNLOAD_BASE/v4l2loopback.ko"; then
+        echo "V4L2LOOPBACK_INSTALLED_OK (downloaded)"
+    else
+        echo "Warning: failed to download v4l2loopback.ko for $KVER — webcam sharing will not work"
+        rm -f "/mnt/lib/modules/$KVER/extra/v4l2loopback.ko"
+        DL_OK=false
+    fi
+
+    if wget -q -O "/mnt/lib/modules/$KVER/extra/rtc-pl031.ko" "$DOWNLOAD_BASE/rtc-pl031.ko"; then
+        echo "RTC_PL031_INSTALLED_OK (downloaded)"
+    else
+        echo "Warning: failed to download rtc-pl031.ko for $KVER — guest clock will need manual sync"
+        rm -f "/mnt/lib/modules/$KVER/extra/rtc-pl031.ko"
+        DL_OK=false
+    fi
+
+    if [ "$DL_OK" = "false" ]; then
+        echo "SANDBOX_SETUP_FAILED: kernel modules unavailable for $KVER — rebuild and upload to $DOWNLOAD_BASE/"
+        exit 1
+    fi
 fi
 
-# ---------------------------------------------------------------------------
-# Kernel and initramfs
-# ---------------------------------------------------------------------------
-
-# ---------------------------------------------------------------------------
-# RTC PL031 (Virtualization.framework virtual RTC, pre-built for linux-lts)
-# ---------------------------------------------------------------------------
-
-KVER=$(ls /mnt/lib/modules/)
-if [ -f "$SCRIPT_DIR/rtc-pl031/rtc-pl031.ko.gz" ]; then
-    mkdir -p "/mnt/lib/modules/$KVER/extra"
-    cp "$SCRIPT_DIR/rtc-pl031/rtc-pl031.ko.gz" "/mnt/lib/modules/$KVER/extra/"
-    gunzip "/mnt/lib/modules/$KVER/extra/rtc-pl031.ko.gz"
-    chroot /mnt depmod "$KVER"
-    echo "rtc-pl031" >> /mnt/etc/modules
-    echo "RTC_PL031_INSTALLED_OK"
-elif [ -f "$SCRIPT_DIR/rtc-pl031/rtc-pl031.ko" ]; then
-    mkdir -p "/mnt/lib/modules/$KVER/extra"
-    cp "$SCRIPT_DIR/rtc-pl031/rtc-pl031.ko" "/mnt/lib/modules/$KVER/extra/"
-    chroot /mnt depmod "$KVER"
-    echo "rtc-pl031" >> /mnt/etc/modules
-    echo "RTC_PL031_INSTALLED_OK"
-else
-    echo "Warning: rtc-pl031.ko not found — guest clock will need manual sync"
-fi
+chroot /mnt depmod "$KVER"
+echo "rtc-pl031" >> /mnt/etc/modules
 
 install_config configs/mkinitfs.conf /mnt/etc/mkinitfs/mkinitfs.conf
 chroot /mnt ls /etc/mkinitfs/features.d/ 2>/dev/null || true
