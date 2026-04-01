@@ -1112,6 +1112,16 @@ print('n/a')
         }
       );
     });
+
+    await test("13.5 Kernel modules loaded (v4l2loopback, rtc-pl031)", async () => {
+      await withSession("E2E_KernelMods", {},
+        async ({ sessionId }) => {
+          const r = await vmExec(sessionId, "lsmod");
+          assertIncludes(r.stdout, "v4l2loopback");
+          assertIncludes(r.stdout, "rtc_pl031");
+        }
+      );
+    });
   }
 
   // ======================================================================
