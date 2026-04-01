@@ -196,36 +196,15 @@ pipeline {
                         }
 
                         UNAME=$(get_stdout "$(exec_vm "uname -a")")
+                        LSMOD=$(get_stdout "$(exec_vm "lsmod")")
                         FAILED=0
 
-                        echo "Loading v4l2loopback..."
-                        R=$(exec_vm "modprobe v4l2loopback video_nr=0 card_label=test exclusive_caps=1")
-                        EC=$(echo "$R" | python3 -c "import sys,json; print(json.load(sys.stdin).get('exitCode',1))")
-                        if [ "$EC" != "0" ]; then
-                            echo "FAIL: v4l2loopback did not load (exit $EC)"
-                            echo "uname -a: $UNAME"
-                            echo "$R"
-                            FAILED=1
-                        fi
+                        echo "$LSMOD" | grep -q v4l2loopback || { echo "FAIL: v4l2loopback not loaded by startup"; echo "uname -a: $UNAME"; FAILED=1; }
+                        echo "$LSMOD" | grep -q rtc_pl031 || { echo "FAIL: rtc_pl031 not loaded by startup"; echo "uname -a: $UNAME"; FAILED=1; }
 
-                        echo "Loading rtc-pl031..."
-                        R=$(exec_vm "modprobe rtc-pl031")
-                        EC=$(echo "$R" | python3 -c "import sys,json; print(json.load(sys.stdin).get('exitCode',1))")
-                        if [ "$EC" != "0" ]; then
-                            echo "FAIL: rtc-pl031 did not load (exit $EC)"
-                            echo "uname -a: $UNAME"
-                            echo "$R"
-                            FAILED=1
-                        fi
+                        if [ "$FAILED" = "1" ]; then echo "lsmod output:"; echo "$LSMOD"; exit 1; fi
 
-                        if [ "$FAILED" = "1" ]; then exit 1; fi
-
-                        echo "Verifying modules are loaded..."
-                        LSMOD=$(get_stdout "$(exec_vm "lsmod")")
-                        echo "$LSMOD" | grep -q v4l2loopback || { echo "FAIL: v4l2loopback not in lsmod"; echo "uname -a: $UNAME"; exit 1; }
-                        echo "$LSMOD" | grep -q rtc_pl031 || { echo "FAIL: rtc_pl031 not in lsmod"; echo "uname -a: $UNAME"; exit 1; }
-
-                        echo "OK: v4l2loopback and rtc-pl031 loaded successfully"
+                        echo "OK: v4l2loopback and rtc-pl031 present in lsmod"
                     '''
                 }
             }
