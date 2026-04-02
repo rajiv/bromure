@@ -340,25 +340,25 @@ public struct VMConfig {
         "abc-qwertz":               "de",
 
         // ── British / Irish ───────────────────────────────────────────────
-        "british":                  "gb",
+        "british":                  "gb:mac",
         "british-pc":               "gb",
         "irish":                    "ie",
         "irishextended":            "ie",
         "welsh":                    "gb",       // Welsh (no dedicated XKB; gb is closest)
 
         // ── French ────────────────────────────────────────────────────────
-        "french":                   "fr",
+        "french":                   "fr:mac",
         "french-pc":                "fr",
-        "french-numerical":         "fr",       // French Numerical (same base layout)
+        "french-numerical":         "fr:mac",   // French Numerical (Mac layout)
 
         // ── German ────────────────────────────────────────────────────────
-        "german":                   "de",
-        "german-din-2137":          "de",       // DIN 2137 variant
-        "austrian":                 "at",
+        "german":                   "de:mac",
+        "german-din-2137":          "de:mac",   // DIN 2137 variant
+        "austrian":                 "at:mac",
 
         // ── Swiss ─────────────────────────────────────────────────────────
-        "swissfrench":              "ch:fr",
-        "swissgerman":              "ch",
+        "swissfrench":              "ch:fr_mac",
+        "swissgerman":              "ch:de_mac",
 
         // ── Canadian ──────────────────────────────────────────────────────
         "canadian":                 "ca",
@@ -371,29 +371,29 @@ public struct VMConfig {
         "latinamerican":            "latam",
 
         // ── Portuguese / Brazilian ────────────────────────────────────────
-        "portuguese":               "pt",
+        "portuguese":               "pt:mac",
         "brazilian":                "br",
         "brazilian-abnt2":          "br",
         "brazilian-pro":            "br",
 
         // ── Italian ───────────────────────────────────────────────────────
-        "italian":                  "it",
-        "italian-pro":              "it",
+        "italian":                  "it:mac",
+        "italian-pro":              "it:mac",
 
         // ── Dutch / Belgian ───────────────────────────────────────────────
-        "dutch":                    "nl",
+        "dutch":                    "nl:mac",
         "belgian":                  "be",
 
         // ── Nordic ────────────────────────────────────────────────────────
-        "swedish":                  "se",
-        "swedish-pro":              "se",
-        "norwegian":                "no",
-        "norwegianextended":        "no",
-        "danish":                   "dk",
-        "finnish":                  "fi",
-        "finnishextended":          "fi",
+        "swedish":                  "se:mac",
+        "swedish-pro":              "se:mac",
+        "norwegian":                "no:mac",
+        "norwegianextended":        "no:mac",
+        "danish":                   "dk:mac",
+        "finnish":                  "fi:mac",
+        "finnishextended":          "fi:mac",
         "faroese":                  "fo",
-        "icelandic":                "is",
+        "icelandic":                "is:mac",
 
         // ── Sami layouts ──────────────────────────────────────────────────
         "northernsami":             "no:smi",
