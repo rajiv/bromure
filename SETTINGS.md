@@ -117,7 +117,9 @@ Network privacy and ad blocking.
 | Setting | Description |
 |---|---|
 | **Cloudflare WARP** | Routes all browser traffic through [Cloudflare's encrypted WARP network](https://one.one.one.one/), hiding your IP address from websites. Runs entirely inside the disposable VM. Requires at least 2 GB of VM memory. |
-| **Connect on Startup** | When WARP is enabled, automatically connect the VPN when the browser session starts. You can always toggle it from the VPN button in the window's titlebar. |
+| **WireGuard** | Routes all browser traffic through a WireGuard tunnel running inside the disposable VM. Works with any WireGuard provider (Mullvad, ProtonVPN, a self-hosted server, etc.). Select this option to reveal the configuration editor. |
+| **WireGuard Configuration** | The `.conf` file content for the WireGuard tunnel. Paste the file contents directly into the text editor or use the **Import .conf File…** button to load it from disk. Only visible when WireGuard is selected as the VPN mode. |
+| **Connect on Startup** | When WARP or WireGuard is enabled, automatically connect the VPN when the browser session starts. You can always toggle it from the VPN button in the window's titlebar. |
 | **Block Ads** | Blocks ads and tracking scripts at the network layer using a built-in DNS sinkhole and Squid proxy. Ads are intercepted before they reach the browser. |
 
 > **Note:** If an HTTP proxy is configured in the Enterprise tab, both WARP and ad blocking are disabled.
