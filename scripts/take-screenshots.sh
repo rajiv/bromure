@@ -10,7 +10,7 @@
 set -euo pipefail
 
 PROFILE="Work"
-OUTPUT_DIR="$(cd "$(dirname "$0")/.." && pwd)/Resources"
+OUTPUT_DIR="$(pwd)/Resources"
 mkdir -p "$OUTPUT_DIR"
 
 CATEGORIES=(general performance media fileTransfer privacy network vpnAds enterprise advanced)
