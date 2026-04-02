@@ -40,10 +40,8 @@ capture_settings_window() {
         end tell
     ')
     if [ -n "$rect" ]; then
-        local pngfile="${outfile%.jpg}.png"
-        screencapture -x -R "$rect" "$pngfile"
-        sips -s format jpeg "$pngfile" --out "$outfile"
-        rm -f "$pngfile"
+        echo "  rect: $rect"
+        screencapture -x -t jpg -R "$rect" "$outfile"
         return 0
     fi
     return 1
