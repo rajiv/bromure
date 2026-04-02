@@ -74,7 +74,7 @@ across all 8 locales, with SETTINGS.md updated to reflect
 any new or changed settings.
 
 Co-Authored-By: Claude Opus 4.6 (1M context) <noreply@anthropic.com>"
-                        git push origin HEAD
+                        git push origin HEAD:refs/heads/${GIT_BRANCH#*/}
                     fi
                 '''
             }
