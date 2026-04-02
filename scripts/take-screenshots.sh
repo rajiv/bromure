@@ -38,9 +38,12 @@ capture_settings_window() {
                 end repeat
             end tell
         end tell
-    ' 2>/dev/null)
+    ')
     if [ -n "$rect" ]; then
-        screencapture -x -t jpg -R "$rect" "$outfile" 2>/dev/null
+        local pngfile="${outfile%.jpg}.png"
+        screencapture -x -R "$rect" "$pngfile"
+        sips -s format jpeg "$pngfile" --out "$outfile"
+        rm -f "$pngfile"
         return 0
     fi
     return 1
@@ -72,17 +75,14 @@ for locale_idx in "${!LOCALES[@]}"; do
     for category in "${CATEGORIES[@]}"; do
         echo -n "  $category... "
 
-        osascript -e "tell application \"Bromure\" to open profile settings \"$PROFILE\" category \"$category\"" 2>/dev/null
+        osascript -e "tell application \"Bromure\" to open profile settings \"$PROFILE\" category \"$category\""
         sleep 1.5
 
         outfile="$OUTPUT_DIR/prefs_${category}_${locale_name}.jpg"
         rm -f "$outfile"
         echo "  Writing to $outfile"
-        if capture_settings_window "$outfile"; then
-            echo "OK → $outfile"
-        else
-            echo "SKIP (window not found)"
-        fi
+        capture_settings_window "$outfile"
+        echo "OK → $outfile"
 
         # Close settings window
         osascript -e '
