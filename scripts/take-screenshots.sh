@@ -10,7 +10,7 @@
 set -euo pipefail
 
 PROFILE="Work"
-OUTPUT_DIR="/Users/jenkins/workspace/Bromure/bromure-screenshots/Resources"
+OUTPUT_DIR="$(pwd)/Resources"
 mkdir -p "$OUTPUT_DIR"
 
 CATEGORIES=(general performance media fileTransfer privacy network vpnAds enterprise advanced)
@@ -19,9 +19,10 @@ LOCALE_NAMES=(en fr de es pt ja zh-TW zh-CN)
 
 capture_settings_window() {
     local outfile="$1"
-    local wid
+    local rect
     # The settings window is always the non-"Bromure" window (main window is just "Bromure")
-    osascript -e '
+    # In any locale, the settings window title contains "—" (em dash) and the profile name
+    rect=$(osascript -e '
         tell application "Bromure" to activate
         delay 0.3
         tell application "System Events"
@@ -29,22 +30,17 @@ capture_settings_window() {
                 repeat with w in windows
                     if name of w is not "Bromure" then
                         perform action "AXRaise" of w
+                        delay 0.2
+                        set p to position of w
+                        set s to size of w
+                        return "" & (item 1 of p) & "," & (item 2 of p) & "," & (item 1 of s) & "," & (item 2 of s)
                     end if
                 end repeat
             end tell
         end tell
-    '
-    sleep 0.2
-    # Get the CGWindowID for the settings window
-    wid=$(/usr/bin/python3 -c "
-import Quartz
-for w in Quartz.CGWindowListCopyWindowInfo(Quartz.kCGWindowListOptionOnScreenOnly, 0):
-    if w.get('kCGWindowOwnerName') == 'Bromure' and w.get('kCGWindowName', '') != 'Bromure':
-        print(w['kCGWindowNumber']); break
-")
-    if [ -n "$wid" ]; then
-        echo "  windowID: $wid"
-        screencapture -x -t jpg -l "$wid" "$outfile"
+    ' 2>/dev/null)
+    if [ -n "$rect" ]; then
+        screencapture -x -t jpg -R "$rect" "$outfile" 2>/dev/null
         return 0
     fi
     return 1
@@ -76,14 +72,17 @@ for locale_idx in "${!LOCALES[@]}"; do
     for category in "${CATEGORIES[@]}"; do
         echo -n "  $category... "
 
-        osascript -e "tell application \"Bromure\" to open profile settings \"$PROFILE\" category \"$category\""
+        osascript -e "tell application \"Bromure\" to open profile settings \"$PROFILE\" category \"$category\"" 2>/dev/null
         sleep 1.5
 
         outfile="$OUTPUT_DIR/prefs_${category}_${locale_name}.jpg"
         rm -f "$outfile"
-        echo "  Writing to $outfile"
-        capture_settings_window "$outfile"
-        echo "OK → $outfile"
+        echo "  $outfile"
+        if capture_settings_window "$outfile"; then
+            echo "OK → $outfile"
+        else
+            echo "SKIP (window not found)"
+        fi
 
         # Close settings window
         osascript -e '
