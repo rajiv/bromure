@@ -20,6 +20,7 @@ Basic identity and behavior for the profile.
 |---|---|
 | **Profile Name** | The display name shown in the profile list and window title bar. |
 | **Retain Browsing Data** | When enabled, bookmarks, history, cookies, and passwords persist between sessions on a dedicated virtual disk. When disabled (the default), everything is destroyed when the window closes. |
+| **Delete Browsing Data...** | Appears when "Retain Browsing Data" is enabled and a profile disk exists. Permanently deletes the profile's saved browsing data (history, cookies, passwords, bookmarks). The profile itself is not deleted — only the persistent disk contents are erased. |
 | **Shared Clipboard** | Allow copy-paste between your Mac and the browser VM. Disabled by default for security -- a compromised page cannot read your clipboard unless you opt in. |
 | **Window Color** | A colored border drawn around the browser window to visually distinguish profiles. Options: None, Blue, Red, Green, Orange, Purple, Pink, Teal, Gray. |
 | **Home Page** | The URL loaded when a new session starts for this profile. Defaults to `https://bromure.io/hello`. |
