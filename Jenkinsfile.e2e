@@ -155,7 +155,8 @@ pipeline {
             steps {
                 withCredentials([
                     string(credentialsId: 'IKEV2_SERVER', variable: 'IKEV2_SERVER'),
-                    usernamePassword(credentialsId: 'IKEV2_CREDENTIALS', usernameVariable: 'IKEV2_USERNAME', passwordVariable: 'IKEV2_PASSWORD')
+                    usernamePassword(credentialsId: 'IKEV2_CREDENTIALS', usernameVariable: 'IKEV2_USERNAME', passwordVariable: 'IKEV2_PASSWORD'),
+                    file(credentialsId: 'IKEV2_CA_PEM', variable: 'IKEV2_CA_PEM')
                 ]) {
                     catchError(buildResult: 'UNSTABLE', stageResult: 'FAILURE') {
                         sh 'cd Tests && node e2e.mjs --filter "^10\\."'

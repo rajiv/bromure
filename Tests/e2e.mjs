@@ -16,6 +16,7 @@
  */
 
 import { execSync } from "child_process";
+import { readFileSync } from "fs";
 import puppeteer from "puppeteer-core";
 
 const API = process.env.BROMURE_API_URL || "http://127.0.0.1:9222";
@@ -909,7 +910,10 @@ finally:
   const ikev2Server = process.env.IKEV2_SERVER;
   const ikev2Username = process.env.IKEV2_USERNAME;
   const ikev2Password = process.env.IKEV2_PASSWORD;
-  const hasIKEv2Creds = ikev2Server && ikev2Username && ikev2Password;
+  const ikev2CaPemPath = process.env.IKEV2_CA_PEM;
+  let ikev2CaPem = "";
+  try { if (ikev2CaPemPath) ikev2CaPem = readFileSync(ikev2CaPemPath, "utf-8").trim(); } catch {}
+  const hasIKEv2Creds = ikev2Server && ikev2Username && ikev2Password && ikev2CaPem;
 
   if (hasDebugShell) {
     console.log("\n--- 10. VPN ---");
@@ -1016,50 +1020,90 @@ print('n/a')
     });
 
     if (hasIKEv2Creds) {
-      await test("10.4 IKEv2 OFF — strongSwan not running", async () => {
-      await withSession("E2E_IKEv2_Off", { vpnMode: "none" },
-        async ({ sessionId }) => {
-          await sleep(3000);
-          const r = await vmExec(sessionId, "pgrep -f '[c]haron' | wc -l");
-          assert(parseInt(r.stdout.trim()) === 0, `charon running when IKEv2 off (${r.stdout.trim()})`);
-        }
-      );
-    });
-
-      await test("10.5 IKEv2 ON — charon running and tunnel established", async () => {
-      const origMem = osascript('get app setting "vm.memoryGB"');
-      if (parseInt(origMem) < 2) {
-        osascript('set app setting "vm.memoryGB" to value "2"');
-        await waitForPool();
-      }
-      try {
-        // Create profile manually to set keychain secret
-        const profileName = "E2E_IKEv2_On";
-        const profileId = osascript(`create profile "${profileName}"`);
-        osascript(`set profile setting "${profileName}" key "allowAutomation" to value "true"`);
-        osascript(`set profile setting "${profileName}" key "vpnMode" to value "ikev2"`);
-        osascript(`set profile setting "${profileName}" key "ikev2Server" to value "${ikev2Server}"`);
-        osascript(`set profile setting "${profileName}" key "ikev2AuthMethod" to value "eap"`);
-        osascript(`set profile setting "${profileName}" key "ikev2Username" to value "${ikev2Username}"`);
-        osascript(`set profile setting "${profileName}" key "ikev2AutoConnect" to value "true"`);
-        osascript(`set profile setting "${profileName}" key "ikev2Secret" to value "${ikev2Password}"`);
-
-        let sessionId;
-        try {
+      // Helper: create an IKEv2 profile with EAP auth, run a check, then clean up.
+      // If `includeCa` is true, the CA PEM is added to the profile's root CAs.
+      async function withIKEv2Session(profileName, extraSettings, includeCa, checkFn) {
+        const origMem = osascript('get app setting "vm.memoryGB"');
+        if (parseInt(origMem) < 2) {
+          osascript('set app setting "vm.memoryGB" to value "2"');
           await waitForPool();
-          const sess = await api("POST", "/sessions", { profile: profileName });
-          assert(!sess.error, `Session creation failed: ${sess.error}`);
-          sessionId = sess.id;
-          await sleep(5000);
-
-          // Wait for shell bridge
-          for (let i = 0; i < 10; i++) {
-            try { await vmExec(sessionId, "true"); break; } catch {
-              if (i === 9) throw new Error("Shell bridge not ready");
-              await sleep(1000);
-            }
+        }
+        try {
+          osascript(`create profile "${profileName}"`);
+          osascript(`set profile setting "${profileName}" key "allowAutomation" to value "true"`);
+          osascript(`set profile setting "${profileName}" key "vpnMode" to value "ikev2"`);
+          osascript(`set profile setting "${profileName}" key "ikev2Server" to value "${ikev2Server}"`);
+          osascript(`set profile setting "${profileName}" key "ikev2AuthMethod" to value "eap"`);
+          osascript(`set profile setting "${profileName}" key "ikev2Username" to value "${ikev2Username}"`);
+          osascript(`set profile setting "${profileName}" key "ikev2AutoConnect" to value "true"`);
+          osascript(`set profile setting "${profileName}" key "ikev2Secret" to value "${ikev2Password}"`);
+          if (includeCa) {
+            osascript(`set profile setting "${profileName}" key "addRootCA" to value "${ikev2CaPem.replace(/"/g, '\\"')}"`);
+          }
+          for (const [key, value] of Object.entries(extraSettings || {})) {
+            osascript(`set profile setting "${profileName}" key "${key}" to value "${value}"`);
           }
 
+          let sessionId;
+          try {
+            await waitForPool();
+            const sess = await api("POST", "/sessions", { profile: profileName });
+            assert(!sess.error, `Session creation failed: ${sess.error}`);
+            sessionId = sess.id;
+            await sleep(5000);
+
+            // Wait for shell bridge
+            for (let i = 0; i < 10; i++) {
+              try { await vmExec(sessionId, "true"); break; } catch {
+                if (i === 9) throw new Error("Shell bridge not ready");
+                await sleep(1000);
+              }
+            }
+
+            await checkFn(sessionId);
+          } finally {
+            if (sessionId) await api("DELETE", `/sessions/${sessionId}`);
+            await sleep(500);
+            try { osascript(`delete profile "${profileName}"`); } catch {}
+          }
+        } finally {
+          if (parseInt(origMem) < 2) {
+            osascript(`set app setting "vm.memoryGB" to value "${origMem}"`);
+          }
+        }
+      }
+
+      await test("10.4 IKEv2 OFF — strongSwan not running", async () => {
+        await withSession("E2E_IKEv2_Off", { vpnMode: "none" },
+          async ({ sessionId }) => {
+            await sleep(3000);
+            const r = await vmExec(sessionId, "pgrep -f '[c]haron' | wc -l");
+            assert(parseInt(r.stdout.trim()) === 0, `charon running when IKEv2 off (${r.stdout.trim()})`);
+          }
+        );
+      });
+
+      await test("10.5 IKEv2 without CA — connection refused", async () => {
+        await withIKEv2Session("E2E_IKEv2_NoCA", {}, false, async (sessionId) => {
+          // Wait for auto-connect attempt to fail
+          await sleep(20000);
+
+          // Tunnel should NOT be established (server cert not trusted)
+          const sa = await vmExec(sessionId, "swanctl --list-sas 2>/dev/null");
+          assert(!sa.stdout.includes("ESTABLISHED"), "Tunnel established without CA — should have been rejected");
+
+          // Check the agent log for a certificate error
+          const agentLog = await vmExec(sessionId, "cat /tmp/bromure/ikev2-agent.log 2>/dev/null");
+          const logText = agentLog.stdout || "";
+          assert(
+            logText.includes("not trusted") || logText.includes("certificate") || logText.includes("AUTH_FAILED") || logText.includes("failed"),
+            `Expected certificate/auth error in agent log, got: ${logText.slice(-300)}`
+          );
+        });
+      });
+
+      await test("10.6 IKEv2 ON — charon running and tunnel established", async () => {
+        await withIKEv2Session("E2E_IKEv2_On", {}, true, async (sessionId) => {
           // Wait for IKEv2 to connect (strongSwan + auto-connect)
           await sleep(20000);
 
@@ -1071,50 +1115,11 @@ print('n/a')
           const sa = await vmExec(sessionId, "swanctl --list-sas 2>/dev/null || echo NO_SA");
           assert(!sa.stdout.includes("NO_SA"), `swanctl failed: ${sa.stderr}`);
           assertIncludes(sa.stdout, "ESTABLISHED", `Tunnel not established: ${sa.stdout.slice(0, 200)}`);
-        } finally {
-          if (sessionId) await api("DELETE", `/sessions/${sessionId}`);
-          await sleep(500);
-          try { osascript(`delete profile "${profileName}"`); } catch {}
-        }
-      } finally {
-        if (parseInt(origMem) < 2) {
-          osascript(`set app setting "vm.memoryGB" to value "${origMem}"`);
-        }
-      }
-    });
+        });
+      });
 
-      await test("10.6 IKEv2 toggle — IP changes via titlebar button", async () => {
-      const origMem = osascript('get app setting "vm.memoryGB"');
-      if (parseInt(origMem) < 2) {
-        osascript('set app setting "vm.memoryGB" to value "2"');
-        await waitForPool();
-      }
-      try {
-        const profileName = "E2E_IKEv2_Toggle";
-        const profileId = osascript(`create profile "${profileName}"`);
-        osascript(`set profile setting "${profileName}" key "allowAutomation" to value "true"`);
-        osascript(`set profile setting "${profileName}" key "vpnMode" to value "ikev2"`);
-        osascript(`set profile setting "${profileName}" key "ikev2Server" to value "${ikev2Server}"`);
-        osascript(`set profile setting "${profileName}" key "ikev2AuthMethod" to value "eap"`);
-        osascript(`set profile setting "${profileName}" key "ikev2Username" to value "${ikev2Username}"`);
-        osascript(`set profile setting "${profileName}" key "ikev2AutoConnect" to value "true"`);
-        osascript(`set profile setting "${profileName}" key "ikev2Secret" to value "${ikev2Password}"`);
-
-        let sessionId;
-        try {
-          await waitForPool();
-          const sess = await api("POST", "/sessions", { profile: profileName });
-          assert(!sess.error, `Session creation failed: ${sess.error}`);
-          sessionId = sess.id;
-          await sleep(5000);
-
-          for (let i = 0; i < 10; i++) {
-            try { await vmExec(sessionId, "true"); break; } catch {
-              if (i === 9) throw new Error("Shell bridge not ready");
-              await sleep(1000);
-            }
-          }
-
+      await test("10.7 IKEv2 toggle — IP changes via titlebar button", async () => {
+        await withIKEv2Session("E2E_IKEv2_Toggle", {}, true, async (sessionId) => {
           // Wait for IKEv2 auto-connect
           await sleep(20000);
 
@@ -1156,51 +1161,11 @@ print('n/a')
           const rReOn = await vmExec(sessionId, getIP);
           const ipReOn = rReOn.stdout.trim();
           assert(ipReOn === ipOn, `IP didn't restore: expected ${ipOn}, got ${ipReOn}`);
-        } finally {
-          if (sessionId) await api("DELETE", `/sessions/${sessionId}`);
-          await sleep(500);
-          try { osascript(`delete profile "${profileName}"`); } catch {}
-        }
-      } finally {
-        if (parseInt(origMem) < 2) {
-          osascript(`set app setting "vm.memoryGB" to value "${origMem}"`);
-        }
-      }
-    });
+        });
+      });
 
-      await test("10.7 IKEv2 DNS — resolves through tunnel", async () => {
-      const origMem = osascript('get app setting "vm.memoryGB"');
-      if (parseInt(origMem) < 2) {
-        osascript('set app setting "vm.memoryGB" to value "2"');
-        await waitForPool();
-      }
-      try {
-        const profileName = "E2E_IKEv2_DNS";
-        const profileId = osascript(`create profile "${profileName}"`);
-        osascript(`set profile setting "${profileName}" key "allowAutomation" to value "true"`);
-        osascript(`set profile setting "${profileName}" key "vpnMode" to value "ikev2"`);
-        osascript(`set profile setting "${profileName}" key "ikev2Server" to value "${ikev2Server}"`);
-        osascript(`set profile setting "${profileName}" key "ikev2AuthMethod" to value "eap"`);
-        osascript(`set profile setting "${profileName}" key "ikev2Username" to value "${ikev2Username}"`);
-        osascript(`set profile setting "${profileName}" key "ikev2AutoConnect" to value "true"`);
-        osascript(`set profile setting "${profileName}" key "ikev2UseDNS" to value "true"`);
-        osascript(`set profile setting "${profileName}" key "ikev2Secret" to value "${ikev2Password}"`);
-
-        let sessionId;
-        try {
-          await waitForPool();
-          const sess = await api("POST", "/sessions", { profile: profileName });
-          assert(!sess.error, `Session creation failed: ${sess.error}`);
-          sessionId = sess.id;
-          await sleep(5000);
-
-          for (let i = 0; i < 10; i++) {
-            try { await vmExec(sessionId, "true"); break; } catch {
-              if (i === 9) throw new Error("Shell bridge not ready");
-              await sleep(1000);
-            }
-          }
-
+      await test("10.8 IKEv2 DNS — resolves through tunnel", async () => {
+        await withIKEv2Session("E2E_IKEv2_DNS", { ikev2UseDNS: "true" }, true, async (sessionId) => {
           // Wait for IKEv2 auto-connect
           await sleep(20000);
 
@@ -1216,19 +1181,8 @@ print('n/a')
           // Verify internet connectivity through the tunnel
           const web = await vmExec(sessionId, "wget -qO- --timeout=10 'http://example.com' 2>/dev/null | head -1");
           assertIncludes(web.stdout, "<!doctype html>", "Cannot reach example.com through tunnel");
-        } finally {
-          if (sessionId) await api("DELETE", `/sessions/${sessionId}`);
-          await sleep(500);
-          try { osascript(`delete profile "${profileName}"`); } catch {}
-        }
-      } finally {
-        if (parseInt(origMem) < 2) {
-          osascript(`set app setting "vm.memoryGB" to value "${origMem}"`);
-        }
-      }
+        });
       });
-    } else {
-      console.log("  (IKEv2 tests skipped — set IKEV2_SERVER, IKEV2_USERNAME, IKEV2_PASSWORD)");
     }
   }
 

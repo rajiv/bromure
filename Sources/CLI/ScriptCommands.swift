@@ -272,6 +272,16 @@ final class SetProfileSettingCommand: NSScriptCommand {
             case "ikev2PSKSecret":
                 VPNKeychain.store(profileID: profile.id, key: VPNKeychain.ikev2PSK, secret: value)
                 return nil
+            case "addRootCA":
+                // value is the PEM string; add as a new CustomRootCA
+                let ca = CustomRootCA(name: "CA-\(profile.settings.rootCAs.count + 1)", pem: value)
+                profile.settings.rootCAs.append(ca)
+                delegate.state.profileManager.updateProfile(profile)
+                return nil
+            case "clearRootCAs":
+                profile.settings.rootCAs.removeAll()
+                delegate.state.profileManager.updateProfile(profile)
+                return nil
             default: break
             }
             guard writeSetting(&profile.settings, key: key, value: value) else {
