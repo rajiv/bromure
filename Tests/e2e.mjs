@@ -1044,6 +1044,12 @@ print('n/a')
             osascript(`set profile setting "${profileName}" key "${key}" to value "${value}"`);
           }
 
+          // Verify settings were applied
+          const readbackMode = osascript(`get profile setting "${profileName}" key "vpnMode"`);
+          const readbackServer = osascript(`get profile setting "${profileName}" key "ikev2Server"`);
+          assert(readbackMode === "ikev2", `vpnMode not set: got '${readbackMode}'`);
+          assert(readbackServer === ikev2Server, `ikev2Server not set: got '${readbackServer}'`);
+
           let sessionId;
           try {
             await waitForPool();

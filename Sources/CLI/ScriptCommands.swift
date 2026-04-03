@@ -46,6 +46,7 @@ private func readSetting(_ s: ProfileSettings, key: String) -> String? {
     case "phishingWarning": return String(s.phishingWarning)
     case "linkSender":      return String(s.enableLinkSender)
     case "adBlocking":      return String(s.enableAdBlocking)
+    case "vpnMode":         return s.vpnMode.rawValue
     case "warp":            return String(s.vpnMode == .cloudflareWarp)
     case "warpAutoConnect": return String(s.warpAutoConnect)
     case "isolateFromLAN":  return String(s.isolateFromLAN)
