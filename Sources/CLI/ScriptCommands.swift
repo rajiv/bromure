@@ -55,6 +55,8 @@ private func readSetting(_ s: ProfileSettings, key: String) -> String? {
     case "proxyPort":       return String(s.proxyPort)
     case "proxyUsername":   return s.proxyUsername
     case "proxyPassword":   return s.proxyPassword
+    case "cloudManagementToken": return s.cloudManagementToken
+    case "cloudManagementMandatory": return String(s.cloudManagementMandatory)
     case "allowAutomation": return String(s.allowAutomation)
     case "traceLevel":      return String(s.traceLevel.rawValue)
     case "traceAutoStart":  return String(s.traceAutoStart)
@@ -104,6 +106,8 @@ private func writeSetting(_ s: inout ProfileSettings, key: String, value: String
     case "proxyPort":       s.proxyPort = Int(value) ?? s.proxyPort
     case "proxyUsername":   s.proxyUsername = value
     case "proxyPassword":   s.proxyPassword = value
+    case "cloudManagementToken": s.cloudManagementToken = value
+    case "cloudManagementMandatory": s.cloudManagementMandatory = b
     case "allowAutomation": s.allowAutomation = b
     case "traceLevel":      s.traceLevel = TraceLevel(rawValue: Int(value) ?? 0) ?? .disabled
     case "traceAutoStart":  s.traceAutoStart = b
