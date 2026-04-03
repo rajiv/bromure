@@ -276,6 +276,12 @@ def write_dynamic_policy(cfg):
         policy["AutofillCreditCardEnabled"] = False
         policy["CredentialProviderPromoEnabled"] = False
 
+    # Chrome Browser Cloud Management (CBCM)
+    if cfg.get("cloudManagementToken"):
+        policy["CloudManagementEnrollmentToken"] = cfg["cloudManagementToken"]
+        if cfg.get("cloudManagementMandatory"):
+            policy["CloudManagementEnrollmentMandatory"] = True
+
     policy_path = "/etc/chromium/policies/managed/session.json"
     os.makedirs(os.path.dirname(policy_path), exist_ok=True)
     with open(policy_path, "w") as f:

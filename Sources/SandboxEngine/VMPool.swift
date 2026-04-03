@@ -437,6 +437,10 @@ public final class VMPool {
         }
         if config.traceLevel != .disabled { cfg["traceLevel"] = config.traceLevel.rawValue }
         if !config.rootCAs.isEmpty { cfg["rootCAs"] = config.rootCAs }
+        if let token = config.cloudManagementToken, !token.isEmpty {
+            cfg["cloudManagementToken"] = token
+            cfg["cloudManagementMandatory"] = config.cloudManagementMandatory
+        }
         cfg["locale"] = config.locale
 
         // Display scale: read from UserDefaults so changing 1x/2x doesn't require image rebuild

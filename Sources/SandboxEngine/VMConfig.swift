@@ -143,6 +143,12 @@ public struct VMConfig {
     /// Webcam overlay effects (city/time, name badge, logo).
     public var webcamEffects: WebcamEffects
 
+    /// Chrome Browser Cloud Management enrollment token (CBCM).
+    public var cloudManagementToken: String?
+
+    /// Whether CBCM enrollment is mandatory (browser refuses to start without it).
+    public var cloudManagementMandatory: Bool
+
     /// PEM-encoded custom root CA certificates to install in the guest.
     public var rootCAs: [String]
 
@@ -232,6 +238,8 @@ public struct VMConfig {
         microphoneDeviceID: String? = nil,
         speakerDeviceID: String? = nil,
         webcamEffects: WebcamEffects = WebcamEffects(),
+        cloudManagementToken: String? = nil,
+        cloudManagementMandatory: Bool = false,
         rootCAs: [String] = [],
         isolateFromLAN: Bool = false,
         allowedPorts: String? = nil,
@@ -284,6 +292,8 @@ public struct VMConfig {
         self.microphoneDeviceID = microphoneDeviceID
         self.speakerDeviceID = speakerDeviceID
         self.webcamEffects = webcamEffects
+        self.cloudManagementToken = cloudManagementToken
+        self.cloudManagementMandatory = cloudManagementMandatory
         self.rootCAs = rootCAs
         self.isolateFromLAN = isolateFromLAN
         self.allowedPorts = allowedPorts

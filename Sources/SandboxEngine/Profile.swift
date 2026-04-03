@@ -235,6 +235,10 @@ public struct ProfileSettings: Codable, Equatable {
     // Webcam effects
     public var webcamEffects: WebcamEffects = WebcamEffects()
 
+    // Chrome Cloud Management
+    public var cloudManagementToken: String = ""
+    public var cloudManagementMandatory: Bool = false
+
     // Certificates
     public var rootCAs: [CustomRootCA] = []
 
@@ -271,6 +275,7 @@ public struct ProfileSettings: Codable, Equatable {
         case isolateFromLAN, restrictPorts, allowedPorts, networkInterface
         case enableAudio, audioVolume, enableWebcam, webcamQuality, enableMicrophone
         case webcamDeviceID, microphoneDeviceID, speakerDeviceID, webcamEffects
+        case cloudManagementToken, cloudManagementMandatory
         case rootCAs, matchKeyboardLayout, locale, allowAutomation
         case traceLevel, traceAutoStart, persistent, encryptOnDisk
     }
@@ -331,6 +336,8 @@ public struct ProfileSettings: Codable, Equatable {
         speakerDeviceID = try c.decodeIfPresent(String.self, forKey: .speakerDeviceID)
         webcamEffects = try c.decodeIfPresent(WebcamEffects.self, forKey: .webcamEffects) ?? defaults.webcamEffects
         rootCAs = try c.decodeIfPresent([CustomRootCA].self, forKey: .rootCAs) ?? defaults.rootCAs
+        cloudManagementToken = try c.decodeIfPresent(String.self, forKey: .cloudManagementToken) ?? defaults.cloudManagementToken
+        cloudManagementMandatory = try c.decodeIfPresent(Bool.self, forKey: .cloudManagementMandatory) ?? defaults.cloudManagementMandatory
         matchKeyboardLayout = try c.decodeIfPresent(Bool.self, forKey: .matchKeyboardLayout) ?? defaults.matchKeyboardLayout
         locale = try c.decodeIfPresent(String.self, forKey: .locale)
         allowAutomation = try c.decodeIfPresent(Bool.self, forKey: .allowAutomation) ?? defaults.allowAutomation
@@ -386,6 +393,8 @@ public struct ProfileSettings: Codable, Equatable {
         try c.encodeIfPresent(speakerDeviceID, forKey: .speakerDeviceID)
         try c.encode(webcamEffects, forKey: .webcamEffects)
         try c.encode(rootCAs, forKey: .rootCAs)
+        try c.encode(cloudManagementToken, forKey: .cloudManagementToken)
+        try c.encode(cloudManagementMandatory, forKey: .cloudManagementMandatory)
         try c.encode(matchKeyboardLayout, forKey: .matchKeyboardLayout)
         try c.encodeIfPresent(locale, forKey: .locale)
         try c.encode(allowAutomation, forKey: .allowAutomation)
@@ -453,6 +462,8 @@ public struct ProfileSettings: Codable, Equatable {
             microphoneDeviceID: microphoneDeviceID,
             speakerDeviceID: speakerDeviceID,
             webcamEffects: webcamEffects,
+            cloudManagementToken: cloudManagementToken.isEmpty ? nil : cloudManagementToken,
+            cloudManagementMandatory: cloudManagementMandatory,
             rootCAs: rootCAs.map(\.pem),
             isolateFromLAN: isolateFromLAN,
             allowedPorts: restrictPorts ? allowedPorts : nil,

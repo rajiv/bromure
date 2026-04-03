@@ -930,6 +930,26 @@ struct ProfileSettingsView: View {
 
             settingsDivider
 
+            // Chrome Cloud Management
+            VStack(alignment: .leading, spacing: 10) {
+                Text("Chrome Cloud Management").font(.headline)
+                Text("Enroll the browser in Chrome Browser Cloud Management (CBCM) so your organization can push policies remotely.")
+                    .settingDescription()
+
+                TextField("Enrollment Token", text: $draft.settings.cloudManagementToken)
+                    .textFieldStyle(.roundedBorder)
+
+                if !draft.settings.cloudManagementToken.isEmpty {
+                    Toggle("Mandatory Enrollment", isOn: $draft.settings.cloudManagementMandatory)
+                        .toggleStyle(.checkbox)
+                    Text("When enabled, the browser will not start if enrollment fails.")
+                        .font(.caption)
+                        .foregroundStyle(.secondary)
+                }
+            }
+
+            settingsDivider
+
             VStack(alignment: .leading, spacing: 10) {
                 Text("Root Certificates").font(.headline)
                 Text("Install custom root CA certificates so the browser trusts your organization\u{2019}s internal websites and services. Accepts PEM, DER, CRT, and CER files.")
