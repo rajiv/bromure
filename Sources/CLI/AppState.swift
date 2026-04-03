@@ -19,8 +19,8 @@ final class AppState: @unchecked Sendable {
             case (.checking, .checking), (.needsSetup, .needsSetup),
                  (.warmingUp, .warmingUp), (.ready, .ready):
                 return true
-            case (.initializing(let a, _), .initializing(let b, _)):
-                return a == b
+            case (.initializing(let a, let ap), .initializing(let b, let bp)):
+                return a == b && ap == bp
             case (.error(let a), .error(let b)):
                 return a == b
             default:
@@ -134,7 +134,7 @@ final class AppState: @unchecked Sendable {
                     displayScale: scale,
                     extraKernelOptions: kernelOpts
                 ) { [weak self] event in
-                    Task { @MainActor in
+                    DispatchQueue.main.async {
                         self?.handleProgress(event)
                     }
                 }
