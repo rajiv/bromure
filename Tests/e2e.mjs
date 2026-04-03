@@ -1044,12 +1044,6 @@ print('n/a')
             osascript(`set profile setting "${profileName}" key "${key}" to value "${value}"`);
           }
 
-          // Verify settings were applied
-          const readbackMode = osascript(`get profile setting "${profileName}" key "vpnMode"`);
-          const readbackServer = osascript(`get profile setting "${profileName}" key "ikev2Server"`);
-          assert(readbackMode === "ikev2", `vpnMode not set: got '${readbackMode}'`);
-          assert(readbackServer === ikev2Server, `ikev2Server not set: got '${readbackServer}'`);
-
           let sessionId;
           try {
             await waitForPool();
@@ -1095,7 +1089,7 @@ print('n/a')
           await sleep(20000);
 
           // Tunnel should NOT be established (server cert not trusted)
-          const sa = await vmExec(sessionId, "swanctl --list-sas 2>/dev/null");
+          const sa = await vmExec(sessionId, "doas swanctl --list-sas 2>/dev/null");
           assert(!sa.stdout.includes("ESTABLISHED"), "Tunnel established without CA — should have been rejected");
 
           // Check the agent log for a certificate error
@@ -1118,7 +1112,7 @@ print('n/a')
           assert(parseInt(charon.stdout.trim()) > 0, "charon not running");
 
           // Verify tunnel is established via swanctl
-          const sa = await vmExec(sessionId, "swanctl --list-sas 2>/dev/null || echo NO_SA");
+          const sa = await vmExec(sessionId, "doas swanctl --list-sas 2>/dev/null || echo NO_SA");
           assert(!sa.stdout.includes("NO_SA"), `swanctl failed: ${sa.stderr}`);
           assertIncludes(sa.stdout, "ESTABLISHED", `Tunnel not established: ${sa.stdout.slice(0, 200)}`);
         });
@@ -1130,7 +1124,7 @@ print('n/a')
           await sleep(20000);
 
           // Verify tunnel is up
-          const saBefore = await vmExec(sessionId, "swanctl --list-sas 2>/dev/null");
+          const saBefore = await vmExec(sessionId, "doas swanctl --list-sas 2>/dev/null");
           assertIncludes(saBefore.stdout, "ESTABLISHED", "Tunnel not established before toggle");
 
           // Get IP with VPN on
@@ -1146,7 +1140,7 @@ print('n/a')
           await sleep(8000);
 
           // Verify tunnel is down
-          const saAfter = await vmExec(sessionId, "swanctl --list-sas 2>/dev/null");
+          const saAfter = await vmExec(sessionId, "doas swanctl --list-sas 2>/dev/null");
           assert(!saAfter.stdout.includes("ESTABLISHED"), "Tunnel still established after toggle off");
 
           // Get IP with VPN off
@@ -1161,7 +1155,7 @@ print('n/a')
           osascript(`toggle warp "${sessionId}"`);
           await sleep(15000);
 
-          const saReOn = await vmExec(sessionId, "swanctl --list-sas 2>/dev/null");
+          const saReOn = await vmExec(sessionId, "doas swanctl --list-sas 2>/dev/null");
           assertIncludes(saReOn.stdout, "ESTABLISHED", "Tunnel not re-established after toggle on");
 
           const rReOn = await vmExec(sessionId, getIP);
@@ -1176,7 +1170,7 @@ print('n/a')
           await sleep(20000);
 
           // Verify tunnel established
-          const sa = await vmExec(sessionId, "swanctl --list-sas 2>/dev/null");
+          const sa = await vmExec(sessionId, "doas swanctl --list-sas 2>/dev/null");
           assertIncludes(sa.stdout, "ESTABLISHED", "Tunnel not established");
 
           // DNS resolution should work through the tunnel

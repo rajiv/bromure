@@ -318,20 +318,29 @@ def run_session(conn):
 def main():
     log("starting")
 
-    # Sleep forever if no IKEv2 config is expected — exiting would cause
-    # the resilient-launch wrapper to restart us in a loop (CRASHED spam).
+    # Wait for config-agent to signal whether IKEv2 is configured.
+    # The agent starts at boot before config-agent has run, so we poll
+    # for the boot marker or swanctl conf.  If neither appears after 60s,
+    # this session doesn't use IKEv2 — sleep forever instead of exiting
+    # (exiting causes the resilient-launch wrapper to log CRASHED spam).
     if not os.path.isfile(BOOT_SETUP_MARKER) and not os.path.isfile(SWANCTL_CONF):
-        log("no IKEv2 config — sleeping")
-        signal.pause()
+        log("waiting for config-agent...")
+        for _ in range(60):
+            if os.path.isfile(BOOT_SETUP_MARKER) or os.path.isfile(SWANCTL_CONF):
+                break
+            time.sleep(1)
+        else:
+            log("no IKEv2 config — sleeping")
+            signal.pause()
 
-    # Wait for config-agent to write the config
+    # Wait for config-agent to finish writing the swanctl config
     for _ in range(120):
         if os.path.isfile(SWANCTL_CONF):
             break
         time.sleep(1)
     else:
         log("timed out waiting for swanctl config")
-        return
+        signal.pause()
 
     # Connect to host vsock
     while True:
