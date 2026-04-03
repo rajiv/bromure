@@ -43,7 +43,7 @@ public final class LinuxImageManager {
 
     /// Create a Linux base image: download Alpine netboot, install to disk, add Chromium.
     public func createBaseImage(
-        diskSizeGB: UInt64 = 4,
+        diskSizeMB: UInt64 = 4608,
         keyboardLayout: String? = nil,
         naturalScrolling: Bool? = nil,
         locale: String? = nil,
@@ -73,7 +73,7 @@ public final class LinuxImageManager {
 
         // 2. Create raw disk image
         progress(.stepStart("Creating disk image"))
-        try createRawDisk(at: linuxDiskURL, sizeGB: diskSizeGB)
+        try createRawDisk(at: linuxDiskURL, sizeMB: diskSizeMB)
         progress(.stepDone("Creating disk image"))
 
         // 3. Boot Alpine netboot, install to disk, add Chromium.
@@ -393,7 +393,7 @@ public final class LinuxImageManager {
         }
     }
 
-    private func createRawDisk(at url: URL, sizeGB: UInt64) throws {
+    private func createRawDisk(at url: URL, sizeMB: UInt64) throws {
         try? FileManager.default.removeItem(at: url)
         let fd = open(url.path, O_RDWR | O_CREAT | O_TRUNC, 0o644)
         guard fd >= 0 else {
@@ -403,7 +403,7 @@ public final class LinuxImageManager {
         }
         defer { close(fd) }
 
-        let size = Int64(sizeGB * 1024 * 1024 * 1024)
+        let size = Int64(sizeMB * 1024 * 1024)
         guard ftruncate(fd, size) == 0 else {
             throw SandboxError.diskCreationFailed(
                 "Failed to set disk size: \(String(cString: strerror(errno)))"

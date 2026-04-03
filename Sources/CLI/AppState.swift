@@ -128,7 +128,7 @@ final class AppState: @unchecked Sendable {
         initTask = Task {
             do {
                 try await imageManager.createBaseImage(
-                    diskSizeGB: 4,
+                    diskSizeMB: 4608,
                     keyboardLayout: keyboard,
                     naturalScrolling: scrolling,
                     displayScale: scale,

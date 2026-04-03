@@ -2322,17 +2322,17 @@ struct Init: ParsableCommand {
     func run() throws {
         let guestOS = try parseGuestOS(os)
         let dir = storageDir.map { URL(filePath: $0) } ?? VMConfig.defaultStorageDirectory
-        let defaultDiskSize: UInt64 = guestOS == .linux ? 4 : 64
+        let defaultDiskSize: UInt64 = guestOS == .linux ? 4608 : 64 * 1024
 
         switch guestOS {
         case .linux:
-            try initLinux(dir: dir, diskSizeGB: diskSize ?? defaultDiskSize)
+            try initLinux(dir: dir, diskSizeMB: diskSize.map { $0 * 1024 } ?? defaultDiskSize)
         case .macOS:
-            try initMacOS(dir: dir, diskSizeGB: diskSize ?? defaultDiskSize)
+            try initMacOS(dir: dir, diskSizeMB: diskSize.map { $0 * 1024 } ?? defaultDiskSize)
         }
     }
 
-    private func initLinux(dir: URL, diskSizeGB: UInt64) throws {
+    private func initLinux(dir: URL, diskSizeMB: UInt64) throws {
         let manager = LinuxImageManager(storageDir: dir)
         if manager.hasImageFiles {
             print("Removing existing Linux base image...")
@@ -2350,7 +2350,7 @@ struct Init: ParsableCommand {
 
         Task {
             do {
-                try await manager.createBaseImage(diskSizeGB: diskSizeGB) { event in
+                try await manager.createBaseImage(diskSizeMB: diskSizeMB) { event in
                     progress.handle(event)
                 }
             } catch { taskError = error }
@@ -2366,7 +2366,7 @@ struct Init: ParsableCommand {
         print("\nDone. Run 'bromure' to launch the app.")
     }
 
-    private func initMacOS(dir: URL, diskSizeGB: UInt64) throws {
+    private func initMacOS(dir: URL, diskSizeMB: UInt64) throws {
         let manager = BaseImageManager(storageDir: dir)
         if manager.baseImageExists {
             print("Removing existing macOS base image...")
@@ -2383,7 +2383,7 @@ struct Init: ParsableCommand {
 
         Task {
             do {
-                try await manager.createBaseImage(diskSizeGB: diskSizeGB) { event in
+                try await manager.createBaseImage(diskSizeMB: diskSizeMB) { event in
                     progress.handle(event)
                 }
             } catch { taskError = error }

@@ -30,7 +30,7 @@ public final class BaseImageManager {
     /// Create a new base image by downloading and installing macOS.
     /// This is a long-running operation — it downloads an IPSW and runs the installer.
     public func createBaseImage(
-        diskSizeGB: UInt64 = 64,
+        diskSizeMB: UInt64 = 65536,
         progress: @escaping (ProgressEvent) -> Void
     ) async throws {
         let fm = FileManager.default
@@ -59,9 +59,10 @@ public final class BaseImageManager {
 
         // 3. Create disk image
         let diskURL = VMConfig.baseImageURL(in: storageDir)
-        progress(.stepStart("Creating \(diskSizeGB)GB sparse disk image"))
-        try createSparseDiskImage(at: diskURL, sizeGB: diskSizeGB)
-        progress(.stepDone("Creating \(diskSizeGB)GB sparse disk image"))
+        let diskSizeDesc = diskSizeMB >= 1024 ? "\(diskSizeMB / 1024)GB" : "\(diskSizeMB)MB"
+        progress(.stepStart("Creating \(diskSizeDesc) sparse disk image"))
+        try createSparseDiskImage(at: diskURL, sizeMB: diskSizeMB)
+        progress(.stepDone("Creating \(diskSizeDesc) sparse disk image"))
 
         // 4. Create auxiliary storage
         let auxURL = VMConfig.baseAuxURL(in: storageDir)
@@ -216,7 +217,7 @@ public final class BaseImageManager {
         }
     }
 
-    private func createSparseDiskImage(at url: URL, sizeGB: UInt64) throws {
+    private func createSparseDiskImage(at url: URL, sizeMB: UInt64) throws {
         try EphemeralDisk.checkDiskSpace(at: url.deletingLastPathComponent().path)
 
         let fd = open(url.path, O_RDWR | O_CREAT | O_TRUNC, 0o644)
@@ -225,7 +226,7 @@ public final class BaseImageManager {
         }
         defer { close(fd) }
 
-        let size = Int64(sizeGB * 1024 * 1024 * 1024)
+        let size = Int64(sizeMB * 1024 * 1024)
         let ret = ftruncate(fd, size)
         guard ret == 0 else {
             throw SandboxError.diskCreationFailed("Failed to set disk size: \(String(cString: strerror(errno)))")
