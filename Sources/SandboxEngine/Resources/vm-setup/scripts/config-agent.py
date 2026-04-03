@@ -114,6 +114,7 @@ def write_chrome_env(cfg):
         # Always route through internal squid proxy (required for dynamic
         # WARP toggling — squid is restarted with/without proxychains).
         extra_flags.append("--proxy-server=http://127.0.0.1:3128")
+        extra_flags.append("--proxy-bypass-list=<-loopback>")
     if cfg.get("disableGPU"):
         extra_flags.append("--disable-gpu")
     else:
@@ -173,8 +174,9 @@ def write_chrome_env(cfg):
     extra_flags.append("--remote-debugging-port=9222")
     extra_flags.append("--remote-debugging-address=127.0.0.1")
 
-    # Disable WebRTC when both webcam and microphone are off
-    if not cfg.get("webcam") and not cfg.get("microphone"):
+    # Disable WebRTC when both webcam and microphone are off (skip for IKEv2
+    # — these flags can interfere with private network access through the tunnel)
+    if not cfg.get("webcam") and not cfg.get("microphone") and not cfg.get("enableIKEv2"):
         extra_flags.append("--force-webrtc-ip-handling-policy=disable_non_proxied_udp")
         extra_flags.append("--enforce-webrtc-ip-permission-check")
 
@@ -252,6 +254,272 @@ def write_chrome_env(cfg):
         f.write("\n".join(lines) + "\n")
 
 
+def write_ikev2_config(cfg):
+    """Write strongSwan swanctl.conf for IKEv2 VPN."""
+    server = cfg.get("ikev2Server", "")
+    remote_id = cfg.get("ikev2RemoteID", server)
+    method = cfg.get("ikev2AuthMethod", "eap")
+    use_dns = cfg.get("ikev2UseDNS", True)
+
+    # macOS-compatible cipher proposals
+    proposals = "aes256gcm16-sha384-ecp384,aes256gcm16-sha256-ecp256,aes256gcm16-sha256-modp2048,aes256-sha256-ecp256"
+    esp_proposals = "aes256gcm16-ecp384,aes256gcm16-ecp256,aes256gcm16-modp2048,aes256-sha256-ecp256"
+
+    # Build connection section based on auth method
+    username = cfg.get("ikev2Username", "")
+    if method == "eap":
+        local_auth = "auth = eap-mschapv2\n            id = {}\n            eap_id = {}".format(username, username)
+        remote_auth = "auth = pubkey"
+    elif method == "certificate":
+        local_auth = "auth = pubkey\n            certs = client.crt"
+        remote_auth = "auth = pubkey"
+    elif method == "psk":
+        local_auth = "auth = psk"
+        remote_auth = "auth = psk"
+    else:
+        local_auth = "auth = eap-mschapv2"
+        remote_auth = "auth = pubkey"
+
+    updown_line = '                updown = /etc/swanctl/updown.sh'
+
+    conf = """connections {{
+    bromure-vpn {{
+        version = 2
+        proposals = {proposals}
+        dpd_delay = 30s
+        encap = yes
+        remote_addrs = {server}
+        vips = 0.0.0.0
+
+        local {{
+            {local_auth}
+        }}
+        remote {{
+            {remote_auth}
+            id = {remote_id}
+        }}
+
+        children {{
+            bromure-child {{
+                local_ts = 0.0.0.0/0
+                remote_ts = 0.0.0.0/0
+                esp_proposals = {esp_proposals}
+                dpd_action = restart
+                start_action = none
+{updown_line}
+            }}
+        }}
+    }}
+}}
+""".format(
+        proposals=proposals,
+        esp_proposals=esp_proposals,
+        server=server,
+        local_auth=local_auth,
+        remote_auth=remote_auth,
+        remote_id=remote_id,
+        updown_line=updown_line,
+    )
+
+    # Build secrets section
+    secrets = ""
+    if method == "eap":
+        password = cfg.get("ikev2Password", "")
+        # id must match eap_id so strongSwan finds the secret during EAP exchange.
+        # Use both the username and the server identity to cover all lookup patterns.
+        secrets = """secrets {{
+    eap-bromure {{
+        id0 = {username}
+        id1 = {remote_id}
+        secret = "{password}"
+    }}
+}}
+""".format(username=username, remote_id=remote_id,
+           password=password.replace('"', '\\"'))
+    elif method == "psk":
+        psk = cfg.get("ikev2PSK", "")
+        secrets = """secrets {{
+    ike-bromure {{
+        secret = "{psk}"
+    }}
+}}
+""".format(psk=psk.replace('"', '\\"'))
+
+    os.makedirs("/etc/swanctl/conf.d", exist_ok=True)
+    with open("/etc/swanctl/conf.d/bromure.conf", "w") as f:
+        f.write(conf)
+        if secrets:
+            f.write(secrets)
+    os.chmod("/etc/swanctl/conf.d/bromure.conf", 0o600)
+
+    # For certificate auth, decode PKCS#12 and extract cert/key
+    if method == "certificate":
+        cert_b64 = cfg.get("ikev2ClientCert", "")
+        cert_pass = cfg.get("ikev2CertPassphrase", "")
+        if cert_b64:
+            import base64
+            p12_data = base64.b64decode(cert_b64)
+            p12_path = "/tmp/bromure/client.p12"
+            with open(p12_path, "wb") as f:
+                f.write(p12_data)
+            os.chmod(p12_path, 0o600)
+
+            # Extract client cert and private key using openssl
+            pass_arg = "-passin pass:{}".format(cert_pass) if cert_pass else "-passin pass:"
+            os.makedirs("/etc/swanctl/x509", exist_ok=True)
+            os.makedirs("/etc/swanctl/private", exist_ok=True)
+            subprocess.run(
+                "openssl pkcs12 -in {p12} -clcerts -nokeys {pw} -out /etc/swanctl/x509/client.crt 2>/dev/null".format(
+                    p12=p12_path, pw=pass_arg),
+                shell=True)
+            subprocess.run(
+                "openssl pkcs12 -in {p12} -nocerts -nodes {pw} -out /etc/swanctl/private/client.key 2>/dev/null".format(
+                    p12=p12_path, pw=pass_arg),
+                shell=True)
+            os.chmod("/etc/swanctl/private/client.key", 0o600)
+            os.unlink(p12_path)
+
+    # Write IKEv2 proxy config for the updown script to use
+    ikev2_proxy_host = cfg.get("ikev2ProxyHost", "")
+    ikev2_proxy_port = cfg.get("ikev2ProxyPort", 0)
+    ikev2_proxy_user = cfg.get("ikev2ProxyUsername", "")
+    ikev2_proxy_pass = cfg.get("ikev2ProxyPassword", "")
+    if ikev2_proxy_host and ikev2_proxy_port:
+        with open("/tmp/bromure/ikev2-proxy.conf", "w") as f:
+            f.write(f"{ikev2_proxy_host}\n{ikev2_proxy_port}\n{ikev2_proxy_user}\n{ikev2_proxy_pass}\n")
+
+    # Write updown script for routing and DNS integration
+    use_dns_sh = "true" if use_dns else "false"
+    updown_script = """#!/bin/sh
+# strongSwan updown script — handles routing + DNS for Bromure IKEv2
+USE_DNS={use_dns}
+DNSMASQ_VPN_CONF="/etc/dnsmasq.d/vpn-dns.conf"
+GW_FILE="/tmp/bromure/ikev2-orig-gw"
+
+case "$PLUTO_VERB" in
+    up-client)
+        # Add the virtual IP to eth0 so the kernel can source packets from it
+        if [ -n "$PLUTO_MY_SOURCEIP" ]; then
+            ip addr add "$PLUTO_MY_SOURCEIP/32" dev eth0 2>/dev/null
+        fi
+
+        # Save original default gateway
+        ORIG_GW=$(ip route show default | head -1)
+        echo "$ORIG_GW" > "$GW_FILE"
+
+        # Route to the VPN server via the original gateway (so ESP packets aren't looped)
+        if [ -n "$PLUTO_PEER" ]; then
+            GW_IP=$(echo "$ORIG_GW" | grep -oE 'via [0-9.]+' | awk '{{print $2}}')
+            GW_DEV=$(echo "$ORIG_GW" | grep -oE 'dev [a-z0-9]+' | awk '{{print $2}}')
+            if [ -n "$GW_IP" ] && [ -n "$GW_DEV" ]; then
+                ip route add "$PLUTO_PEER/32" via "$GW_IP" dev "$GW_DEV" 2>/dev/null
+            fi
+        fi
+
+        # Install routes based on negotiated traffic selectors.
+        # PLUTO_PEER_CLIENT contains the remote TS (e.g. "0.0.0.0/0" or "10.0.0.0/24").
+        if [ -n "$PLUTO_MY_SOURCEIP" ]; then
+            GW_IP=$(echo "$ORIG_GW" | grep -oE 'via [0-9.]+' | awk '{{print $2}}')
+            GW_DEV=$(echo "$ORIG_GW" | grep -oE 'dev [a-z0-9]+' | awk '{{print $2}}')
+            if [ -n "$GW_IP" ]; then
+                if [ "$PLUTO_PEER_CLIENT" = "0.0.0.0/0" ]; then
+                    # Full tunnel — replace default route
+                    ip route del default 2>/dev/null
+                    ip route add default via "$GW_IP" dev "$GW_DEV" src "$PLUTO_MY_SOURCEIP" 2>/dev/null
+                else
+                    # Split tunnel — only route the pushed subnet(s)
+                    ip route add "$PLUTO_PEER_CLIENT" via "$GW_IP" dev "$GW_DEV" src "$PLUTO_MY_SOURCEIP" 2>/dev/null
+                fi
+            fi
+        fi
+
+        # Configure squid cache_peer if an IKEv2 proxy is set
+        PROXY_CONF="/tmp/bromure/ikev2-proxy.conf"
+        SQUID_CONF="/etc/squid/squid.conf"
+        if [ -f "$PROXY_CONF" ]; then
+            PHOST=$(sed -n '1p' "$PROXY_CONF")
+            PPORT=$(sed -n '2p' "$PROXY_CONF")
+            PUSER=$(sed -n '3p' "$PROXY_CONF")
+            PPASS=$(sed -n '4p' "$PROXY_CONF")
+            # Remove any existing cache_peer/login lines
+            sed -i '/^cache_peer /d' "$SQUID_CONF"
+            sed -i '/^never_direct /d' "$SQUID_CONF"
+            # Add parent proxy
+            if [ -n "$PUSER" ] && [ -n "$PPASS" ]; then
+                echo "cache_peer $PHOST parent $PPORT 0 no-query default login=$PUSER:$PPASS" >> "$SQUID_CONF"
+            else
+                echo "cache_peer $PHOST parent $PPORT 0 no-query default" >> "$SQUID_CONF"
+            fi
+            echo "never_direct allow all" >> "$SQUID_CONF"
+        fi
+
+        # Kill Squid so resilient-launch.sh restarts it with new routes/DNS
+        pkill -f "squid -N" 2>/dev/null
+
+        # DNS
+        if [ "$USE_DNS" = "true" ] && [ -n "$PLUTO_DNS" ]; then
+            : > "$DNSMASQ_VPN_CONF"
+            for dns in $PLUTO_DNS; do
+                echo "server=$dns" >> "$DNSMASQ_VPN_CONF"
+            done
+            if [ -f /var/run/dnsmasq.pid ]; then
+                kill -HUP $(cat /var/run/dnsmasq.pid) 2>/dev/null
+            else
+                cp /etc/resolv.conf /etc/resolv.conf.bak.ikev2 2>/dev/null
+                : > /etc/resolv.conf
+                for dns in $PLUTO_DNS; do
+                    echo "nameserver $dns" >> /etc/resolv.conf
+                done
+            fi
+        fi
+        ;;
+    down-client)
+        # Restore routes
+        if [ -f "$GW_FILE" ]; then
+            ORIG_GW=$(cat "$GW_FILE")
+            if [ "$PLUTO_PEER_CLIENT" = "0.0.0.0/0" ] && [ -n "$ORIG_GW" ]; then
+                # Full tunnel — restore default route
+                ip route del default 2>/dev/null
+                ip route add $ORIG_GW 2>/dev/null
+            else
+                # Split tunnel — remove the pushed subnet route
+                ip route del "$PLUTO_PEER_CLIENT" 2>/dev/null
+            fi
+            rm -f "$GW_FILE"
+        fi
+
+        # Remove server-specific route
+        if [ -n "$PLUTO_PEER" ]; then
+            ip route del "$PLUTO_PEER/32" 2>/dev/null
+        fi
+
+        # Remove virtual IP
+        if [ -n "$PLUTO_MY_SOURCEIP" ]; then
+            ip addr del "$PLUTO_MY_SOURCEIP/32" dev eth0 2>/dev/null
+        fi
+
+        # Remove IKEv2 proxy cache_peer from squid and restart
+        SQUID_CONF="/etc/squid/squid.conf"
+        sed -i '/^cache_peer /d' "$SQUID_CONF"
+        sed -i '/^never_direct /d' "$SQUID_CONF"
+        pkill -f "squid -N" 2>/dev/null
+
+        # Restore DNS
+        rm -f "$DNSMASQ_VPN_CONF"
+        if [ -f /var/run/dnsmasq.pid ]; then
+            kill -HUP $(cat /var/run/dnsmasq.pid) 2>/dev/null
+        elif [ -f /etc/resolv.conf.bak.ikev2 ]; then
+            mv /etc/resolv.conf.bak.ikev2 /etc/resolv.conf
+        fi
+        ;;
+esac
+""".format(use_dns=use_dns_sh)
+    os.makedirs("/etc/swanctl", exist_ok=True)
+    with open("/etc/swanctl/updown.sh", "w") as f:
+        f.write(updown_script)
+    os.chmod("/etc/swanctl/updown.sh", 0o755)
+
+
 def write_dynamic_policy(cfg):
     """Write session-specific Chrome enterprise policy (media capture, WebRTC)."""
     policy = {}
@@ -275,12 +543,6 @@ def write_dynamic_policy(cfg):
         policy["PasswordManagerEnabled"] = False
         policy["AutofillCreditCardEnabled"] = False
         policy["CredentialProviderPromoEnabled"] = False
-
-    # Chrome Browser Cloud Management (CBCM)
-    if cfg.get("cloudManagementToken"):
-        policy["CloudManagementEnrollmentToken"] = cfg["cloudManagementToken"]
-        if cfg.get("cloudManagementMandatory"):
-            policy["CloudManagementEnrollmentMandatory"] = True
 
     policy_path = "/etc/chromium/policies/managed/session.json"
     os.makedirs(os.path.dirname(policy_path), exist_ok=True)
@@ -334,6 +596,27 @@ def configure_services(cfg, ca_count):
         open("/tmp/bromure/wireguard-boot-setup", "w").close()
         if cfg.get("wireGuardAutoConnect"):
             open("/tmp/bromure/wireguard-auto-connect", "w").close()
+
+    # IKEv2/IPsec: write swanctl.conf, start charon, and load config.
+    if cfg.get("enableIKEv2"):
+        write_ikev2_config(cfg)
+        # Copy custom CAs into strongSwan's trust store before loading config
+        if ca_count > 0:
+            os.makedirs("/etc/swanctl/x509ca", exist_ok=True)
+            subprocess.run(
+                "cp /tmp/bromure/custom-cas/*.crt /etc/swanctl/x509ca/ 2>/dev/null",
+                shell=True)
+        # Start charon and load the config now so it's ready for the agent
+        subprocess.run("ipsec start 2>/dev/null", shell=True)
+        # Wait for charon socket to appear
+        for _ in range(20):
+            if os.path.exists("/var/run/charon.vici"):
+                break
+            time.sleep(0.5)
+        subprocess.run("swanctl --load-all 2>/dev/null", shell=True)
+        open("/tmp/bromure/ikev2-boot-setup", "w").close()
+        if cfg.get("ikev2AutoConnect"):
+            open("/tmp/bromure/ikev2-auto-connect", "w").close()
 
     # Webcam setup (background)
     if cfg.get("webcam"):

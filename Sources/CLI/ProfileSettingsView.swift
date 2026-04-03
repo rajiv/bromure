@@ -83,6 +83,13 @@ struct ProfileSettingsView: View {
         self.onShowWarpEULA = onShowWarpEULA
         self.initialCategory = initialCategory
         self._selectedCategory = State(initialValue: initialCategory)
+
+        // Load IKEv2 secrets from keychain
+        self._ikev2Password = State(initialValue: VPNKeychain.retrieve(profileID: draft.id, key: VPNKeychain.ikev2Password) ?? "")
+        self._ikev2PSK = State(initialValue: VPNKeychain.retrieve(profileID: draft.id, key: VPNKeychain.ikev2PSK) ?? "")
+        self._ikev2CertData = State(initialValue: VPNKeychain.retrieve(profileID: draft.id, key: VPNKeychain.ikev2Cert) ?? "")
+        self._ikev2CertPass = State(initialValue: VPNKeychain.retrieve(profileID: draft.id, key: VPNKeychain.ikev2CertPass) ?? "")
+        self._ikev2CertName = State(initialValue: VPNKeychain.retrieve(profileID: draft.id, key: VPNKeychain.ikev2Cert) != nil ? "Imported" : "")
     }
     @State private var showWarpMemoryConfirm = false
     @State private var showEncryptionWarning = false
@@ -97,6 +104,13 @@ struct ProfileSettingsView: View {
     @State private var vtKeyStatus: VTKeyStatus?
     @State private var proxyHostError: String?
     @State private var proxyHostChecking = false
+
+    // IKEv2 keychain-backed secrets (not stored in profile JSON)
+    @State private var ikev2Password: String = ""
+    @State private var ikev2PSK: String = ""
+    @State private var ikev2CertData: String = ""
+    @State private var ikev2CertPass: String = ""
+    @State private var ikev2CertName: String = ""
 
     private enum VTKeyStatus {
         case valid
@@ -798,6 +812,7 @@ struct ProfileSettingsView: View {
                         Text("No VPN").tag(VPNMode.none)
                         Text("Cloudflare WARP").tag(VPNMode.cloudflareWarp)
                         Text("WireGuard").tag(VPNMode.wireGuard)
+                        Text("IKEv2").tag(VPNMode.ikev2)
                     }
                     .pickerStyle(.segmented)
                     .disabled(proxyActive)
@@ -867,6 +882,154 @@ struct ProfileSettingsView: View {
                     )
                     .padding(.leading, 20)
                 }
+
+                // IKEv2 options
+                if draft.settings.vpnMode == .ikev2 {
+                    VStack(alignment: .leading, spacing: 12) {
+                        Text("IKEv2 Configuration")
+                            .font(.subheadline)
+                            .fontWeight(.medium)
+
+                        Grid(alignment: .leading, horizontalSpacing: 12, verticalSpacing: 8) {
+                            GridRow {
+                                Text("Server address")
+                                    .frame(maxWidth: .infinity, alignment: .trailing)
+                                    .foregroundStyle(.primary)
+                                TextField("", text: $draft.settings.ikev2Server)
+                                    .textFieldStyle(.roundedBorder)
+                            }
+                            GridRow {
+                                Text("Remote ID")
+                                    .frame(maxWidth: .infinity, alignment: .trailing)
+                                    .foregroundStyle(.primary)
+                                TextField("Same as server if empty", text: $draft.settings.ikev2RemoteID)
+                                    .textFieldStyle(.roundedBorder)
+                            }
+
+                            Divider()
+                                .gridCellColumns(2)
+
+                            GridRow {
+                                Text("Authentication")
+                                    .frame(maxWidth: .infinity, alignment: .trailing)
+                                    .foregroundStyle(.primary)
+                                    .fontWeight(.medium)
+                                Color.clear.frame(height: 0)
+                            }
+
+                            GridRow {
+                                Text("User authentication")
+                                    .frame(maxWidth: .infinity, alignment: .trailing)
+                                    .foregroundStyle(.primary)
+                                Picker("", selection: $draft.settings.ikev2AuthMethod) {
+                                    Text("Username").tag(IKEv2AuthMethod.eap)
+                                    Text("Certificate").tag(IKEv2AuthMethod.certificate)
+                                    Text("None (PSK)").tag(IKEv2AuthMethod.psk)
+                                }
+                                .labelsHidden()
+                                .frame(maxWidth: 180, alignment: .leading)
+                            }
+
+                            if draft.settings.ikev2AuthMethod == .eap {
+                                GridRow {
+                                    Text("Username")
+                                        .frame(maxWidth: .infinity, alignment: .trailing)
+                                        .foregroundStyle(.primary)
+                                    TextField("", text: $draft.settings.ikev2Username)
+                                        .textFieldStyle(.roundedBorder)
+                                }
+                                GridRow {
+                                    Text("Password")
+                                        .frame(maxWidth: .infinity, alignment: .trailing)
+                                        .foregroundStyle(.primary)
+                                    SecureField("", text: ikev2PasswordBinding)
+                                        .textFieldStyle(.roundedBorder)
+                                }
+                            }
+
+                            if draft.settings.ikev2AuthMethod == .psk {
+                                GridRow {
+                                    Text("Shared secret")
+                                        .frame(maxWidth: .infinity, alignment: .trailing)
+                                        .foregroundStyle(.primary)
+                                    SecureField("", text: ikev2PSKBinding)
+                                        .textFieldStyle(.roundedBorder)
+                                }
+                            }
+
+                            if draft.settings.ikev2AuthMethod == .certificate {
+                                GridRow {
+                                    Text("Certificate")
+                                        .frame(maxWidth: .infinity, alignment: .trailing)
+                                        .foregroundStyle(.primary)
+                                    HStack {
+                                        Text(ikev2CertName.isEmpty ? "None" : ikev2CertName)
+                                            .foregroundStyle(ikev2CertName.isEmpty ? .secondary : .primary)
+                                            .lineLimit(1)
+                                        Spacer()
+                                        Button("Select\u{2026}") {
+                                            let panel = NSOpenPanel()
+                                            panel.allowedContentTypes = [.init(filenameExtension: "p12")!, .init(filenameExtension: "pfx")!]
+                                            panel.allowsMultipleSelection = false
+                                            if panel.runModal() == .OK, let url = panel.url,
+                                               let data = try? Data(contentsOf: url) {
+                                                let b64 = data.base64EncodedString()
+                                                ikev2CertData = b64
+                                                ikev2CertName = url.lastPathComponent
+                                                VPNKeychain.store(profileID: draft.id, key: VPNKeychain.ikev2Cert, secret: b64)
+                                            }
+                                        }
+                                    }
+                                }
+                                GridRow {
+                                    Text("Passphrase")
+                                        .frame(maxWidth: .infinity, alignment: .trailing)
+                                        .foregroundStyle(.primary)
+                                    SecureField("", text: ikev2CertPassBinding)
+                                        .textFieldStyle(.roundedBorder)
+                                }
+                            }
+                        }
+                    }
+                    .padding(.leading, 20)
+
+                    VStack(alignment: .leading, spacing: 10) {
+                        Text("VPN Proxy")
+                            .font(.subheadline).bold()
+                        Text("Route browser traffic through an HTTP proxy reachable inside the VPN tunnel.")
+                            .settingDescription()
+                        HStack(spacing: 8) {
+                            TextField("Hostname", text: $draft.settings.ikev2ProxyHost)
+                                .textFieldStyle(.roundedBorder)
+                            TextField("Port", value: $draft.settings.ikev2ProxyPort, format: .number)
+                                .textFieldStyle(.roundedBorder)
+                                .frame(width: 80)
+                        }
+                        if !draft.settings.ikev2ProxyHost.isEmpty {
+                            HStack(spacing: 8) {
+                                TextField("Username", text: $draft.settings.ikev2ProxyUsername)
+                                    .textFieldStyle(.roundedBorder)
+                                SecureField("Password", text: $draft.settings.ikev2ProxyPassword)
+                                    .textFieldStyle(.roundedBorder)
+                            }
+                        }
+                    }
+                    .padding(.leading, 20)
+
+                    settingToggle(
+                        "Use VPN DNS",
+                        description: "Use DNS servers pushed by the IKEv2 gateway, preventing DNS leaks outside the tunnel.",
+                        isOn: $draft.settings.ikev2UseDNS
+                    )
+                    .padding(.leading, 20)
+
+                    settingToggle(
+                        "Connect on Startup",
+                        description: "Automatically connect the VPN when the browser session starts. You can always toggle it from the window\u{2019}s VPN button.",
+                        isOn: $draft.settings.ikev2AutoConnect
+                    )
+                    .padding(.leading, 20)
+                }
             }
 
             settingsDivider
@@ -925,26 +1088,6 @@ struct ProfileSettingsView: View {
                         SecureField("Password", text: $draft.settings.proxyPassword)
                             .textFieldStyle(.roundedBorder)
                     }
-                }
-            }
-
-            settingsDivider
-
-            // Chrome Cloud Management
-            VStack(alignment: .leading, spacing: 10) {
-                Text("Chrome Cloud Management").font(.headline)
-                Text("Enroll the browser in Chrome Browser Cloud Management (CBCM) so your organization can push policies remotely.")
-                    .settingDescription()
-
-                TextField("Enrollment Token", text: $draft.settings.cloudManagementToken)
-                    .textFieldStyle(.roundedBorder)
-
-                if !draft.settings.cloudManagementToken.isEmpty {
-                    Toggle("Mandatory Enrollment", isOn: $draft.settings.cloudManagementMandatory)
-                        .toggleStyle(.checkbox)
-                    Text("When enabled, the browser will not start if enrollment fails.")
-                        .font(.caption)
-                        .foregroundStyle(.secondary)
                 }
             }
 
@@ -1195,6 +1338,38 @@ struct ProfileSettingsView: View {
     private enum CertError: LocalizedError {
         case invalidCertificate
         var errorDescription: String? { "Not a valid X.509 certificate" }
+    }
+
+    // MARK: - IKEv2 Keychain Bindings
+
+    private var ikev2PasswordBinding: Binding<String> {
+        Binding(
+            get: { ikev2Password },
+            set: { newValue in
+                ikev2Password = newValue
+                VPNKeychain.store(profileID: draft.id, key: VPNKeychain.ikev2Password, secret: newValue)
+            }
+        )
+    }
+
+    private var ikev2PSKBinding: Binding<String> {
+        Binding(
+            get: { ikev2PSK },
+            set: { newValue in
+                ikev2PSK = newValue
+                VPNKeychain.store(profileID: draft.id, key: VPNKeychain.ikev2PSK, secret: newValue)
+            }
+        )
+    }
+
+    private var ikev2CertPassBinding: Binding<String> {
+        Binding(
+            get: { ikev2CertPass },
+            set: { newValue in
+                ikev2CertPass = newValue
+                VPNKeychain.store(profileID: draft.id, key: VPNKeychain.ikev2CertPass, secret: newValue)
+            }
+        )
     }
 
     private func validateProxyHost() {

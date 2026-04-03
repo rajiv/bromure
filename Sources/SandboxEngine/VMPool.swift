@@ -410,6 +410,26 @@ public final class VMPool {
             cfg["wireGuardConfig"] = wgConf
             if config.wireGuardAutoConnect { cfg["wireGuardAutoConnect"] = true }
         }
+        if let server = config.ikev2Server, !server.isEmpty {
+            cfg["enableIKEv2"] = true
+            cfg["ikev2Server"] = server
+            if let remoteID = config.ikev2RemoteID { cfg["ikev2RemoteID"] = remoteID }
+            if let method = config.ikev2AuthMethod { cfg["ikev2AuthMethod"] = method }
+            if let username = config.ikev2Username { cfg["ikev2Username"] = username }
+            if let password = config.ikev2Password { cfg["ikev2Password"] = password }
+            if let psk = config.ikev2PSK { cfg["ikev2PSK"] = psk }
+            if let cert = config.ikev2ClientCert { cfg["ikev2ClientCert"] = cert }
+            if let pass = config.ikev2CertPassphrase { cfg["ikev2CertPassphrase"] = pass }
+            cfg["ikev2UseDNS"] = config.ikev2UseDNS
+            if config.ikev2AutoConnect { cfg["ikev2AutoConnect"] = true }
+            if let proxyHost = config.ikev2ProxyHost, !proxyHost.isEmpty,
+               let proxyPort = config.ikev2ProxyPort, proxyPort > 0 {
+                cfg["ikev2ProxyHost"] = proxyHost
+                cfg["ikev2ProxyPort"] = proxyPort
+                if let u = config.ikev2ProxyUsername { cfg["ikev2ProxyUsername"] = u }
+                if let p = config.ikev2ProxyPassword { cfg["ikev2ProxyPassword"] = p }
+            }
+        }
         if let proxyHost = config.proxyHost, let proxyPort = config.proxyPort {
             cfg["proxyHost"] = proxyHost
             cfg["proxyPort"] = proxyPort
@@ -437,10 +457,6 @@ public final class VMPool {
         }
         if config.traceLevel != .disabled { cfg["traceLevel"] = config.traceLevel.rawValue }
         if !config.rootCAs.isEmpty { cfg["rootCAs"] = config.rootCAs }
-        if let token = config.cloudManagementToken, !token.isEmpty {
-            cfg["cloudManagementToken"] = token
-            cfg["cloudManagementMandatory"] = config.cloudManagementMandatory
-        }
         cfg["locale"] = config.locale
 
         // Display scale: read from UserDefaults so changing 1x/2x doesn't require image rebuild

@@ -68,6 +68,48 @@ public struct VMConfig {
     /// Only meaningful when ``vpnMode`` is ``.wireGuard``.
     public var wireGuardAutoConnect: Bool
 
+    /// IKEv2 VPN server hostname.
+    public var ikev2Server: String?
+
+    /// IKEv2 remote (server) identity.
+    public var ikev2RemoteID: String?
+
+    /// IKEv2 authentication method: "eap", "certificate", or "psk".
+    public var ikev2AuthMethod: String?
+
+    /// IKEv2 EAP username.
+    public var ikev2Username: String?
+
+    /// IKEv2 EAP password (from keychain).
+    public var ikev2Password: String?
+
+    /// IKEv2 pre-shared key (from keychain).
+    public var ikev2PSK: String?
+
+    /// IKEv2 client certificate as base64 PKCS#12 (from keychain).
+    public var ikev2ClientCert: String?
+
+    /// IKEv2 PKCS#12 passphrase (from keychain).
+    public var ikev2CertPassphrase: String?
+
+    /// Whether to use DNS servers pushed by the IKEv2 server.
+    public var ikev2UseDNS: Bool
+
+    /// Whether to auto-connect IKEv2 on session start.
+    public var ikev2AutoConnect: Bool
+
+    /// Optional HTTP proxy reachable through the IKEv2 tunnel.
+    public var ikev2ProxyHost: String?
+
+    /// Port for the IKEv2 tunnel proxy.
+    public var ikev2ProxyPort: Int?
+
+    /// Username for the IKEv2 tunnel proxy.
+    public var ikev2ProxyUsername: String?
+
+    /// Password for the IKEv2 tunnel proxy.
+    public var ikev2ProxyPassword: String?
+
     /// Whether to force dark mode in the browser.
     public var forceDarkMode: Bool
 
@@ -143,12 +185,6 @@ public struct VMConfig {
     /// Webcam overlay effects (city/time, name badge, logo).
     public var webcamEffects: WebcamEffects
 
-    /// Chrome Browser Cloud Management enrollment token (CBCM).
-    public var cloudManagementToken: String?
-
-    /// Whether CBCM enrollment is mandatory (browser refuses to start without it).
-    public var cloudManagementMandatory: Bool
-
     /// PEM-encoded custom root CA certificates to install in the guest.
     public var rootCAs: [String]
 
@@ -216,6 +252,20 @@ public struct VMConfig {
         warpAutoConnect: Bool = false,
         wireGuardConfig: String? = nil,
         wireGuardAutoConnect: Bool = false,
+        ikev2Server: String? = nil,
+        ikev2RemoteID: String? = nil,
+        ikev2AuthMethod: String? = nil,
+        ikev2Username: String? = nil,
+        ikev2Password: String? = nil,
+        ikev2PSK: String? = nil,
+        ikev2ClientCert: String? = nil,
+        ikev2CertPassphrase: String? = nil,
+        ikev2UseDNS: Bool = true,
+        ikev2AutoConnect: Bool = false,
+        ikev2ProxyHost: String? = nil,
+        ikev2ProxyPort: Int? = nil,
+        ikev2ProxyUsername: String? = nil,
+        ikev2ProxyPassword: String? = nil,
         forceDarkMode: Bool = false,
         enableAdBlocking: Bool = false,
         swapCmdCtrl: Bool = true,
@@ -238,8 +288,6 @@ public struct VMConfig {
         microphoneDeviceID: String? = nil,
         speakerDeviceID: String? = nil,
         webcamEffects: WebcamEffects = WebcamEffects(),
-        cloudManagementToken: String? = nil,
-        cloudManagementMandatory: Bool = false,
         rootCAs: [String] = [],
         isolateFromLAN: Bool = false,
         allowedPorts: String? = nil,
@@ -270,6 +318,20 @@ public struct VMConfig {
         self.warpAutoConnect = warpAutoConnect
         self.wireGuardConfig = wireGuardConfig
         self.wireGuardAutoConnect = wireGuardAutoConnect
+        self.ikev2Server = ikev2Server
+        self.ikev2RemoteID = ikev2RemoteID
+        self.ikev2AuthMethod = ikev2AuthMethod
+        self.ikev2Username = ikev2Username
+        self.ikev2Password = ikev2Password
+        self.ikev2PSK = ikev2PSK
+        self.ikev2ClientCert = ikev2ClientCert
+        self.ikev2CertPassphrase = ikev2CertPassphrase
+        self.ikev2UseDNS = ikev2UseDNS
+        self.ikev2AutoConnect = ikev2AutoConnect
+        self.ikev2ProxyHost = ikev2ProxyHost
+        self.ikev2ProxyPort = ikev2ProxyPort
+        self.ikev2ProxyUsername = ikev2ProxyUsername
+        self.ikev2ProxyPassword = ikev2ProxyPassword
         self.forceDarkMode = forceDarkMode
         self.enableAdBlocking = enableAdBlocking
         self.swapCmdCtrl = swapCmdCtrl
@@ -292,8 +354,6 @@ public struct VMConfig {
         self.microphoneDeviceID = microphoneDeviceID
         self.speakerDeviceID = speakerDeviceID
         self.webcamEffects = webcamEffects
-        self.cloudManagementToken = cloudManagementToken
-        self.cloudManagementMandatory = cloudManagementMandatory
         self.rootCAs = rootCAs
         self.isolateFromLAN = isolateFromLAN
         self.allowedPorts = allowedPorts

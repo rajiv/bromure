@@ -55,8 +55,16 @@ private func readSetting(_ s: ProfileSettings, key: String) -> String? {
     case "proxyPort":       return String(s.proxyPort)
     case "proxyUsername":   return s.proxyUsername
     case "proxyPassword":   return s.proxyPassword
-    case "cloudManagementToken": return s.cloudManagementToken
-    case "cloudManagementMandatory": return String(s.cloudManagementMandatory)
+    case "ikev2Server":         return s.ikev2Server
+    case "ikev2RemoteID":       return s.ikev2RemoteID
+    case "ikev2AuthMethod":     return s.ikev2AuthMethod.rawValue
+    case "ikev2Username":       return s.ikev2Username
+    case "ikev2UseDNS":         return String(s.ikev2UseDNS)
+    case "ikev2AutoConnect":    return String(s.ikev2AutoConnect)
+    case "ikev2ProxyHost":      return s.ikev2ProxyHost
+    case "ikev2ProxyPort":      return String(s.ikev2ProxyPort)
+    case "ikev2ProxyUsername":  return s.ikev2ProxyUsername
+    case "ikev2ProxyPassword":  return s.ikev2ProxyPassword
     case "allowAutomation": return String(s.allowAutomation)
     case "traceLevel":      return String(s.traceLevel.rawValue)
     case "traceAutoStart":  return String(s.traceAutoStart)
@@ -106,8 +114,18 @@ private func writeSetting(_ s: inout ProfileSettings, key: String, value: String
     case "proxyPort":       s.proxyPort = Int(value) ?? s.proxyPort
     case "proxyUsername":   s.proxyUsername = value
     case "proxyPassword":   s.proxyPassword = value
-    case "cloudManagementToken": s.cloudManagementToken = value
-    case "cloudManagementMandatory": s.cloudManagementMandatory = b
+    case "ikev2Server":         s.ikev2Server = value
+    case "ikev2RemoteID":       s.ikev2RemoteID = value
+    case "ikev2AuthMethod":     s.ikev2AuthMethod = IKEv2AuthMethod(rawValue: value) ?? .eap
+    case "ikev2Username":       s.ikev2Username = value
+    case "ikev2UseDNS":         s.ikev2UseDNS = b
+    case "ikev2AutoConnect":    s.ikev2AutoConnect = b
+    case "ikev2ProxyHost":      s.ikev2ProxyHost = value
+    case "ikev2ProxyPort":      s.ikev2ProxyPort = Int(value) ?? s.ikev2ProxyPort
+    case "ikev2ProxyUsername":  s.ikev2ProxyUsername = value
+    case "ikev2ProxyPassword":  s.ikev2ProxyPassword = value
+    case "vpnMode":
+        if let mode = VPNMode(rawValue: value) { s.vpnMode = mode }
     case "allowAutomation": s.allowAutomation = b
     case "traceLevel":      s.traceLevel = TraceLevel(rawValue: Int(value) ?? 0) ?? .disabled
     case "traceAutoStart":  s.traceAutoStart = b

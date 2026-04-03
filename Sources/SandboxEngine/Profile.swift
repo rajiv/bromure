@@ -94,6 +94,18 @@ public enum VPNMode: String, Codable, CaseIterable, Equatable, Sendable {
     case cloudflareWarp
     /// WireGuard (full network tunnel inside the guest, works with any provider).
     case wireGuard
+    /// IKEv2/IPsec (full network tunnel via strongSwan, supports EAP/cert/PSK).
+    case ikev2
+}
+
+/// IKEv2 authentication method.
+public enum IKEv2AuthMethod: String, Codable, CaseIterable, Equatable, Sendable {
+    /// EAP-MSCHAPv2 (username/password).
+    case eap
+    /// X.509 certificate (mutual TLS with client cert).
+    case certificate
+    /// Pre-shared key.
+    case psk
 }
 
 /// Trace verbosity level for HTTP session recording.
@@ -171,9 +183,22 @@ public struct ProfileSettings: Codable, Equatable {
     /// Auto-connect WARP on session start (only used when vpnMode == .cloudflareWarp).
     public var warpAutoConnect: Bool = true
     /// Raw WireGuard .conf file content (only used when vpnMode == .wireGuard).
+    /// Migrated to Keychain — this field is cleared on save.
     public var wireGuardConfig: String = ""
     /// Auto-connect WireGuard on session start (only used when vpnMode == .wireGuard).
     public var wireGuardAutoConnect: Bool = true
+
+    // IKEv2
+    public var ikev2Server: String = ""
+    public var ikev2RemoteID: String = ""
+    public var ikev2AuthMethod: IKEv2AuthMethod = .eap
+    public var ikev2Username: String = ""
+    public var ikev2UseDNS: Bool = true
+    public var ikev2AutoConnect: Bool = true
+    public var ikev2ProxyHost: String = ""
+    public var ikev2ProxyPort: Int = 0
+    public var ikev2ProxyUsername: String = ""
+    public var ikev2ProxyPassword: String = ""
 
     // Proxy
     public var proxyHost: String = ""
@@ -235,10 +260,6 @@ public struct ProfileSettings: Codable, Equatable {
     // Webcam effects
     public var webcamEffects: WebcamEffects = WebcamEffects()
 
-    // Chrome Cloud Management
-    public var cloudManagementToken: String = ""
-    public var cloudManagementMandatory: Bool = false
-
     // Certificates
     public var rootCAs: [CustomRootCA] = []
 
@@ -265,6 +286,8 @@ public struct ProfileSettings: Codable, Equatable {
         case homePage, enableGPU, enableWebGL, enableZeroCopy, enableSmoothScrolling
         case enableAdBlocking, enableWarp, warpAutoConnect
         case vpnMode, wireGuardConfig, wireGuardAutoConnect
+        case ikev2Server, ikev2RemoteID, ikev2AuthMethod, ikev2Username, ikev2UseDNS, ikev2AutoConnect
+        case ikev2ProxyHost, ikev2ProxyPort, ikev2ProxyUsername, ikev2ProxyPassword
         case proxyHost, proxyPort, proxyUsername, proxyPassword
         case enableClipboardSharing
         case canUpload, canDownload, virusTotalEnabled, virusTotalAPIKey, blockThreats, blockUnscannable
@@ -275,7 +298,6 @@ public struct ProfileSettings: Codable, Equatable {
         case isolateFromLAN, restrictPorts, allowedPorts, networkInterface
         case enableAudio, audioVolume, enableWebcam, webcamQuality, enableMicrophone
         case webcamDeviceID, microphoneDeviceID, speakerDeviceID, webcamEffects
-        case cloudManagementToken, cloudManagementMandatory
         case rootCAs, matchKeyboardLayout, locale, allowAutomation
         case traceLevel, traceAutoStart, persistent, encryptOnDisk
     }
@@ -300,6 +322,16 @@ public struct ProfileSettings: Codable, Equatable {
         warpAutoConnect = try c.decodeIfPresent(Bool.self, forKey: .warpAutoConnect) ?? defaults.warpAutoConnect
         wireGuardConfig = try c.decodeIfPresent(String.self, forKey: .wireGuardConfig) ?? defaults.wireGuardConfig
         wireGuardAutoConnect = try c.decodeIfPresent(Bool.self, forKey: .wireGuardAutoConnect) ?? defaults.wireGuardAutoConnect
+        ikev2Server = try c.decodeIfPresent(String.self, forKey: .ikev2Server) ?? defaults.ikev2Server
+        ikev2RemoteID = try c.decodeIfPresent(String.self, forKey: .ikev2RemoteID) ?? defaults.ikev2RemoteID
+        ikev2AuthMethod = try c.decodeIfPresent(IKEv2AuthMethod.self, forKey: .ikev2AuthMethod) ?? defaults.ikev2AuthMethod
+        ikev2Username = try c.decodeIfPresent(String.self, forKey: .ikev2Username) ?? defaults.ikev2Username
+        ikev2UseDNS = try c.decodeIfPresent(Bool.self, forKey: .ikev2UseDNS) ?? defaults.ikev2UseDNS
+        ikev2AutoConnect = try c.decodeIfPresent(Bool.self, forKey: .ikev2AutoConnect) ?? defaults.ikev2AutoConnect
+        ikev2ProxyHost = try c.decodeIfPresent(String.self, forKey: .ikev2ProxyHost) ?? defaults.ikev2ProxyHost
+        ikev2ProxyPort = try c.decodeIfPresent(Int.self, forKey: .ikev2ProxyPort) ?? defaults.ikev2ProxyPort
+        ikev2ProxyUsername = try c.decodeIfPresent(String.self, forKey: .ikev2ProxyUsername) ?? defaults.ikev2ProxyUsername
+        ikev2ProxyPassword = try c.decodeIfPresent(String.self, forKey: .ikev2ProxyPassword) ?? defaults.ikev2ProxyPassword
         proxyHost = try c.decodeIfPresent(String.self, forKey: .proxyHost) ?? defaults.proxyHost
         proxyPort = try c.decodeIfPresent(Int.self, forKey: .proxyPort) ?? defaults.proxyPort
         proxyUsername = try c.decodeIfPresent(String.self, forKey: .proxyUsername) ?? defaults.proxyUsername
@@ -336,8 +368,6 @@ public struct ProfileSettings: Codable, Equatable {
         speakerDeviceID = try c.decodeIfPresent(String.self, forKey: .speakerDeviceID)
         webcamEffects = try c.decodeIfPresent(WebcamEffects.self, forKey: .webcamEffects) ?? defaults.webcamEffects
         rootCAs = try c.decodeIfPresent([CustomRootCA].self, forKey: .rootCAs) ?? defaults.rootCAs
-        cloudManagementToken = try c.decodeIfPresent(String.self, forKey: .cloudManagementToken) ?? defaults.cloudManagementToken
-        cloudManagementMandatory = try c.decodeIfPresent(Bool.self, forKey: .cloudManagementMandatory) ?? defaults.cloudManagementMandatory
         matchKeyboardLayout = try c.decodeIfPresent(Bool.self, forKey: .matchKeyboardLayout) ?? defaults.matchKeyboardLayout
         locale = try c.decodeIfPresent(String.self, forKey: .locale)
         allowAutomation = try c.decodeIfPresent(Bool.self, forKey: .allowAutomation) ?? defaults.allowAutomation
@@ -361,6 +391,16 @@ public struct ProfileSettings: Codable, Equatable {
         try c.encode(warpAutoConnect, forKey: .warpAutoConnect)
         try c.encode(wireGuardConfig, forKey: .wireGuardConfig)
         try c.encode(wireGuardAutoConnect, forKey: .wireGuardAutoConnect)
+        try c.encode(ikev2Server, forKey: .ikev2Server)
+        try c.encode(ikev2RemoteID, forKey: .ikev2RemoteID)
+        try c.encode(ikev2AuthMethod, forKey: .ikev2AuthMethod)
+        try c.encode(ikev2Username, forKey: .ikev2Username)
+        try c.encode(ikev2UseDNS, forKey: .ikev2UseDNS)
+        try c.encode(ikev2AutoConnect, forKey: .ikev2AutoConnect)
+        try c.encode(ikev2ProxyHost, forKey: .ikev2ProxyHost)
+        try c.encode(ikev2ProxyPort, forKey: .ikev2ProxyPort)
+        try c.encode(ikev2ProxyUsername, forKey: .ikev2ProxyUsername)
+        try c.encode(ikev2ProxyPassword, forKey: .ikev2ProxyPassword)
         try c.encode(proxyHost, forKey: .proxyHost)
         try c.encode(proxyPort, forKey: .proxyPort)
         try c.encode(proxyUsername, forKey: .proxyUsername)
@@ -393,8 +433,6 @@ public struct ProfileSettings: Codable, Equatable {
         try c.encodeIfPresent(speakerDeviceID, forKey: .speakerDeviceID)
         try c.encode(webcamEffects, forKey: .webcamEffects)
         try c.encode(rootCAs, forKey: .rootCAs)
-        try c.encode(cloudManagementToken, forKey: .cloudManagementToken)
-        try c.encode(cloudManagementMandatory, forKey: .cloudManagementMandatory)
         try c.encode(matchKeyboardLayout, forKey: .matchKeyboardLayout)
         try c.encodeIfPresent(locale, forKey: .locale)
         try c.encode(allowAutomation, forKey: .allowAutomation)
@@ -406,7 +444,7 @@ public struct ProfileSettings: Codable, Equatable {
 
     /// Convert to a VMConfig for VM creation.
     /// Merges per-profile settings with app-wide hardware settings from UserDefaults.
-    public func toVMConfig() -> VMConfig {
+    public func toVMConfig(profileID: UUID? = nil) -> VMConfig {
         let defaults = UserDefaults.standard
         let memGB = defaults.integer(forKey: "vm.memoryGB")
         let cpus = defaults.integer(forKey: "vm.cpuCount")
@@ -438,8 +476,22 @@ public struct ProfileSettings: Codable, Equatable {
             audioVolume: audioVolume,
             vpnMode: effectiveVPNMode,
             warpAutoConnect: effectiveVPNMode == .cloudflareWarp && warpAutoConnect,
-            wireGuardConfig: effectiveVPNMode == .wireGuard && !wireGuardConfig.isEmpty ? wireGuardConfig : nil,
+            wireGuardConfig: effectiveVPNMode == .wireGuard ? resolveWireGuardConfig(profileID: profileID) : nil,
             wireGuardAutoConnect: effectiveVPNMode == .wireGuard && wireGuardAutoConnect,
+            ikev2Server: effectiveVPNMode == .ikev2 && !ikev2Server.isEmpty ? ikev2Server : nil,
+            ikev2RemoteID: effectiveVPNMode == .ikev2 ? (ikev2RemoteID.isEmpty ? ikev2Server : ikev2RemoteID) : nil,
+            ikev2AuthMethod: effectiveVPNMode == .ikev2 ? ikev2AuthMethod.rawValue : nil,
+            ikev2Username: effectiveVPNMode == .ikev2 && ikev2AuthMethod == .eap ? ikev2Username : nil,
+            ikev2Password: effectiveVPNMode == .ikev2 && ikev2AuthMethod == .eap ? profileID.flatMap { VPNKeychain.retrieve(profileID: $0, key: VPNKeychain.ikev2Password) } : nil,
+            ikev2PSK: effectiveVPNMode == .ikev2 && ikev2AuthMethod == .psk ? profileID.flatMap { VPNKeychain.retrieve(profileID: $0, key: VPNKeychain.ikev2PSK) } : nil,
+            ikev2ClientCert: effectiveVPNMode == .ikev2 && ikev2AuthMethod == .certificate ? profileID.flatMap { VPNKeychain.retrieve(profileID: $0, key: VPNKeychain.ikev2Cert) } : nil,
+            ikev2CertPassphrase: effectiveVPNMode == .ikev2 && ikev2AuthMethod == .certificate ? profileID.flatMap { VPNKeychain.retrieve(profileID: $0, key: VPNKeychain.ikev2CertPass) } : nil,
+            ikev2UseDNS: ikev2UseDNS,
+            ikev2AutoConnect: effectiveVPNMode == .ikev2 && ikev2AutoConnect,
+            ikev2ProxyHost: effectiveVPNMode == .ikev2 && !ikev2ProxyHost.isEmpty ? ikev2ProxyHost : nil,
+            ikev2ProxyPort: effectiveVPNMode == .ikev2 && ikev2ProxyPort > 0 ? ikev2ProxyPort : nil,
+            ikev2ProxyUsername: effectiveVPNMode == .ikev2 && !ikev2ProxyUsername.isEmpty ? ikev2ProxyUsername : nil,
+            ikev2ProxyPassword: effectiveVPNMode == .ikev2 && !ikev2ProxyPassword.isEmpty ? ikev2ProxyPassword : nil,
             forceDarkMode: forceDark,
             enableAdBlocking: effectiveAdBlocking,
             swapCmdCtrl: defaults.object(forKey: "vm.swapCmdCtrl") as? Bool ?? true,
@@ -462,8 +514,6 @@ public struct ProfileSettings: Codable, Equatable {
             microphoneDeviceID: microphoneDeviceID,
             speakerDeviceID: speakerDeviceID,
             webcamEffects: webcamEffects,
-            cloudManagementToken: cloudManagementToken.isEmpty ? nil : cloudManagementToken,
-            cloudManagementMandatory: cloudManagementMandatory,
             rootCAs: rootCAs.map(\.pem),
             isolateFromLAN: isolateFromLAN,
             allowedPorts: restrictPorts ? allowedPorts : nil,
@@ -480,5 +530,13 @@ public struct ProfileSettings: Codable, Equatable {
             extraKernelOptions: defaults.string(forKey: "vm.extraKernelOptions") ?? VMConfig.defaultExtraKernelOptions,
             locale: locale
         )
+    }
+
+    /// Resolve WireGuard config: try keychain first, fall back to in-memory field.
+    private func resolveWireGuardConfig(profileID: UUID?) -> String? {
+        if let id = profileID, let fromKeychain = VPNKeychain.retrieve(profileID: id, key: VPNKeychain.wgConfig) {
+            return fromKeychain.isEmpty ? nil : fromKeychain
+        }
+        return wireGuardConfig.isEmpty ? nil : wireGuardConfig
     }
 }

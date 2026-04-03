@@ -158,7 +158,7 @@ rm -f /tmp/resolv_stub.c
 # ---------------------------------------------------------------------------
 
 retry chroot /mnt apk add squid dnsmasq proxychains-ng cryptsetup inotify-tools jq python3 \
-    v4l-utils nss-tools bash wireguard-tools
+    v4l-utils nss-tools bash wireguard-tools strongswan
 
 # ---------------------------------------------------------------------------
 # Configuration files (static)
@@ -242,6 +242,7 @@ echo '::once:/usr/local/bin/resilient-launch.sh su -s /bin/sh chrome -c /usr/loc
 echo '::once:/usr/local/bin/resilient-launch.sh /usr/local/bin/webcam-agent.py' >> /mnt/etc/inittab
 echo '::once:/usr/local/bin/resilient-launch.sh /usr/local/bin/warp-agent.py' >> /mnt/etc/inittab
 echo '::once:/usr/local/bin/resilient-launch.sh /usr/local/bin/wireguard-agent.py' >> /mnt/etc/inittab
+echo '::once:/usr/local/bin/resilient-launch.sh /usr/local/bin/ikev2-agent.py' >> /mnt/etc/inittab
 echo '::once:/usr/local/bin/resilient-launch.sh su -s /bin/sh chrome -c /usr/local/bin/keyboard-agent.py' >> /mnt/etc/inittab
 echo '::once:/usr/local/bin/resilient-launch.sh su -s /bin/sh chrome -c /usr/local/bin/cjk-input-agent.py' >> /mnt/etc/inittab
 
@@ -294,15 +295,21 @@ chroot /mnt chown -R chrome:chrome /home/chrome/.config /home/chrome/.cache
 # ---------------------------------------------------------------------------
 
 mkdir -p /mnt/usr/share/fonts/macos
+MAX_FONTS_BYTES=734003200  # 700 MB cap to avoid filling the disk
+# Mount all font shares, collect paths with sizes, copy smallest-first up to the cap,
+# then unmount. This avoids filling the disk when the host has many user-installed fonts.
+FONT_LIST=$(mktemp)
 for tag in fonts userfonts; do
     FMNT="/tmp/$tag"
     mkdir -p "$FMNT"
     mount -t virtiofs "$tag" "$FMNT" 2>/dev/null || continue
-    # Copy TrueType, OpenType, and TrueType Collection fonts (skip .dfont — Linux can't use them)
-    find "$FMNT" -type f \( -iname '*.ttf' -o -iname '*.otf' -o -iname '*.ttc' \) \
-        -exec cp {} /mnt/usr/share/fonts/macos/ \;
-    umount "$FMNT"
+    find "$FMNT" -type f \( -name '*.ttf' -o -name '*.otf' -o -name '*.ttc' -o -name '*.TTF' -o -name '*.OTF' -o -name '*.TTC' \) \
+        -exec stat -c '%s %n' {} + >> "$FONT_LIST"
 done
+sort -n "$FONT_LIST" | awk -v max="$MAX_FONTS_BYTES" '{sz+=$1; if(sz>max) exit; print substr($0, index($0," ")+1)}' \
+    | while IFS= read -r path; do cp -- "$path" /mnt/usr/share/fonts/macos/; done
+rm -f "$FONT_LIST"
+for tag in fonts userfonts; do umount "/tmp/$tag" 2>/dev/null; done
 MACOS_FONT_COUNT=$(find /mnt/usr/share/fonts/macos/ -type f 2>/dev/null | wc -l)
 echo "Copied $MACOS_FONT_COUNT macOS font files"
 
@@ -323,6 +330,7 @@ install_config scripts/link-agent.py        /mnt/usr/local/bin/link-agent.py    
 install_config scripts/webcam-agent.py      /mnt/usr/local/bin/webcam-agent.py      755
 install_config scripts/warp-agent.py        /mnt/usr/local/bin/warp-agent.py        755
 install_config scripts/wireguard-agent.py  /mnt/usr/local/bin/wireguard-agent.py  755
+install_config scripts/ikev2-agent.py     /mnt/usr/local/bin/ikev2-agent.py     755
 install_config scripts/keyboard-agent.py    /mnt/usr/local/bin/keyboard-agent.py    755
 install_config scripts/cjk-input-agent.py  /mnt/usr/local/bin/cjk-input-agent.py  755
 install_config scripts/routing-socks.py     /mnt/usr/local/bin/routing-socks.py     755

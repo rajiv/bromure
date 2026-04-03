@@ -275,7 +275,7 @@ final class AppState: @unchecked Sendable {
 
     /// Build a VMConfig from a profile's settings (merges with app-wide hardware settings).
     func buildConfig(for profile: Profile) -> VMConfig {
-        profile.settings.toVMConfig()
+        profile.settings.toVMConfig(profileID: profile.id)
     }
 
     /// Build a default VMConfig when no profile is selected.

@@ -1303,6 +1303,7 @@ final class BrowserSession {
     private var webcamBridge: WebcamBridge?
     private var warpBridge: WarpBridge?
     private var wireGuardBridge: WireGuardBridge?
+    private var ikev2Bridge: IKEv2Bridge?
     private(set) var cdpBridge: CDPBridge?
     private(set) var shellBridge: ShellBridge?
     private(set) var traceBridge: TraceBridge?
@@ -1569,6 +1570,15 @@ final class BrowserSession {
                         MainActor.assumeIsolated { self?.updateWarpButton(state: state) }
                     }
                 }
+            } else if config.vpnMode == .ikev2 {
+                // IKEv2 bridge on vsock port 5702
+                let bridge = MainActor.assumeIsolated { IKEv2Bridge(socketDevice: dev) }
+                self.ikev2Bridge = bridge
+                MainActor.assumeIsolated {
+                    bridge.onStateChanged = { [weak self] state in
+                        MainActor.assumeIsolated { self?.updateWarpButton(state: state) }
+                    }
+                }
             }
         }
 
@@ -1683,6 +1693,15 @@ final class BrowserSession {
             button.contentTintColor = .systemOrange
             button.alphaValue = 1.0
             button.toolTip = "VPN Error: \(msg)"
+            // Show an alert so the user notices the error
+            if let window = button.window {
+                let alert = NSAlert()
+                alert.messageText = "VPN Connection Failed"
+                alert.informativeText = msg
+                alert.alertStyle = .warning
+                alert.addButton(withTitle: "OK")
+                alert.beginSheetModal(for: window)
+            }
         case .unknown:
             stopWarpPulse()
             button.image = NSImage(systemSymbolName: "powerplug", accessibilityDescription: "VPN Status")
@@ -1715,6 +1734,7 @@ final class BrowserSession {
         MainActor.assumeIsolated {
             warpBridge?.toggle()
             wireGuardBridge?.toggle()
+            ikev2Bridge?.toggle()
         }
     }
 

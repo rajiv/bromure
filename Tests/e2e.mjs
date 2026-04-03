@@ -1050,50 +1050,6 @@ print('n/a')
   }
 
   // ======================================================================
-  // 11. Chrome Cloud Management
-  // ======================================================================
-
-  if (hasDebugShell) {
-    await test("11.3 CBCM token written to managed policy", async () => {
-      await withSession(
-        "E2E_CBCM",
-        { cloudManagementToken: "test-enrollment-token-123", cloudManagementMandatory: "true" },
-        async ({ sessionId }) => {
-          const r = await vmExec(sessionId, "cat /etc/chromium/policies/managed/session.json");
-          const policy = JSON.parse(r.stdout);
-          assert(
-            policy.CloudManagementEnrollmentToken === "test-enrollment-token-123",
-            `Expected token 'test-enrollment-token-123', got '${policy.CloudManagementEnrollmentToken}'`
-          );
-          assert(
-            policy.CloudManagementEnrollmentMandatory === true,
-            `Expected mandatory=true, got '${policy.CloudManagementEnrollmentMandatory}'`
-          );
-        }
-      );
-    });
-
-    await test("11.4 CBCM token absent when not configured", async () => {
-      await withSession(
-        "E2E_NoCBCM",
-        {},
-        async ({ sessionId }) => {
-          const r = await vmExec(sessionId, "cat /etc/chromium/policies/managed/session.json");
-          const policy = JSON.parse(r.stdout);
-          assert(
-            !("CloudManagementEnrollmentToken" in policy),
-            "CloudManagementEnrollmentToken should not be present"
-          );
-          assert(
-            !("CloudManagementEnrollmentMandatory" in policy),
-            "CloudManagementEnrollmentMandatory should not be present"
-          );
-        }
-      );
-    });
-  }
-
-  // ======================================================================
   // 12. Language / Locale
   // ======================================================================
   console.log("\n--- 12. Language ---");
