@@ -318,10 +318,11 @@ def run_session(conn):
 def main():
     log("starting")
 
-    # Exit cleanly if no IKEv2 config is expected
+    # Sleep forever if no IKEv2 config is expected — exiting would cause
+    # the resilient-launch wrapper to restart us in a loop (CRASHED spam).
     if not os.path.isfile(BOOT_SETUP_MARKER) and not os.path.isfile(SWANCTL_CONF):
-        log("no IKEv2 config — exiting")
-        return
+        log("no IKEv2 config — sleeping")
+        signal.pause()
 
     # Wait for config-agent to write the config
     for _ in range(120):
