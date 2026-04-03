@@ -336,8 +336,8 @@ public struct VMConfig {
         "dvorak-qwertycmd":         "us:dvorak", // Dvorak QWERTY-⌘ (no XKB equivalent for cmd layer)
 
         // ── ABC layout variants (macOS 14+) ──────────────────────────────
-        "abc-azerty":               "fr",
-        "abc-qwertz":               "de",
+        "abc-azerty":               "fr:mac",
+        "abc-qwertz":               "de:mac",
 
         // ── British / Irish ───────────────────────────────────────────────
         "british":                  "gb:mac",
